@@ -1,0 +1,8 @@
+# Build artefacts
+surface_grinding_controller/build/
+surface_grinding_controller/surface_grinding_controller
+surface_grinding_controller/tools/measure_plane
+*.o
+
+# Local agent settings
+.claude/settings.local.json
