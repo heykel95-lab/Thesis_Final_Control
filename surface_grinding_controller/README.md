@@ -19,6 +19,7 @@ manual guidance.
 | `src/report/` | Writes the control log and prints the run report. |
 | `params/` | Stores robot, geometry, controller, safety, and experiment settings. |
 | `tools/measure_plane.cpp` | Calibrates one point and the orientation of the workpiece plane. |
+| `tools/measure_tool_axis.cpp` | Calibrates the grinding-tool axis in the end-effector frame. |
 
 The main execution sequence is:
 
@@ -112,6 +113,58 @@ Copy these values to `params/surface.conf` and set
 `use_start_as_surface_point = 0`. Run the calibration again while the tool face
 remains seated. The normal mismatch and configured-plane offset should both be
 close to zero.
+
+## Grinding-tool axis calibration
+
+`measure_tool_axis` is a guided calibration tool for the grinding-tool axis.
+It uses four end-effector orientations recorded while the complete tool face
+remains flat on the calibrated workpiece plane. Samples T1--T3 determine the axis in the
+end-effector frame that remains invariant when the tool is rotated about the
+surface normal. Sample T4 provides an independent validation.
+
+Before running the tool:
+
+1. Calibrate the workpiece plane and store it in `params/surface.conf`.
+2. Switch the grinder off and remove any commanded surface preload.
+3. Hand-guide the robot only while the tool reports that active guidance is on.
+4. Keep the robot stationary and press Enter to record each sample.
+
+Build the tool and start it separately:
+
+```bash
+make measure_tool_axis
+./tools/measure_tool_axis
+```
+
+Alternatively, build and start it with one command:
+
+```bash
+make run_measure_tool_axis
+```
+
+The tool uses gravity-compensated hand guidance for all calibration samples.
+T1 is used to seat the complete tool face flat on the surface. For T2, T3, and
+T4, Cartesian damping limits translation and tilt while allowing rotation about
+the configured surface normal. Joint damping remains active during guidance.
+
+Keep the complete tool face in contact with the surface and vary only the yaw
+angle. Use clearly separated orientations, for example 0 deg, +30 deg, -30 deg,
+and +50 deg. Samples separated by less than 15 deg are rejected to avoid
+unreliable calibration from insufficient yaw variation.
+
+After T4, the tool prints the calibrated axis in the format used by
+`params/tool_orientation.conf`:
+
+```text
+tool_axis_ee_x = ...
+tool_axis_ee_y = ...
+tool_axis_ee_z = ...
+```
+
+Copy these values to `params/tool_orientation.conf`. The reported T1--T3 axis
+spread and T4 validation error indicate the repeatability of the calibration.
+The surface-consistency error compares the calibrated tool direction with the
+normal stored in `params/surface.conf`.
 
 ## Startup menu
 

@@ -2,6 +2,7 @@
 surface_grinding_controller/build/
 surface_grinding_controller/surface_grinding_controller
 surface_grinding_controller/tools/measure_plane
+surface_grinding_controller/tools/measure_tool_axis
 *.o
 
 # Local agent settings
