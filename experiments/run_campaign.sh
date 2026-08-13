@@ -3,12 +3,16 @@
 #
 #   ./experiments/run_campaign.sh status
 #   ./experiments/run_campaign.sh next
+#   ./experiments/run_campaign.sh all
 #   ./experiments/run_campaign.sh series S2
+#   ./experiments/run_campaign.sh plots
 #
-# `next` runs exactly one robot trial, the first one still missing. `series`
-# runs every remaining trial of one series, stopping on the first trial that
-# does not archive. run.sh archives the raw logs, the effective parameters,
-# the terminal transcript and the provenance for each one.
+# `next` runs exactly one robot trial, the first one still missing. `all` runs
+# every remaining trial back to back; `series` restricts that to one prefix.
+# Both stop on the first trial that does not archive, and draw the figures for
+# everything archived when they finish. run.sh archives the raw logs, the
+# effective parameters, the terminal transcript and the provenance for each
+# trial.
 #
 # Run the series in order. S1 is the reference the others are read against,
 # S3 assumes S2's lever, and S4 and S5 sweep the position that S2 established
@@ -79,36 +83,63 @@ cmd_next() {
   run_one $first
 }
 
+# Trials run back to back. Nothing physical changes between them: each trial
+# only rewrites parameters, and the controller returns to the configured
+# initial joint pose before it moves. Stopping for an operator between trials
+# would only add the reaction time the gates were disabled to remove.
 cmd_series() {
-  local prefix="$1" any=0 id repeat
+  local prefix="${1:-}" any=0 id repeat
   while read -r id repeat; do
-    case "$id" in
-      "$prefix"*) ;;
-      *) continue ;;
-    esac
+    if [ -n "$prefix" ]; then
+      case "$id" in
+        "$prefix"*) ;;
+        *) continue ;;
+      esac
+    fi
     any=1
     if ! run_one "$id" "$repeat"; then
       echo "stopped: $id r$repeat did not archive" >&2
       return 1
     fi
-    echo "Reset the setup, then press Enter for the next trial."
-    read -r _
   done < <(pending)
 
   if [ "$any" -eq 0 ]; then
-    echo "nothing pending for series '$prefix'"
+    echo "nothing pending${prefix:+ for series '$prefix'}"
+    return 0
   fi
+
+  cmd_plots
+}
+
+# Draw every archived trial that has no figure yet.
+cmd_plots() {
+  local plotter="$HERE/../analysis/plot_setup_trial.py" csv drawn=0
+  if [ ! -f "$plotter" ]; then
+    echo "no plotter at $plotter; skipping figures" >&2
+    return 0
+  fi
+  while IFS= read -r csv; do
+    local dir
+    dir="$(dirname "$csv")"
+    if compgen -G "$dir/*_setup_trial.pdf" > /dev/null; then
+      continue
+    fi
+    python3 "$plotter" "$csv" --out-dir "$dir" > /dev/null 2>&1 && drawn=$((drawn + 1))
+  done < <(find "$RESULTS" -name '*_log.csv' 2>/dev/null | sort)
+  echo "drew figures for $drawn trial(s)"
 }
 
 case "${1:-status}" in
   status) cmd_status ;;
   next)   cmd_next ;;
+  all)    cmd_series "" ;;
+  plots)  cmd_plots ;;
   series)
     [ $# -ge 2 ] || { echo "usage: $0 series <S1|S2|S3|S4|S5>" >&2; exit 1; }
     cmd_series "$2"
     ;;
   *)
-    echo "usage: $0 {status|next|series <prefix>}" >&2
+    echo "usage: $0 {status|next|all|series <prefix>|plots}" >&2
     exit 1
     ;;
 esac
