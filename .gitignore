@@ -10,5 +10,14 @@ __pycache__/
 # of archiving a trial, so what is left here is an unarchived run.
 surface_grinding_controller/logs/
 
+# Raw 1 kHz trial logs, about 7.7 MB each. The campaign would put half a
+# gigabyte of them in the history. They stay on disk and are archived
+# separately; what is tracked is the set-up report in terminal.log, the
+# effective parameters, the figures, and the extracted metrics.
+experiments/results/**/*.csv
+
+# Regenerated from the archives by analysis/extract_metrics.py.
+experiments/derived/
+
 # Local agent settings
 .claude/settings.local.json
