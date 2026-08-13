@@ -35,12 +35,60 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SETUPS = os.path.normpath(os.path.join(HERE, "..", "setups"))
 
 # The tool axis in end-effector coordinates, from params/tool_geometry.conf.
-# The compliance centre is displaced along it, so a tool-frame lever stays on
-# the same physical point of the tool at every commanded orientation offset.
 TOOL_AXIS_EE = (0.0, 0.0, 1.0)
 
 # The face long axis, used for the in-plane lever positions of S4.
 FACE_LONG_EE = (0.0, 1.0, 0.0)
+
+# The press is normal to the surface, so the moment it makes about the TCP is
+#
+#     m = f x r_c = F (r_c_t2, -r_c_t1, 0).
+#
+# A lever along the normal drops out of that cross product entirely: only the
+# tangential part turns the tool, and it turns it perpendicular to itself. A
+# commanded offset about t1 therefore needs a lever along t2, and one about t2
+# needs a lever along t1.
+#
+# With the commanded spin at 90 deg the end-effector axes line up with the
+# surface frame: EE x with t1, EE y with t2, EE z with the normal. The
+# configuration stores p_c - p_TCP, and r_c = p_TCP - p_c, so the stored offset
+# is the negation of the lever.
+#
+# Both signs were measured rather than assumed, and they are set per axis
+# because the assisting direction is not the same on the two tangents.
+#
+# About t1: with the lever along -t2 the alignment component moved 0.08 deg
+# over a set-up that moved 2.05 deg with no lever at all, so that direction
+# cancels the correction. The assisting direction is +t2.
+#
+# About t2: with the lever along -t1 the component went from -5.15 to
+# -21.14 deg against -6.88 deg with no lever, so that direction drives the
+# tool away an order of magnitude harder than the contact alone. The assisting
+# direction is +t1.
+#
+# The t2 axis is the unstable one: the face is 20 mm half-width across it
+# against 60 mm half-length across t1, so the tool rocks over the short
+# dimension. A lever pointed the wrong way there is what produced the 16 deg
+# excursions, and it is why the two axes are kept as separate entries.
+LEVER_OFFSET_EE = {
+    "t1": (0.0, -1.0, 0.0),  # lever along +t2
+    "t2": (-1.0, 0.0, 0.0),  # lever along +t1
+}
+
+# The same two levers named directly in surface axes, for the S3 arm.
+SURFACE_LEVER = {
+    "t1": (0.0, 1.0, 0.0),
+    "t2": (1.0, 0.0, 0.0),
+}
+
+
+def offset_axis(tag):
+    """The surface axis a commanded offset turns about.
+
+    The zero-offset condition has no axis; it takes the t1 lever so that it
+    pairs with the t1 conditions rather than introducing a third setting.
+    """
+    return "t2" if tag.startswith("t2") else "t1"
 
 # Repeats per setting, matching the protocol used for the reported campaign.
 REPEATS = 3
@@ -54,8 +102,17 @@ OFFSETS = [
     ("t2_10deg", 0.0, 10.0),
 ]
 
-# The lever magnitude carried by S2 and S3 [m].
+# The lever magnitude carried by S2 and S3 [m]. The t2 axis takes its own
+# value: the face is 20 mm half-width across it against 60 mm across t1, so the
+# same lever turns the tool much further there. At 60 mm it drove the alignment
+# through zero and out to +15 deg. run_t2_then_campaign.sh measures the value
+# and writes it here.
 LEVER_M = 0.060
+LEVER_M_T2 = 0.03
+
+
+def lever_magnitude(axis):
+    return LEVER_M_T2 if axis == "t2" else LEVER_M
 
 # Tangential lever positions swept by S4 [m], along the face long axis.
 S4_POSITIONS = [-0.050, -0.020, 0.0, 0.020, 0.050]
@@ -149,11 +206,13 @@ def build():
 
     # S2 -- the claim. The lever is fixed to the tool, so the same physical
     # point carries it at every commanded offset.
-    lever_ee = scaled(TOOL_AXIS_EE, LEVER_M)
     for tag, t1, t2 in OFFSETS:
+        axis = offset_axis(tag)
+        lever_ee = scaled(LEVER_OFFSET_EE[axis], lever_magnitude(axis))
         setups[f"S2_tool_{tag}"] = (
             offset_keys(t1, t2) + tool_frame_lever(lever_ee),
-            f"Tool-frame compliance centre at {1000 * LEVER_M:.0f} mm, "
+            f"Tool-frame compliance centre at "
+            f"{1000 * lever_magnitude(axis):.0f} mm, "
             f"commanded offset {tag.replace('_', ' ')}.",
             "Alignment improvement should be present at every commanded "
             "offset. A correction that holds across the offsets supports the "
@@ -161,11 +220,15 @@ def build():
         )
 
     # S3 -- the definition frame. Two offsets are enough: at zero the two
-    # definitions coincide, and any difference at 10 deg is the frame.
+    # definitions coincide, and any difference at 10 deg is the frame. The
+    # lever is the same physical one S2 carries, named in surface axes.
     for tag, t1, t2 in (OFFSETS[0], OFFSETS[2]):
+        axis = offset_axis(tag)
+        lever_surface = scaled(SURFACE_LEVER[axis], lever_magnitude(axis))
         setups[f"S3_surface_{tag}"] = (
-            offset_keys(t1, t2) + surface_frame_lever(0.0, 0.0, LEVER_M),
-            f"Surface-frame compliance centre at {1000 * LEVER_M:.0f} mm, "
+            offset_keys(t1, t2) + surface_frame_lever(*lever_surface),
+            f"Surface-frame compliance centre at "
+            f"{1000 * lever_magnitude(axis):.0f} mm, "
             f"commanded offset {tag.replace('_', ' ')}.",
             "Should match S2 at zero offset and differ from it at 10 deg. "
             "The zero-offset pair is the consistency check.",

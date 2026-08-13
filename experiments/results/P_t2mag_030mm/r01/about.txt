@@ -1,0 +1,8 @@
+run_id:   P_t2mag_030mm
+repeats:  3
+
+purpose:
+  Tool-frame lever of 30 mm about t2, probing the magnitude.
+
+pass criterion:
+  The t2 component after set-up should land nearest zero for the magnitude that suits this axis. 60 mm overshot by 20 deg.

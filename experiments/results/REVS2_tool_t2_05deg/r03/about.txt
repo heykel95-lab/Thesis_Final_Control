@@ -1,0 +1,8 @@
+run_id:   S2_tool_t2_05deg
+repeats:  3
+
+purpose:
+  Tool-frame compliance centre at 60 mm, commanded offset t2 05deg.
+
+pass criterion:
+  Alignment improvement should be present at every commanded offset. A correction that holds across the offsets supports the tool-frame definition.

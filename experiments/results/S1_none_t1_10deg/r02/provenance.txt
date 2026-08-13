@@ -1,0 +1,6 @@
+run_id:        S1_none_t1_10deg
+repeat:        r02
+recorded:      2026-08-13T21:11:23+02:00
+commit:        e5afca8
+tree_state:    dirty
+exit_status:   0

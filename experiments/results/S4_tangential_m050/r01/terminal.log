@@ -1,0 +1,201 @@
+
+==============================================================================
+  SURFACE GRINDING CONTROLLER
+==============================================================================
+  robot              172.16.0.2
+  parameters         /home/hm-panda/Desktop/Thesis_Final_Control/surface_grinding_controller/params
+------------------------------------------------------------------------------
+
+==============================================================================
+  SURFACE GRINDING CONTROLLER - STARTUP MENU
+==============================================================================
+
+-- RUN MODES -----------------------------------------------------------------
+  s      Run orientation, approach, setup, and grinding
+  h      Cartesian pose hold at the initial posture
+  t      Cartesian pose hold with the setup impedance
+  g      Start manual guidance from the current robot pose
+
+-- ROBOT PREPARATION ---------------------------------------------------------
+  i      Move to the configured initial joint posture
+
+-- GRIPPER AND TOOL ----------------------------------------------------------
+  o      Open the gripper
+  c      Grasp the tool
+  r      Recalibrate the gripper with empty fingers
+  f      Pick up the tool from the holder
+  b      Return the tool to the holder
+
+-- PROGRAM -------------------------------------------------------------------
+  e      Exit
+------------------------------------------------------------------------------
+  During control: e = stop | m = startup menu | g = guidance
+------------------------------------------------------------------------------
+Selection [s/h/t/g/i/o/c/r/f/b/e]: 
+-- SELECTED MODE: PHASE SEQUENCE ---------------------------------------------
+
+-- moving to q_init ----------------------------------------------------------
+  case               saved_qinit
+  q1..q7 [deg]     = [0.8, 12.1, -0.5, -130.9, -0.2, 142.9, 44.7] deg
+  saved_qinit = [0.014777, 0.210911, -0.009320, -2.284835, -0.002725, 2.493410, 0.780694] rad
+  q_init reached.
+
+-- start pose ----------------------------------------------------------------
+  q_start          = [0.9, 12.1, -0.5, -130.9, -0.1, 142.9, 44.7] deg
+  p_start          = [    531.3,       2.5,     156.8] mm
+
+==============================================================================
+  RUN
+==============================================================================
+
+-- phase: approach_orient ----------------------------------------------------
+  Kp [t1,t2,n]     = [    150.0,     150.0,     150.0] N/m
+  Dp [t1,t2,n]     = [    133.7,      94.2,     128.3] Ns/m     auto (factor 1.90)
+  KR [t1,t2,n]     = [     90.0,      90.0,      90.0] Nm/rad
+  DR [t1,t2,n]     = [     10.8,      17.7,       2.0] Nms/rad  auto (factor 1.90)
+orient:     t=  0.0 s | axis_err=  8.6 deg | spin_err=  0.6 deg
+orient:     t=  0.2 s | axis_err=  8.0 deg | spin_err=  0.1 deg
+orient:     t=  0.4 s | axis_err=  4.8 deg | spin_err=  0.2 deg
+
+Orientation reached: axis_err=2.0 deg | spin_err=0.2 deg
+
+-- phase: approach_descend ---------------------------------------------------
+  Kp [t1,t2,n]     = [    150.0,     150.0,     150.0] N/m
+  Dp [t1,t2,n]     = [    133.7,      94.2,     128.3] Ns/m     auto (factor 1.90)
+  KR [t1,t2,n]     = [     90.0,      90.0,      90.0] Nm/rad
+  DR [t1,t2,n]     = [     10.8,      17.7,       2.0] Nms/rad  auto (factor 1.90)
+  descend to         20 mm clearance at 0.100 m/s
+descend:    t=  0.0 s | distance=   0.1 mm | height=+125.5 mm (target 20.0) | force=  0.0 N
+descend:    t=  0.2 s | distance=  20.1 mm | height=+113.8 mm (target 20.0) | force=  1.2 N
+descend:    t=  0.4 s | distance=  40.1 mm | height= +98.2 mm (target 20.0) | force=  2.9 N
+descend:    t=  0.6 s | distance=  60.2 mm | height= +82.2 mm (target 20.0) | force=  2.6 N
+descend:    t=  0.8 s | distance=  80.3 mm | height= +64.9 mm (target 20.0) | force=  1.7 N
+descend:    t=  1.0 s | distance= 100.4 mm | height= +47.7 mm (target 20.0) | force=  3.2 N
+descend:    t=  1.2 s | distance= 120.5 mm | height= +30.8 mm (target 20.0) | force=  2.0 N
+
+Clearance reached: distance=133.1 mm | height=20.0 mm | target=20.0 mm | force=1.8 N
+  offset_ee        = [     20.0,      60.0,      20.0] mm
+  p_EE_at_contact  = [    519.1,       1.3,      49.1] mm
+  contact_point    = [    537.8,     -56.4,       1.3] mm
+  edge_offset      = [     18.7,     -57.7,     -47.8] mm
+
+-- phase: setup --------------------------------------------------------------
+
+-- setup impedance -----------------------------------------------------------
+  law                wrench = K_TCP*dx + D_TCP*dv
+                     K_TCP  = Ad(r_c)^T * blkdiag(Kp,KR) * Ad(r_c)
+  Kp [t1,t2,n]     = [   2000.0,    2000.0,     350.0] N/m
+  Dp [t1,t2,n]     = [    230.5,     177.3,     112.4] Ns/m     auto
+  KR [t1,t2,n]     = [      5.0,       5.0,      50.0] Nm/rad
+  DR [t1,t2,n]     = [      1.5,       1.9,       1.2] Nms/rad  auto
+  p_c [EE]         = [      0.0,     -50.0,       0.0] mm       commanded in the tool frame
+  r_c [t1,t2,n]    = [     -0.1,     -49.4,      -7.4] mm       p_TCP - p_c, in the plane
+setup:     t=  0.0 s | tip=  0.0 deg | F=  0.1 N | M=  0.0 Nm (limit 150.0) | contact= 19.9 mm
+setup:     t=  0.2 s | tip=  0.8 deg | F=  1.8 N | M=  1.3 Nm (limit 150.0) | contact=  7.8 mm
+setup:     t=  0.4 s | tip=  1.5 deg | F= 19.4 N | M= 10.1 Nm (limit 150.0) | contact=  3.3 mm
+setup:     t=  0.6 s | tip=  1.5 deg | F= 16.9 N | M=  9.4 Nm (limit 150.0) | contact=  3.4 mm
+setup:     t=  0.8 s | tip=  1.6 deg | F= 22.0 N | M= 11.9 Nm (limit 150.0) | contact=  3.5 mm
+setup:     t=  1.0 s | tip=  1.6 deg | F= 27.4 N | M= 14.7 Nm (limit 150.0) | contact=  3.7 mm
+setup:     t=  1.2 s | tip=  1.7 deg | F= 33.1 N | M= 17.6 Nm (limit 150.0) | contact=  3.7 mm
+setup:     t=  1.4 s | tip=  2.0 deg | F= 37.6 N | M= 19.8 Nm (limit 150.0) | contact=  3.8 mm
+setup:     t=  1.6 s | tip=  2.5 deg | F= 44.0 N | M= 23.2 Nm (limit 150.0) | contact=  3.8 mm
+setup:     t=  1.8 s | tip=  4.2 deg | F= 46.0 N | M= 24.4 Nm (limit 150.0) | contact=  3.7 mm
+setup:     t=  2.0 s | tip=  7.0 deg | F= 50.0 N | M= 26.5 Nm (limit 150.0) | contact=  3.9 mm
+setup:     t=  2.2 s | tip=  7.8 deg | F= 56.2 N | M= 30.4 Nm (limit 150.0) | contact=  3.8 mm
+setup:     t=  2.4 s | tip=  7.8 deg | F= 61.5 N | M= 33.0 Nm (limit 150.0) | contact=  4.0 mm
+setup:     t=  2.6 s | tip=  7.8 deg | F= 67.5 N | M= 36.0 Nm (limit 150.0) | contact=  4.1 mm
+setup:     t=  2.8 s | tip=  7.8 deg | F= 72.7 N | M= 38.6 Nm (limit 150.0) | contact=  4.3 mm
+setup:     t=  3.0 s | tip=  7.8 deg | F= 77.9 N | M= 41.3 Nm (limit 150.0) | contact=  4.4 mm
+setup:     t=  3.2 s | tip=  7.8 deg | F= 83.5 N | M= 44.2 Nm (limit 150.0) | contact=  4.5 mm
+setup:     t=  3.4 s | tip=  7.8 deg | F= 78.6 N | M= 41.9 Nm (limit 150.0) | contact=  4.4 mm
+setup:     t=  3.6 s | tip=  7.8 deg | F= 78.5 N | M= 41.8 Nm (limit 150.0) | contact=  4.4 mm
+setup:     t=  3.8 s | tip=  7.8 deg | F= 78.5 N | M= 41.8 Nm (limit 150.0) | contact=  4.5 mm
+setup:     t=  4.0 s | tip=  7.8 deg | F= 78.4 N | M= 41.8 Nm (limit 150.0) | contact=  4.5 mm
+setup:     t=  4.2 s | tip=  7.8 deg | F= 78.4 N | M= 41.7 Nm (limit 150.0) | contact=  4.5 mm
+setup:     t=  4.4 s | tip=  7.8 deg | F= 78.4 N | M= 41.7 Nm (limit 150.0) | contact=  4.5 mm
+setup:     t=  4.6 s | tip=  7.8 deg | F= 78.3 N | M= 41.7 Nm (limit 150.0) | contact=  4.5 mm
+setup:     t=  4.8 s | tip=  7.8 deg | F= 78.3 N | M= 41.7 Nm (limit 150.0) | contact=  4.5 mm
+
+==============================================================================
+  SETUP RESULT
+==============================================================================
+  stop: time | t=5.0 s | tip=7.8 deg | F=78.3 N | M=41.7 Nm
+  contact_from_start = [-2.9, +0.2, -3.4] mm | norm=4.5 mm
+  tcp_from_contact  = [-20.9, +60.6, +17.3] mm | norm=66.4 mm
+  alignment: before=8.60 deg | after=3.12 deg | gain=+5.48 deg
+  alignment components [t1,t2,n] deg: before=[-8.54,-0.93,-0.00] | after=[-1.03,-2.94,+0.00]
+
+-- setup surface-frame breakdown ---------------------------------------------
+  frame              alignment-target [tangent1, tangent2, normal]
+  force        [N]      = [    +3.14,     -7.28,    -77.87]
+  tcp_disp     [mm]     = [    -1.69,     +3.78,    -30.38]
+  contact_disp [mm]     = [    -2.85,     +0.34,     -3.42]
+  Kp_eff=F/tcp [N/m]    = [  -1856.2,   -1926.5,    2563.3]
+  M_contact    [Nm]     = [    -9.53,    +39.83,     -3.81]
+  tip_angle    [deg]    = [    +7.53,     -2.04,     +0.24]
+  KR_eff=M/ang [Nm/rad] = [    -72.5,   -1119.3,    -900.2]
+  frame              tool face [length, width, tool axis]
+  M_contact    [Nm]     = [   -39.66,     +9.65,     +5.01]
+
+-- center of compliance ------------------------------------------------------
+  definition         r_c = p_TCP - p_c
+  p_TCP [x,y,z]    = [    516.9,       4.2,      18.6] mm
+  p_c [EE]         = [      0.0,     -50.0,      -0.0] mm
+  r_c [t1,t2,n]    = [     -0.5,     -50.0,      -0.9] mm
+                     p_c resolved at end of setup
+
+-- effective TCP impedance ---------------------------------------------------
+  K_TCP translation = [   1999.5,    1998.7,     351.8] N/m
+  K_TCP rotation   = [      5.9,       5.0,      55.0] Nm/rad
+  commanded KR was = [      5.0,       5.0,      50.0] Nm/rad   including lever contribution
+  D_TCP translation = [    230.5,     177.3,     112.5] Ns/m
+  D_TCP rotation   = [      1.8,       1.9,       1.8] Nms/rad
+  coupling           max |moment per unit translation| = 100.0 Nm/m (K), 11.5 Nms/m (D)
+  eigenvalues        K_TCP 4.99 .. 2005 | D_TCP 1.18 .. 231  (both positive: valid springs)
+
+  K_TCP [N/m, Nm/rad | rows fx..mz, cols tx..rz]:
+           tx        ty        tz    |    rx        ry        rz
+  fx [    2000  -0.7871   -28.44 |   -1.422   -1.015   -99.97 ]
+  fy [ -0.7871     1999   -45.62 |   -1.252  0.02216   0.9924 ]
+  fz [  -28.44   -45.62    351.8 |    17.56  -0.1531      1.4 ]
+     ---------------------------+---------------------------
+  mx [  -1.422   -1.252    17.56 |    5.891  0.01382   0.8461 ]
+  my [  -1.015  0.02216  -0.1531 |  0.01382    5.035    1.295 ]
+  mz [  -99.97   0.9924      1.4 |   0.8461    1.295    54.95 ]
+
+  D_TCP [Ns/m, Nms/rad]:
+           tx        ty        tz    |    rx        ry        rz
+  fx [   230.5 -0.05636   -2.036 |  -0.1018  -0.1176   -11.52 ]
+  fy [-0.05636    177.3   -1.795 | 0.001466 0.0008849  0.08735 ]
+  fz [  -2.036   -1.795    112.5 |    5.622 -0.05258    0.101 ]
+     ---------------------------+---------------------------
+  mx [ -0.1018 0.001466    5.622 |    1.776 -0.002778 -0.0003095 ]
+  my [ -0.1176 0.0008849 -0.05258 | -0.002778    1.876 -0.01334 ]
+  mz [  -11.52  0.08735    0.101 | -0.0003095 -0.01334    1.758 ]
+
+[GATE] Set up finished (still pressing). Press Enter to start the grind (e+Enter stops).
+
+Stop requested with e + Enter. Finishing control loop...
+
+-- joint motion [deg] --------------------------------------------------------
+  joint       start    final    delta
+  q1            0.9      5.8     +4.9
+  q2           12.1     30.3    +18.2
+  q3           -0.5     -4.6     -4.1
+  q4         -130.9   -129.0     +1.9
+  q5           -0.1      4.5     +4.7
+  q6          142.9    155.2    +12.4
+  q7           44.7     43.1     -1.6
+
+==============================================================================
+  FINAL RESULT
+==============================================================================
+  p_d              = [    514.6,      -5.9,    -210.8] mm
+  p_EE             = [    516.9,       4.2,      18.6] mm
+  e_p              = [     -2.3,     -10.1,    -229.4] mm
+  e_R              = [     7.53,     -2.03,      0.17] deg
+------------------------------------------------------------------------------
+  position error     229.66 mm
+  rotation error     7.80 deg
+  csv                logs/surface_grinding_controller_log.csv
+------------------------------------------------------------------------------

@@ -1,0 +1,6 @@
+run_id:        S2_tool_t2_10deg
+repeat:        r02
+recorded:      2026-08-13T21:14:22+02:00
+commit:        79dff7e
+tree_state:    dirty
+exit_status:   0
