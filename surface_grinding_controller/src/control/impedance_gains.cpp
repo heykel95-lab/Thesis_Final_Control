@@ -50,11 +50,42 @@ PhaseImpedanceGains buildPhaseImpedanceGains(const ControllerConfig& params) {
   gains.Dp_hold = params.hold_Dp_diag.asDiagonal();
   gains.KR_hold = params.hold_KR_diag.asDiagonal();
   gains.DR_hold = params.hold_DR_diag.asDiagonal();
-  // Assigning phase-gate hold gains in base and surface axes.
-  gains.Kp_pause = params.pause_hold_Kp_diag.asDiagonal();
-  gains.Dp_pause = params.pause_hold_Dp_diag.asDiagonal();
-  gains.KR_pause = taskGain(params.pause_hold_KR_diag);
-  gains.DR_pause = taskGain(params.pause_hold_DR_diag);
+  // Selecting active translational gate-hold gains from base or surface axes.
+  gains.pause_Kp_active_diag =
+      params.pause_hold_translation_surface_frame
+          ? params.pause_hold_Kp_surface_diag
+          : params.pause_hold_Kp_diag;
+  gains.pause_Dp_active_diag =
+      params.pause_hold_translation_surface_frame
+          ? params.pause_hold_Dp_surface_diag
+          : params.pause_hold_Dp_diag;
+  // Transforming the selected translational gate-hold gains to base axes.
+  gains.Kp_pause =
+      params.pause_hold_translation_surface_frame
+          ? taskGain(params.pause_hold_Kp_surface_diag)
+          : params.pause_hold_Kp_diag.asDiagonal();
+  gains.Dp_pause =
+      params.pause_hold_translation_surface_frame
+          ? taskGain(params.pause_hold_Dp_surface_diag)
+          : params.pause_hold_Dp_diag.asDiagonal();
+  // Selecting active rotational gate-hold gains from base or surface axes.
+  gains.pause_KR_active_diag =
+      params.pause_hold_rotation_surface_frame
+          ? params.pause_hold_KR_surface_diag
+          : params.pause_hold_KR_diag;
+  gains.pause_DR_active_diag =
+      params.pause_hold_rotation_surface_frame
+          ? params.pause_hold_DR_surface_diag
+          : params.pause_hold_DR_diag;
+  // Transforming the selected rotational gate-hold gains to base axes.
+  gains.KR_pause =
+      params.pause_hold_rotation_surface_frame
+          ? taskGain(params.pause_hold_KR_surface_diag)
+          : params.pause_hold_KR_diag.asDiagonal();
+  gains.DR_pause =
+      params.pause_hold_rotation_surface_frame
+          ? taskGain(params.pause_hold_DR_surface_diag)
+          : params.pause_hold_DR_diag.asDiagonal();
 
   return gains;
 }
@@ -126,25 +157,29 @@ void updateAutoDamping(const ControllerConfig& params,
     };
 
     if (pause_hold_active) {
-      // Calculating translational base-frame and rotational surface-frame inertia.
+      // Selecting base or surface axes for translation and for rotation.
       const CartesianInertiaEstimate inertia_base =
           computeCartesianInertiaEstimate(joint_mass, J, Mat3::Identity());
       const CartesianInertiaEstimate inertia_task =
           computeCartesianInertiaEstimate(joint_mass, J, gains.R_base_surface);
-      if (inertia_base.valid && inertia_task.valid) {
+      const CartesianInertiaEstimate& inertia_translation =
+          params.pause_hold_translation_surface_frame ? inertia_task : inertia_base;
+      const CartesianInertiaEstimate& inertia_rotation =
+          params.pause_hold_rotation_surface_frame ? inertia_task : inertia_base;
+      if (inertia_translation.valid && inertia_rotation.valid) {
         // Calculating unit-ratio critical damping for gain matching.
         const Vec3 unit_critical_Dp = criticalDampingFromStiffness(
-            inertia_base.translational,
-            params.pause_hold_Kp_diag,
+            inertia_translation.translational,
+            gains.pause_Kp_active_diag,
             1.0, Vec3::Zero(), params.auto_damping_max);
         const Vec3 unit_critical_DR = criticalDampingFromStiffness(
-            inertia_task.rotational,
-            params.pause_hold_KR_diag,
+            inertia_rotation.rotational,
+            gains.pause_KR_active_diag,
             1.0, Vec3::Zero(), params.auto_damping_max);
 
         // Fitting damping ratios to the configured gate-hold damping.
-        const Vec3& target_Dp = params.pause_hold_Dp_diag;
-        const Vec3& target_DR = params.pause_hold_DR_diag;
+        const Vec3& target_Dp = gains.pause_Dp_active_diag;
+        const Vec3& target_DR = gains.pause_DR_active_diag;
         const auto fittedFactor = [](const Vec3& unit_critical,
                                      const Vec3& target) {
           const double denominator = unit_critical.squaredNorm();
@@ -157,16 +192,22 @@ void updateAutoDamping(const ControllerConfig& params,
 
         // Assigning the fitted damping matrices and report values.
         const Vec3 Dp_diag = criticalDampingFromStiffness(
-            inertia_base.translational,
-            params.pause_hold_Kp_diag,
+            inertia_translation.translational,
+            gains.pause_Kp_active_diag,
             Dp_factor, dampingFloor(target_Dp), params.auto_damping_max);
         const Vec3 DR_diag = criticalDampingFromStiffness(
-            inertia_task.rotational,
-            params.pause_hold_KR_diag,
+            inertia_rotation.rotational,
+            gains.pause_KR_active_diag,
             DR_factor, dampingFloor(target_DR), params.auto_damping_max);
-        damping.Dp_pause = Dp_diag.asDiagonal();
+        // Assigning gate-hold damping in the same axes as the corresponding stiffness.
+        damping.Dp_pause =
+            params.pause_hold_translation_surface_frame
+                ? makeSpatialGainMatrix(Dp_diag, gains.R_base_surface)
+                : Dp_diag.asDiagonal();
         damping.DR_pause =
-            makeSpatialGainMatrix(DR_diag, gains.R_base_surface);
+            params.pause_hold_rotation_surface_frame
+                ? makeSpatialGainMatrix(DR_diag, gains.R_base_surface)
+                : DR_diag.asDiagonal();
         // Storing damping values reported at the phase gate.
         damping.pause_Dp_used = Dp_diag;
         damping.pause_DR_used = DR_diag;
@@ -177,9 +218,9 @@ void updateAutoDamping(const ControllerConfig& params,
         printf("pause damping: inertia estimate unavailable, using manual "
                "Dp=[%.1f, %.1f, %.1f] Ns/m and DR=[%.1f, %.1f, %.1f] "
                "Nms/rad\n",
-               params.pause_hold_Dp_diag(0), params.pause_hold_Dp_diag(1),
-               params.pause_hold_Dp_diag(2), params.pause_hold_DR_diag(0),
-               params.pause_hold_DR_diag(1), params.pause_hold_DR_diag(2));
+               gains.pause_Dp_active_diag(0), gains.pause_Dp_active_diag(1),
+               gains.pause_Dp_active_diag(2), gains.pause_DR_active_diag(0),
+               gains.pause_DR_active_diag(1), gains.pause_DR_active_diag(2));
       }
       damping.pause_computed = true;
     } else if (in_approach) {

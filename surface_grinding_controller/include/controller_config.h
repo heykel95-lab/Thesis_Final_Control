@@ -163,11 +163,25 @@ struct ControllerConfig {
   // --------------------------------------------------------------------------
   bool pause_before_setup = false; // Selector for the pre-setup gate hold.
   bool pause_before_grind = false; // Selector for the pre-grinding gate hold.
-  Vec3 pause_hold_Kp_diag = Vec3::Constant(5000.0); // Base-frame Kp [N/m].
-  Vec3 pause_hold_Dp_diag = Vec3::Constant(200.0);  // Base-frame Dp [N s/m].
-  Vec3 pause_hold_KR_diag = Vec3::Constant(90.0);   // Base-frame KR [N m/rad].
-  Vec3 pause_hold_DR_diag = Vec3::Constant(12.0);   // Base-frame DR [N m s/rad].
-  bool pause_hold_auto_damping = true;              // Selector for inertia-based damping.
+
+  // Base-frame translational gains [x, y, z].
+  Vec3 pause_hold_Kp_diag = Vec3::Constant(5000.0); // [N/m].
+  Vec3 pause_hold_Dp_diag = Vec3::Constant(200.0);  // [N s/m].
+  bool pause_hold_translation_surface_frame = false; // false = base gains; true = surface gains.
+
+  // Surface-frame translational gains [tangent1, tangent2, normal].
+  Vec3 pause_hold_Kp_surface_diag = Vec3::Constant(5000.0); // [N/m].
+  Vec3 pause_hold_Dp_surface_diag = Vec3::Constant(200.0);  // [N s/m].
+
+  // Base-frame rotational gains [x, y, z].
+  Vec3 pause_hold_KR_diag = Vec3::Constant(90.0); // [N m/rad].
+  Vec3 pause_hold_DR_diag = Vec3::Constant(12.0); // [N m s/rad].
+  bool pause_hold_rotation_surface_frame = true;  // false = base gains; true = surface gains.
+
+  // Surface-frame rotational gains [tangent1, tangent2, normal].
+  Vec3 pause_hold_KR_surface_diag = Vec3::Constant(90.0); // [N m/rad].
+  Vec3 pause_hold_DR_surface_diag = Vec3::Constant(12.0); // [N m s/rad].
+  bool pause_hold_auto_damping = true; // Selector for inertia-based damping.
 
   // --------------------------------------------------------------------------
   // Virtual center of compliance

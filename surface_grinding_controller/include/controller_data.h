@@ -86,7 +86,7 @@ struct SetupReport {
   Mat3 R_EE = Mat3::Identity();             // Final EE orientation [-].
   Vec3 tool_contact_point = Vec3::Zero();   // Final tool-feature position [m].
   Vec3 external_force = Vec3::Zero();       // Final external force [N].
-  Vec3 contact_moment_at_edge = Vec3::Zero(); // Moment at contact feature [N m].
+  Vec3 contact_moment = Vec3::Zero(); // Moment at the contact point [N m].
 
   // Defining the first-contact reference in the base frame.
   Vec3 first_contact_tcp = Vec3::Zero();    // TCP position at contact [m].
@@ -173,6 +173,10 @@ struct PhaseImpedanceGains {
   Mat3 KR_hold = Mat3::Zero(); // Hold rotational stiffness [N m/rad].
   Mat3 DR_hold = Mat3::Zero(); // Hold rotational damping [N m s/rad].
 
+  Vec3 pause_Kp_active_diag = Vec3::Zero(); // Selected gate-hold stiffness diagonal [N/m].
+  Vec3 pause_Dp_active_diag = Vec3::Zero(); // Selected gate-hold damping diagonal [N s/m].
+  Vec3 pause_KR_active_diag = Vec3::Zero(); // Selected gate-hold stiffness diagonal [N m/rad].
+  Vec3 pause_DR_active_diag = Vec3::Zero(); // Selected gate-hold damping diagonal [N m s/rad].
   Mat3 Kp_pause = Mat3::Zero(); // Gate-hold translational stiffness [N/m].
   Mat3 Dp_pause = Mat3::Zero(); // Gate-hold translational damping [N s/m].
   Mat3 KR_pause = Mat3::Zero(); // Gate-hold rotational stiffness [N m/rad].

@@ -16,15 +16,28 @@ void formatRatio(char* out, size_t n, double num, double den, double den_floor) 
   }
 }
 
+// Constructing the tool-face frame [length, width, tool axis] in base axes.
+Mat3 makeToolFaceFrame(const ControllerConfig& params, const Mat3& R_EE) {
+  // Expressing the tool axis and the face long axis in base coordinates [-].
+  const Vec3 axis_base =
+      R_EE * normalizedOrFallback(params.tool_axis_ee, Vec3(0.0, 0.0, 1.0));
+  const Vec3 length_base =
+      R_EE * normalizedOrFallback(params.tool_contact_half_length_ee,
+                                  Vec3(0.0, 1.0, 0.0));
+  // Reusing the orthonormalization that builds the surface frame.
+  return makeSurfaceFrameFromNormalTangent(axis_base, length_base);
+}
+
 // Transforming measured wrench, displacement, and rotation to surface axes.
-void printSurfaceFrameBreakdown(const Mat3& R_base_surface,
+void printSurfaceFrameBreakdown(const ControllerConfig& params,
+                                const Mat3& R_base_surface,
                                 const SetupReport& r) {
   const Vec3 force_surf =
       R_base_surface.transpose() * (r.external_force - r.contact_force_bias);
-  const Vec3 moment_surf = R_base_surface.transpose() * r.contact_moment_at_edge;
+  const Vec3 moment_surf = R_base_surface.transpose() * r.contact_moment;
   const Vec3 tcp_disp_surf =
       R_base_surface.transpose() * (r.p_EE - r.first_contact_tcp);
-  const Vec3 edge_disp_surf =
+  const Vec3 contact_disp_surf =
       R_base_surface.transpose() * (r.tool_contact_point - r.first_contact_point);
   const Vec3 tip_surf =
       R_base_surface.transpose() * orientationError(r.R_EE, r.R_contact_start);
@@ -44,15 +57,23 @@ void printSurfaceFrameBreakdown(const Mat3& R_base_surface,
          force_surf(0), force_surf(1), force_surf(2));
   printf("  tcp_disp     [mm]     = [%+9.2f, %+9.2f, %+9.2f]\n",
          1000.0 * tcp_disp_surf(0), 1000.0 * tcp_disp_surf(1), 1000.0 * tcp_disp_surf(2));
-  printf("  edge_disp    [mm]     = [%+9.2f, %+9.2f, %+9.2f]\n",
-         1000.0 * edge_disp_surf(0), 1000.0 * edge_disp_surf(1), 1000.0 * edge_disp_surf(2));
+  printf("  contact_disp [mm]     = [%+9.2f, %+9.2f, %+9.2f]\n",
+         1000.0 * contact_disp_surf(0), 1000.0 * contact_disp_surf(1),
+         1000.0 * contact_disp_surf(2));
   printf("  Kp_eff=F/tcp [N/m]    = [%s, %s, %s]\n", kp[0], kp[1], kp[2]);
-  printf("  moment@edge  [Nm]     = [%+9.2f, %+9.2f, %+9.2f]\n",
+  printf("  M_contact    [Nm]     = [%+9.2f, %+9.2f, %+9.2f]\n",
          moment_surf(0), moment_surf(1), moment_surf(2));
   printf("  tip_angle    [deg]    = [%+9.2f, %+9.2f, %+9.2f]\n",
          (180.0 / M_PI) * tip_surf(0), (180.0 / M_PI) * tip_surf(1),
          (180.0 / M_PI) * tip_surf(2));
   printf("  KR_eff=M/ang [Nm/rad] = [%s, %s, %s]\n", kr[0], kr[1], kr[2]);
+
+  // Resolving the contact moment in tool-face axes to identify the tipping edge.
+  const Mat3 R_base_face = makeToolFaceFrame(params, r.R_EE);
+  const Vec3 moment_face = R_base_face.transpose() * r.contact_moment;
+  printf("  %-16s   tool face [length, width, tool axis]\n", "frame");
+  printf("  M_contact    [Nm]     = [%+9.2f, %+9.2f, %+9.2f]\n",
+         moment_face(0), moment_face(1), moment_face(2));
 }
 
 }  // namespace
@@ -63,16 +84,17 @@ void reportSetupResult(const ControllerConfig& params,
   // Calculating final passive tip rotation [deg] and contact displacements [mm].
   const double actual_tip_deg =
       (180.0 / M_PI) * orientationError(r.R_EE, r.R_contact_start).norm();
-  const Vec3 edge_from_contact_mm = 1000.0 * (r.tool_contact_point - r.first_contact_point);
+  const Vec3 contact_from_start_mm =
+      1000.0 * (r.tool_contact_point - r.first_contact_point);
   const Vec3 tcp_from_contact_mm = 1000.0 * (r.p_EE - r.first_contact_point);
 
   printBanner("SETUP RESULT");
   printf("  stop: %s | t=%.1f s | tip=%.1f deg | F=%.1f N | M=%.1f Nm\n",
          r.stopped_on_moment ? "moment" : "time",
          r.phase_time, actual_tip_deg, r.force_delta_norm, r.moment_delta_norm);
-  printf("  edge_from_contact = [%+.1f, %+.1f, %+.1f] mm | norm=%.1f mm\n",
-         edge_from_contact_mm(0), edge_from_contact_mm(1), edge_from_contact_mm(2),
-         edge_from_contact_mm.norm());
+  printf("  contact_from_start = [%+.1f, %+.1f, %+.1f] mm | norm=%.1f mm\n",
+         contact_from_start_mm(0), contact_from_start_mm(1),
+         contact_from_start_mm(2), contact_from_start_mm.norm());
   printf("  tcp_from_contact  = [%+.1f, %+.1f, %+.1f] mm | norm=%.1f mm\n",
          tcp_from_contact_mm(0), tcp_from_contact_mm(1), tcp_from_contact_mm(2),
          tcp_from_contact_mm.norm());
@@ -99,7 +121,7 @@ void reportSetupResult(const ControllerConfig& params,
          align_before_surface_deg(2), align_after_surface_deg(0),
          align_after_surface_deg(1), align_after_surface_deg(2));
 
-  printSurfaceFrameBreakdown(R_base_surface, r);
+  printSurfaceFrameBreakdown(params, R_base_surface, r);
 
   // Evaluating the coupled setup impedance at the final state.
   if (!params.print_compliance_diagnostics ||

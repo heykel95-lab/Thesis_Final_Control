@@ -412,7 +412,7 @@ void printSetupDebug(double phase_time,
                      double force_n,
                      double moment_nm,
                      double moment_limit_nm,
-                     double edge_mm);
+                     double contact_mm);
 
 /// Prints grinding sweep, tracking error, and normal force [mm, N].
 void printGrindDebug(double phase_time,

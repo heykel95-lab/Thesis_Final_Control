@@ -387,19 +387,35 @@ void printPhaseIntro(const ControllerConfig& params,
 }
 
 void printGateHold(const ControllerConfig& params, const PhaseDampingCache& damping) {
-  const auto row = printRow;
+  const bool translation_surface = params.pause_hold_translation_surface_frame;
+  const bool rotation_surface = params.pause_hold_rotation_surface_frame;
+  // Selecting the parameter frames used by the gate hold.
+  const Vec3& kp = translation_surface ? params.pause_hold_Kp_surface_diag
+                                       : params.pause_hold_Kp_diag;
+  const Vec3& dp = translation_surface ? params.pause_hold_Dp_surface_diag
+                                       : params.pause_hold_Dp_diag;
+  const Vec3& kr = rotation_surface ? params.pause_hold_KR_surface_diag
+                                    : params.pause_hold_KR_diag;
+  const Vec3& dr = rotation_surface ? params.pause_hold_DR_surface_diag
+                                    : params.pause_hold_DR_diag;
+  const auto labelled = [](const char* name, bool surface) {
+    return std::string(name) + " " + (surface ? "[t1,t2,n]" : "[x,y,z]");
+  };
+
   printSection("gate hold");
-  row("Kp [x,y,z]", params.pause_hold_Kp_diag, "N/m", "");
+  printRow(labelled("Kp", translation_surface).c_str(), kp, "N/m", "");
   if (params.pause_hold_auto_damping && damping.pause_damping_valid) {
-    row("Dp [x,y,z]", damping.pause_Dp_used, "Ns/m", "auto");
+    printRow(labelled("Dp", translation_surface).c_str(), damping.pause_Dp_used,
+             "Ns/m", "auto");
   } else if (!params.pause_hold_auto_damping) {
-    row("Dp [x,y,z]", params.pause_hold_Dp_diag, "Ns/m", "");
+    printRow(labelled("Dp", translation_surface).c_str(), dp, "Ns/m", "");
   }
-  row("KR [t1,t2,n]", params.pause_hold_KR_diag, "Nm/rad", "");
+  printRow(labelled("KR", rotation_surface).c_str(), kr, "Nm/rad", "");
   if (params.pause_hold_auto_damping && damping.pause_damping_valid) {
-    row("DR [t1,t2,n]", damping.pause_DR_used, "Nms/rad", "auto");
+    printRow(labelled("DR", rotation_surface).c_str(), damping.pause_DR_used,
+             "Nms/rad", "auto");
   } else if (!params.pause_hold_auto_damping) {
-    row("DR [t1,t2,n]", params.pause_hold_DR_diag, "Nms/rad", "");
+    printRow(labelled("DR", rotation_surface).c_str(), dr, "Nms/rad", "");
   }
 }
 
@@ -437,9 +453,9 @@ void printSetupDebug(double phase_time,
                      double force_n,
                      double moment_nm,
                      double moment_limit_nm,
-                     double edge_mm) {
-  printf("setup:     t=%5.1f s | tip=%5.1f deg | F=%5.1f N | M=%5.1f Nm (limit %.1f) | edge=%5.1f mm\n",
-         phase_time, tip_deg, force_n, moment_nm, moment_limit_nm, edge_mm);
+                     double contact_mm) {
+  printf("setup:     t=%5.1f s | tip=%5.1f deg | F=%5.1f N | M=%5.1f Nm (limit %.1f) | contact=%5.1f mm\n",
+         phase_time, tip_deg, force_n, moment_nm, moment_limit_nm, contact_mm);
 }
 
 void printGrindDebug(double phase_time,

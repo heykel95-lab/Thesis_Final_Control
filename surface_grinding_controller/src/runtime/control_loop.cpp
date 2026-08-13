@@ -626,12 +626,12 @@ RunResult runControlLoop(ControllerConfig& params,
             (external_force - contact_force_bias).norm();
         const double moment_delta_norm =
             (external_moment - contact_moment_bias).norm();
-        // Transforming moment from the TCP to the pressed edge [N m]:
-        // M_C = m - r_C x f with r_C = p_edge - p_EE [m].
-        const Vec3 edge_from_tcp = tool_contact_point - p_EE;
-        const Vec3 contact_moment_at_edge =
-            (external_moment - contact_moment_bias) -
-            edge_from_tcp.cross(external_force - contact_force_bias);
+        // Transforming moment from the TCP to the contact point [N m]:
+        // M_contact = M_TCP + r_contact x f with r_contact = p_EE - p_contact [m].
+        const Vec3 r_contact = p_EE - tool_contact_point;
+        const Vec3 contact_moment =
+            (external_moment - contact_moment_bias) +
+            r_contact.cross(external_force - contact_force_bias);
 
         const bool waiting_at_gate = gate_grind_armed && !gate_grind_passed;
         if (params.debug_period > 0.0 && time >= next_debug_time &&
@@ -667,7 +667,7 @@ RunResult runControlLoop(ControllerConfig& params,
           report.R_EE = R_EE;
           report.tool_contact_point = tool_contact_point;
           report.external_force = external_force;
-          report.contact_moment_at_edge = contact_moment_at_edge;
+          report.contact_moment = contact_moment;
           report.first_contact_tcp = first_contact_tcp;
           report.first_contact_point = first_contact_point;
           report.R_contact_start = R_contact_start;

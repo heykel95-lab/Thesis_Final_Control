@@ -447,8 +447,22 @@ ControllerConfig readControllerConfig(const std::vector<std::string>& filenames)
   p.pause_before_grind = getBool("pause_before_grind", p.pause_before_grind);
   p.pause_hold_Kp_diag = getVec3Xyz("pause_hold_Kp", p.pause_hold_Kp_diag);
   p.pause_hold_Dp_diag = getVec3Xyz("pause_hold_Dp", p.pause_hold_Dp_diag);
-  p.pause_hold_KR_diag = getVec3Task("pause_hold_KR", p.pause_hold_KR_diag);
-  p.pause_hold_DR_diag = getVec3Task("pause_hold_DR", p.pause_hold_DR_diag);
+  p.pause_hold_translation_surface_frame =
+      getBool("pause_hold_translation_surface_frame",
+              p.pause_hold_translation_surface_frame);
+  p.pause_hold_Kp_surface_diag =
+      getVec3Task("pause_hold_Kp_surface", p.pause_hold_Kp_surface_diag);
+  p.pause_hold_Dp_surface_diag =
+      getVec3Task("pause_hold_Dp_surface", p.pause_hold_Dp_surface_diag);
+  p.pause_hold_KR_diag = getVec3Xyz("pause_hold_KR", p.pause_hold_KR_diag);
+  p.pause_hold_DR_diag = getVec3Xyz("pause_hold_DR", p.pause_hold_DR_diag);
+  p.pause_hold_rotation_surface_frame =
+      getBool("pause_hold_rotation_surface_frame",
+              p.pause_hold_rotation_surface_frame);
+  p.pause_hold_KR_surface_diag =
+      getVec3Task("pause_hold_KR_surface", p.pause_hold_KR_surface_diag);
+  p.pause_hold_DR_surface_diag =
+      getVec3Task("pause_hold_DR_surface", p.pause_hold_DR_surface_diag);
   p.pause_hold_auto_damping =
       getBool("pause_hold_auto_damping", p.pause_hold_auto_damping);
 
