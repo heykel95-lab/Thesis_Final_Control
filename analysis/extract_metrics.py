@@ -45,9 +45,9 @@ PARAM_KEYS = (
 FIELDS = (
     ("stop_reason", re.compile(r"^\s*stop:\s*(\w+)")),
     ("phase_time_s", re.compile(r"stop:.*\|\s*t=([-\d.]+)\s*s")),
-    # Archives written before the rename carry "tip=" instead of "defl=".
-    ("contact_deflection_deg",
-     re.compile(r"stop:.*\|\s*(?:defl|tip)=([-\d.]+)\s*deg")),
+    # Archives predating the renames carry "tip=" or "defl=".
+    ("angular_deviation_deg",
+     re.compile(r"stop:.*\|\s*(?:dev|defl|tip)=([-\d.]+)\s*deg")),
     ("force_norm_n", re.compile(r"stop:.*\|\s*F=([-\d.]+)\s*N")),
     ("moment_norm_nm", re.compile(r"stop:.*\|\s*M=([-\d.]+)\s*Nm")),
     ("align_before_deg", re.compile(r"alignment:\s*before=([-\d.]+)")),
