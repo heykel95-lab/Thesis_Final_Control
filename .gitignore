@@ -4,6 +4,11 @@ surface_grinding_controller/surface_grinding_controller
 surface_grinding_controller/tools/measure_plane
 surface_grinding_controller/tools/measure_tool_axis
 *.o
+__pycache__/
+
+# Live controller output. run.sh moves these into experiments/results/ as part
+# of archiving a trial, so what is left here is an unarchived run.
+surface_grinding_controller/logs/
 
 # Local agent settings
 .claude/settings.local.json
