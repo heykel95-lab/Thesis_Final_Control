@@ -1,59 +1,47 @@
 #!/usr/bin/env python3
-"""Draw the tool-to-plane angle split into its two surface-frame components.
+"""Draw the angular deviation split into its two surface-frame components.
 
   python3 analysis/plot_alignment_components.py [TRIAL=LABEL ...] [--out-dir DIR]
 
-The total angle is the length of a vector, so it hides any rotation across the
-commanded tilt: a degree gained on the second tangent moves a 9.35 degree total
-to 9.40. The components carry that motion with its sign, and they separate the
-correction the lever is meant to produce from the sideways rotation it is meant
-to prevent.
+The total deviation is the length of a vector, so it hides rotation across the
+commanded tilt: a degree gained on the second tangent moves 9.35 to 9.40. The
+components carry that motion with its sign.
 
-The dashed line is the commanded tangent, the solid line the one across it.
+Both conditions share one panel, with the commanded tangent drawn for every
+condition first and the tangent across it after, so the pair that barely
+differs and the pair that carries the whole effect read against each other.
 """
 
 import argparse
 import csv
 import glob
 import os
+import sys
 
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.pyplot as plt
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from figure_style import (apply_style, reference_line, shared_legend,  # noqa: E402
+                          thin, SERIES_COLOURS)
+
 RESULTS = os.path.join(HERE, "..", "experiments", "results")
 
-SERIES_BLACK = "#000000"
-SERIES_RED = "#c00000"
-
-plt.rcParams.update({
-    "font.family": "serif",
-    "font.serif": ["Latin Modern Roman", "CMU Serif", "cmr10", "DejaVu Serif"],
-    "mathtext.fontset": "cm",
-    "pdf.fonttype": 42,
-    "ps.fonttype": 42,
-    "font.size": 9,
-    "axes.edgecolor": "#1a1a1a",
-    "axes.linewidth": 0.8,
-    "axes.grid": True,
-    "axes.grid.axis": "y",
-    "grid.alpha": 0.3,
-    "grid.linewidth": 0.6,
-    "lines.linewidth": 1.4,
-    "legend.frameon": False,
-    "legend.fontsize": 8,
-})
+apply_style()
 
 SETUP_PHASE = 2  # ControlPhase::kSetup
 
 # Archives written before the rename carry the alignment_ column names.
 COLUMN_ALIASES = {
-    "angular_deviation_deg": "alignment_angle_deg",
     "angular_deviation_t1_deg": "alignment_error_t1_deg",
     "angular_deviation_t2_deg": "alignment_error_t2_deg",
 }
+
+DEFAULT_TRIALS = [
+    ("S1_none_t1_10deg/r01", "no lever"),
+    ("S5_normal_p090/r01", "90 mm along the tool axis"),
+]
 
 
 def column(row, name):
@@ -63,14 +51,8 @@ def column(row, name):
     return float(row[COLUMN_ALIASES[name]])
 
 
-DEFAULT_TRIALS = [
-    ("S1_none_t1_10deg/r01", "no lever"),
-    ("S5_normal_p090/r01", "90 mm along the tool axis"),
-]
-
-
 def load(trial):
-    """Return set-up time and the two in-plane alignment components [s, deg]."""
+    """Return set-up time and the two in-plane deviation components [s, deg]."""
     matches = glob.glob(os.path.join(RESULTS, trial, "logs", "*.csv"))
     if not matches:
         raise SystemExit(f"no log csv under {trial}")
@@ -96,25 +78,24 @@ def main():
     selected = ([tuple(a.split("=", 1)) for a in args.trials]
                 if args.trials else DEFAULT_TRIALS)
 
-    fig, axes = plt.subplots(1, len(selected), figsize=(6.9, 3.1), sharey=True)
-    axes = np.atleast_1d(axes)
+    fig, ax = plt.subplots(figsize=(5.6, 3.4))
 
-    for ax, (trial, label) in zip(axes, selected):
-        t, t1, t2 = load(trial)
-        ax.plot(t, t1, color=SERIES_BLACK, linestyle="--",
-                label=r"$t_1$, the commanded tilt")
-        ax.plot(t, t2, color=SERIES_RED,
-                label=r"$t_2$, across it")
-        ax.axhline(0.0, color="#888888", linewidth=0.8, zorder=0)
-        ax.set_xlabel("Time from first contact [s]")
-        ax.set_title(label, fontsize=8)
-        print(f"{trial:24s} t1 {t1[0]:+6.2f} -> {t1[-1]:+6.2f} | "
+    loaded = [(label, thin(*load(trial))) for trial, label in selected]
+    colour = iter(SERIES_COLOURS)
+    for index, name in ((1, r"$t_1$"), (2, r"$t_2$")):
+        for label, (t, t1, t2) in loaded:
+            ax.plot(t, t1 if index == 1 else t2, color=next(colour),
+                    label=f"{name}, {label}")
+
+    reference_line(ax)
+    ax.set_xlabel("Time from first contact [s]")
+    ax.set_ylabel(r"Angular deviation [$^\circ$]")
+    shared_legend(fig, [ax], ncol=2, bottom=0.17)
+
+    for label, (_, t1, t2) in loaded:
+        print(f"{label:26s} t1 {t1[0]:+6.2f} -> {t1[-1]:+6.2f} | "
               f"t2 {t2[0]:+6.2f} -> {t2[-1]:+6.2f}")
 
-    axes[0].set_ylabel(r"Alignment error [$^\circ$]")
-    axes[0].legend(loc="lower right")
-
-    fig.tight_layout()
     out = os.path.join(args.out_dir, "ANGLE_components.pdf")
     fig.savefig(out)
     fig.savefig(out.replace(".pdf", ".png"), dpi=160)

@@ -28,39 +28,20 @@ import os
 import sys
 
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.pyplot as plt
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from extract_metrics import surface_frame, read_params  # noqa: E402
+from figure_style import (apply_style, reference_line, shared_legend,  # noqa: E402
+                          thin, SERIES_COLOURS)
 
 RESULTS = os.path.join(HERE, "..", "experiments", "results")
 
-AXIS_STYLE = (
-    (r"$t_1$", "#000000", "--"),
-    (r"$t_2$", "#c00000", "-"),
-    (r"$n$", "#0057b8", ":"),
-)
+apply_style()
 
-plt.rcParams.update({
-    "font.family": "serif",
-    "font.serif": ["Latin Modern Roman", "CMU Serif", "cmr10", "DejaVu Serif"],
-    "mathtext.fontset": "cm",
-    "pdf.fonttype": 42,
-    "ps.fonttype": 42,
-    "font.size": 9,
-    "axes.edgecolor": "#1a1a1a",
-    "axes.linewidth": 0.8,
-    "axes.grid": True,
-    "axes.grid.axis": "y",
-    "grid.alpha": 0.3,
-    "grid.linewidth": 0.6,
-    "lines.linewidth": 1.2,
-    "legend.frameon": False,
-    "legend.fontsize": 8,
-})
+AXIS_NAMES = (r"$t_1$", r"$t_2$", r"$n$")
+
 
 SETUP_PHASE = 2  # ControlPhase::kSetup
 
@@ -110,14 +91,15 @@ def load(trial):
             np.array(moment_contact) @ frame)
 
 
-def draw_axes(ax, t, values, ylabel, legend=False):
-    for i, (label, colour, style) in enumerate(AXIS_STYLE):
-        ax.plot(t, values[:, i], color=colour, linestyle=style, label=label)
-    ax.axhline(0.0, color="#888888", linewidth=0.8, zorder=0)
+def draw_axes(ax, t, values, ylabel):
+    """Draw the three surface-frame components of one vector quantity."""
+    for i, name in enumerate(AXIS_NAMES):
+        ax.plot(t, values[:, i], color=SERIES_COLOURS[i], label=name)
+    # Zero separates a restoring component from a driving one here, so the
+    # line means something; the press axis below is left without one.
+    reference_line(ax)
     if ylabel:
         ax.set_ylabel(ylabel)
-    if legend:
-        ax.legend(loc="best", ncol=3)
 
 
 def main():
@@ -134,27 +116,25 @@ def main():
                              sharex=True, squeeze=False)
 
     for column, (trial, label) in enumerate(selected):
-        t, rotation, force, m_tcp, m_contact = load(trial)
+        t, rotation, force, m_tcp, m_contact = thin(*load(trial))
         first = column == 0
         draw_axes(axes[0][column], t, rotation,
-                  r"Rotation since contact [$^\circ$]" if first else "",
-                  legend=first)
-        axes[1][column].plot(t, force, color="#000000")
+                  r"Rotation since contact [$^\circ$]" if first else "")
+        axes[1][column].plot(t, force, color=SERIES_COLOURS[0])
         if first:
             axes[1][column].set_ylabel("Press force [N]")
         draw_axes(axes[2][column], t, m_tcp,
                   r"$M_{\mathrm{TCP}}$ [N m]" if first else "")
         draw_axes(axes[3][column], t, m_contact,
                   r"$M_{\mathrm{contact}}$ [N m]" if first else "")
-        axes[0][column].set_title(label, fontsize=9)
-        axes[3][column].set_xlabel("Time from first contact [s]")
+        axes[3][column].set_xlabel(f"Time from first contact [s]\n{label}")
 
         print(f"{trial:24s} rotation t1 {rotation[-1, 0]:+6.2f} deg | "
               f"force {force[-1]:5.1f} N | "
               f"M_TCP t1 {m_tcp[-1, 0]:+6.2f} | "
               f"M_contact t1 {m_contact[-1, 0]:+6.2f} N m")
 
-    fig.tight_layout()
+    shared_legend(fig, [axes[0][0]], ncol=3, bottom=0.09)
     out = os.path.join(args.out_dir, "SETUP_diagnostics.pdf")
     fig.savefig(out)
     fig.savefig(out.replace(".pdf", ".png"), dpi=160)

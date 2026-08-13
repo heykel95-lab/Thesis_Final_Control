@@ -15,34 +15,19 @@ import argparse
 import csv
 import glob
 import os
+import sys
 
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.pyplot as plt
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from figure_style import (apply_style, reference_line, shared_legend,  # noqa: E402
+                          thin, SERIES_COLOURS)
+
 RESULTS = os.path.join(HERE, "..", "experiments", "results")
 
-SERIES_COLOURS = ("#000000", "#c00000", "#0057b8", "#e0ad00")
-
-plt.rcParams.update({
-    "font.family": "serif",
-    "font.serif": ["Latin Modern Roman", "CMU Serif", "cmr10", "DejaVu Serif"],
-    "mathtext.fontset": "cm",
-    "pdf.fonttype": 42,
-    "ps.fonttype": 42,
-    "font.size": 9,
-    "axes.edgecolor": "#1a1a1a",
-    "axes.linewidth": 0.8,
-    "axes.grid": True,
-    "axes.grid.axis": "y",
-    "grid.alpha": 0.3,
-    "grid.linewidth": 0.6,
-    "lines.linewidth": 1.4,
-    "legend.frameon": False,
-    "legend.fontsize": 8,
-})
+apply_style()
 
 SETUP_PHASE = 2  # ControlPhase::kSetup
 
@@ -96,7 +81,7 @@ def main():
 
     fig, ax = plt.subplots(figsize=(5.6, 3.1))
     for (trial, label), colour in zip(selected, SERIES_COLOURS):
-        t, angle = load(trial)
+        t, angle = thin(*load(trial))
         ax.plot(t, angle, color=colour, label=label)
         # Marking the value the trial ended on, which is the residual tilt.
         ax.plot(t[-1], angle[-1], marker="o", color=colour,
@@ -106,13 +91,12 @@ def main():
                     fontsize=8, color=colour)
         print(f"{trial:24s} {angle[0]:5.2f} -> {angle[-1]:4.2f} deg")
 
-    ax.axhline(0.0, color="#888888", linewidth=0.8, zorder=0)
+    reference_line(ax)
     ax.set_xlabel("Time from first contact [s]")
-    ax.set_ylabel(r"Tool-to-plane angle [$^\circ$]")
+    ax.set_ylabel(r"Angular deviation [$^\circ$]")
     ax.set_ylim(bottom=-0.4)
-    ax.legend(loc="upper right")
+    shared_legend(fig, [ax], ncol=2)
 
-    fig.tight_layout()
     out = os.path.join(args.out_dir, "ANGLE_descent.pdf")
     fig.savefig(out)
     fig.savefig(out.replace(".pdf", ".png"), dpi=160)

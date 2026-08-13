@@ -28,11 +28,10 @@ import argparse
 import csv
 import glob
 import os
+import sys
 
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.pyplot as plt
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RESULTS = os.path.join(HERE, "..", "experiments", "results")
@@ -42,24 +41,11 @@ SERIES_BLACK = "#000000"
 SERIES_RED = "#c00000"
 SERIES_BLUE = "#0057b8"
 
-plt.rcParams.update({
-    "font.family": "serif",
-    "font.serif": ["Latin Modern Roman", "CMU Serif", "cmr10", "DejaVu Serif"],
-    "mathtext.fontset": "cm",
-    "pdf.fonttype": 42,
-    "ps.fonttype": 42,
-    "font.size": 9,
-    "axes.edgecolor": "#1a1a1a",
-    "axes.linewidth": 0.8,
-    "axes.grid": True,
-    "axes.grid.axis": "y",
-    "grid.alpha": 0.3,
-    "grid.linewidth": 0.6,
-    "lines.linewidth": 1.25,
-    "lines.markersize": 4.5,
-    "legend.frameon": False,
-    "legend.fontsize": 8,
-})
+sys.path.insert(0, HERE)
+from figure_style import (apply_style, reference_line, shared_legend,  # noqa: E402
+                          thin, SERIES_BLACK, SERIES_RED, SERIES_BLUE)
+
+apply_style()
 
 SETUP_PHASE = 2  # ControlPhase::kSetup
 
@@ -136,16 +122,13 @@ def main():
     fig, axes = plt.subplots(1, 2, figsize=(6.9, 3.0))
 
     # Left: both descriptions of the same trial, on one absolute scale.
-    axes[0].plot(t, alignment, color=SERIES_BLACK, label="alignment")
+    t, alignment, deviation = thin(t, alignment, deviation)
+    axes[0].plot(t, alignment, color=SERIES_BLACK, label="angular deviation")
     axes[0].plot(t, alignment[0] - deviation, color=SERIES_RED,
-                 linestyle="--",
-                 label=r"alignment at contact $-$ deviation")
-    axes[0].axhline(0.0, color="#888888", linewidth=0.8, zorder=0)
+                 label=r"deviation at contact $-$ end-effector deviation")
+    reference_line(axes[0])
     axes[0].set_xlabel("Time from first contact [s]")
     axes[0].set_ylabel(r"Angle [$^\circ$]")
-    axes[0].legend(loc="upper right")
-    axes[0].set_title(os.path.basename(os.path.dirname(args.trial)) + " " +
-                      os.path.basename(args.trial), fontsize=8)
 
     # Right: the same comparison reduced to one point per archived trial. The
     # gain is a magnitude here, because the deviation carries no sign.
@@ -155,14 +138,13 @@ def main():
     improved = gain >= 0.0
     axes[1].plot(deviation_final[improved], gain[improved], linestyle="none",
                  marker="o", color=SERIES_BLUE, markerfacecolor="white",
-                 markeredgewidth=1.0, label="alignment improved")
+                 markeredgewidth=1.0, label="deviation reduced")
     axes[1].plot(deviation_final[~improved], -gain[~improved], linestyle="none",
                  marker="s", color=SERIES_RED, markerfacecolor="white",
-                 markeredgewidth=1.0, label="alignment worsened")
-    axes[1].set_xlabel(r"Contact deviation [$^\circ$]")
-    axes[1].set_ylabel(r"Alignment change, magnitude [$^\circ$]")
-    axes[1].set_title(f"{len(gain)} archived trials", fontsize=8)
-    axes[1].legend(loc="upper left")
+                 markeredgewidth=1.0, label="deviation increased")
+    axes[1].set_xlabel(r"End-effector deviation [$^\circ$]")
+    axes[1].set_ylabel(r"Deviation change, magnitude [$^\circ$]")
+
 
     residual = np.abs(gain) - deviation_final
     print(f"trials compared        : {len(gain)}")
@@ -173,7 +155,7 @@ def main():
     worst = int(np.argmax(np.abs(residual)))
     print(f"largest disagreement   : {residual[worst]:+.3f} deg")
 
-    fig.tight_layout()
+    shared_legend(fig, list(axes), ncol=2, bottom=0.20)
     out = os.path.join(args.out_dir, "ANGLE_metric_comparison.pdf")
     fig.savefig(out)
     fig.savefig(out.replace(".pdf", ".png"), dpi=160)
