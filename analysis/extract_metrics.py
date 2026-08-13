@@ -135,9 +135,16 @@ def collect(results_dir):
             if not os.path.isdir(trial):
                 continue
 
+            # The directory name is the authority on which condition a trial
+            # belongs to. provenance.txt records the identifier the trial was
+            # recorded under, which differs wherever an archive was moved after
+            # the fact, so it is kept under its own key rather than merged.
+            provenance = read_provenance(os.path.join(trial, "provenance.txt"))
             row = {"run_id": run_id, "repeat": repeat}
             row["series"] = run_id.split("_")[0]
-            row.update(read_provenance(os.path.join(trial, "provenance.txt")))
+            row["recorded_as"] = provenance.pop("run_id", "")
+            provenance.pop("repeat", None)
+            row.update(provenance)
 
             params = read_params(os.path.join(trial, "params_effective"))
             for key in PARAM_KEYS:
