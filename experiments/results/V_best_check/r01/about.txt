@@ -1,0 +1,8 @@
+Verification trial for the full angle range.
+
+Identical to S5_normal_p120, the configuration that removed the most tilt in
+the campaign. Run after the approach rotational stiffness was raised, so the
+commanded 10 deg is now reached.
+
+What it checks: that one curve runs from close to the commanded angle down to
+a small residual, which is the result the thesis figures present.

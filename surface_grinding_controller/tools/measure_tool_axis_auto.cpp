@@ -15,12 +15,14 @@
 namespace {
 
 // Defining the number of seatings and the subset used for the axis solution.
-constexpr std::size_t kSampleCount = 4;
-constexpr std::size_t kEstimationSampleCount = 3;
+// Seating scatter, not measurement noise, limits the result, so the sequence
+// spends its time on more seatings rather than on a longer settle.
+constexpr std::size_t kSampleCount = 6;
+constexpr std::size_t kEstimationSampleCount = 5;
 
 // Defining the commanded yaw about the surface normal between seatings [deg].
 constexpr double kInitialYawDeg = -45.0;
-constexpr double kSampleYawStepDeg = 30.0;
+constexpr double kSampleYawStepDeg = 18.0;
 constexpr double kYawRateDeg = 30.0;              // Commanded yaw rate [deg/s].
 // Defining the dwell after the yaw reference stops [s]. A dwell is used
 // instead of an orientation-error threshold, because joint friction can hold
@@ -238,6 +240,11 @@ int main() {
     Vec3 seat_contact_p = p_start;
     Mat3 seat_release_R = R_start;
     double commanded_yaw = 0.0;
+    // Accumulating the commanded yaw, so the sequence can unwind it at the end.
+    // Without this the arm keeps the last yaw and successive runs walk one
+    // full excursion further, until a wrist joint reaches its limit.
+    double yaw_total = 0.0;
+    bool returning = false;
     double seat_push = 0.0;
     double quiet_time = 0.0;
     Mat3 quiet_reference_R = R_start;
@@ -256,272 +263,287 @@ int main() {
            kSampleCount);
     fflush(stdout);
 
-    robot.control([&](const RobotState& state, Duration period) -> Torques {
-      time += period.toSec();
+    try {
+        robot.control([&](const RobotState& state, Duration period) -> Torques {
+        time += period.toSec();
 
-      // Mapping the measured pose, velocity, and estimated external wrench.
-      Map<const Mat4x4> T_EE(state.O_T_EE.data());
-      const Mat3 R_EE = T_EE.block<3, 3>(0, 0);
-      const Vec3 p_EE = T_EE.block<3, 1>(0, 3);
-      const std::array<double, 42> jacobian_array =
-          model.zeroJacobian(Frame::kEndEffector, state);
-      Map<const Mat6x7> J(jacobian_array.data());
-      Map<const Vec7> dq(state.dq.data());
-      const Vec6 velocity = J * dq;
-      const Vec3 pdot = velocity.head<3>();
-      const Vec3 omega = velocity.tail<3>();
-      Map<const Vec6> external_wrench(state.O_F_ext_hat_K.data());
-      const Vec3 external_force = external_wrench.head<3>();
-      const Vec3 external_moment = external_wrench.tail<3>();
+        // Mapping the measured pose, velocity, and estimated external wrench.
+        Map<const Mat4x4> T_EE(state.O_T_EE.data());
+        const Mat3 R_EE = T_EE.block<3, 3>(0, 0);
+        const Vec3 p_EE = T_EE.block<3, 1>(0, 3);
+        const std::array<double, 42> jacobian_array =
+            model.zeroJacobian(Frame::kEndEffector, state);
+        Map<const Mat6x7> J(jacobian_array.data());
+        Map<const Vec7> dq(state.dq.data());
+        const Vec6 velocity = J * dq;
+        const Vec3 pdot = velocity.head<3>();
+        const Vec3 omega = velocity.tail<3>();
+        Map<const Vec6> external_wrench(state.O_F_ext_hat_K.data());
+        const Vec3 external_force = external_wrench.head<3>();
+        const Vec3 external_moment = external_wrench.tail<3>();
 
-      // Calculating the contact-face center [m] and its height above the plane [m].
-      const Vec3 face_center =
-          p_EE + R_EE * config.tool_contact_face_center_ee;
-      const double face_height =
-          surface_normal.dot(face_center - config.surface_point);
+        // Calculating the contact-face center [m] and its height above the plane [m].
+        const Vec3 face_center =
+            p_EE + R_EE * config.tool_contact_face_center_ee;
+        const double face_height =
+            surface_normal.dot(face_center - config.surface_point);
 
-      // Calculating the contact-force change [N] used to detect and rate contact.
-      const Vec3 contact_force = external_force - force_bias;
-      const double contact_force_norm = contact_force.norm();
+        // Calculating the contact-force change [N] used to detect and rate contact.
+        const Vec3 contact_force = external_force - force_bias;
+        const double contact_force_norm = contact_force.norm();
 
-      // Selecting the impedance of the active stage.
-      const bool seating = stage == SeatingStage::kSeat ||
-                           stage == SeatingStage::kRelax ||
-                           stage == SeatingStage::kSettle;
-      const Mat3& Kp = seating ? Kp_seat : Kp_transport;
-      const Mat3& KR = seating ? KR_seat : KR_transport;
+        // Selecting the impedance of the active stage.
+        const bool seating = stage == SeatingStage::kSeat ||
+                             stage == SeatingStage::kRelax ||
+                             stage == SeatingStage::kSettle;
+        const Mat3& Kp = seating ? Kp_seat : Kp_transport;
+        const Mat3& KR = seating ? KR_seat : KR_transport;
 
-      // Initializing the commanded velocity of the active stage [m/s].
-      Vec3 pdot_d = Vec3::Zero();
+        // Initializing the commanded velocity of the active stage [m/s].
+        Vec3 pdot_d = Vec3::Zero();
 
-      switch (stage) {
-        // -----------------------------------------------------------
-        // Retracting the face to the clearance height. The reference
-        // orientation is reset to the measured attitude, so restoring
-        // the tilt stiffness after a seating causes no torque step.
-        // -----------------------------------------------------------
-        case SeatingStage::kLift: {
-          const double stage_time = time - stage_start_time;
-          const double travel =
-              std::min(kLiftSpeed * stage_time, kLiftMaxTravel);
-          p_d = stage_start_p + travel * surface_normal;
-          pdot_d = kLiftSpeed * surface_normal;
-          R_d = stage_start_R;
+        switch (stage) {
+          // -----------------------------------------------------------
+          // Retracting the face to the clearance height. The reference
+          // orientation is reset to the measured attitude, so restoring
+          // the tilt stiffness after a seating causes no torque step.
+          // -----------------------------------------------------------
+          case SeatingStage::kLift: {
+            const double stage_time = time - stage_start_time;
+            const double travel =
+                std::min(kLiftSpeed * stage_time, kLiftMaxTravel);
+            p_d = stage_start_p + travel * surface_normal;
+            pdot_d = kLiftSpeed * surface_normal;
+            R_d = stage_start_R;
 
-          if (face_height >= kLiftClearance) {
-            stage = SeatingStage::kYaw;
-            stage_start_time = time;
-            stage_start_p = p_d;
-            stage_start_R = R_EE;
-            commanded_yaw = (sample_index == 0)
-                                ? (M_PI / 180.0) * kInitialYawDeg
-                                : (M_PI / 180.0) * kSampleYawStepDeg;
-          } else if (travel >= kLiftMaxTravel) {
-            lift_failed = true;
-          }
-          break;
-        }
-
-        // -----------------------------------------------------------
-        // Rotating the reference about the surface normal at a bounded
-        // rate, then waiting until the measured yaw has followed.
-        // -----------------------------------------------------------
-        case SeatingStage::kYaw: {
-          const double stage_time = time - stage_start_time;
-          const double rate = (M_PI / 180.0) * kYawRateDeg;
-          const double travelled =
-              std::min(rate * stage_time, std::abs(commanded_yaw));
-          const double yaw =
-              commanded_yaw >= 0.0 ? travelled : -travelled;
-          R_d = Eigen::AngleAxisd(yaw, surface_normal).toRotationMatrix() *
-                stage_start_R;
-          p_d = stage_start_p;
-
-          // Ending the stage once the reference has stopped and dwelled.
-          const double command_time = std::abs(commanded_yaw) / rate;
-          if (stage_time >= command_time + kYawDwellTime) {
-            // Reporting how far the arm stayed behind the yaw reference [deg].
-            printf("T%zu yawed %+.1f deg | reference error %.2f deg\n",
-                   sample_index + 1, (180.0 / M_PI) * yaw,
-                   (180.0 / M_PI) * orientationError(R_EE, R_d).norm());
-            // Capturing the free-space wrench baseline before descending.
-            force_bias = external_force;
-            moment_bias = external_moment;
-            stage = SeatingStage::kDescend;
-            stage_start_time = time;
-            stage_start_p = p_d;
-          }
-          break;
-        }
-
-        // -----------------------------------------------------------
-        // Lowering the face along the surface normal until the
-        // estimated contact force rises above the detection threshold.
-        // -----------------------------------------------------------
-        case SeatingStage::kDescend: {
-          const double stage_time = time - stage_start_time;
-          const double travel =
-              std::min(kDescendSpeed * stage_time, kDescendMaxTravel);
-          p_d = stage_start_p - travel * surface_normal;
-          pdot_d = -kDescendSpeed * surface_normal;
-
-          if (contact_force_norm >= kContactForce) {
-            stage = SeatingStage::kSeat;
-            stage_start_time = time;
-            seat_contact_p = p_d;
-            seat_release_R = R_EE;
-            seat_push = 0.0;
-            printf("\nT%zu contact at %.1f mm face height | %.1f N\n",
-                   sample_index + 1, 1000.0 * face_height, contact_force_norm);
-          } else if (travel >= kDescendMaxTravel) {
-            descend_failed = true;
-          }
-          break;
-        }
-
-        // -----------------------------------------------------------
-        // Pressing the face onto the plane with the tilt stiffness
-        // released. The ramp stops at the commanded seating force, so
-        // contact alone decides the resting attitude of the face.
-        // -----------------------------------------------------------
-        case SeatingStage::kSeat: {
-          const double stage_time = time - stage_start_time;
-          if (contact_force_norm < kSeatingForce) {
-            seat_push = std::min(kSeatSpeed * stage_time, kSeatMaxPush);
-            pdot_d = -kSeatSpeed * surface_normal;
-          }
-          p_d = seat_contact_p - seat_push * surface_normal;
-
-          if (contact_force_norm >= kSeatingForce ||
-              seat_push >= kSeatMaxPush) {
-            stage = SeatingStage::kRelax;
-            stage_start_time = time;
-          }
-          break;
-        }
-
-        // -----------------------------------------------------------
-        // Unloading the contact once per dither cycle. Each cycle
-        // returns to the full seating force, so the stage begins and
-        // ends pressed and only the friction lock is interrupted.
-        // -----------------------------------------------------------
-        case SeatingStage::kRelax: {
-          const double stage_time = time - stage_start_time;
-          // Calculating the penetration that unloads to the relief force [m].
-          const double amplitude = std::max(
-              0.0, (kSeatingForce - kDitherReliefForce) / kSeatNormalStiffness);
-          const double phase = 2.0 * M_PI * kDitherFrequency * stage_time;
-          const double relief = 0.5 * (1.0 - std::cos(phase));
-          p_d = seat_contact_p - (seat_push - amplitude * relief) * surface_normal;
-          pdot_d = amplitude * M_PI * kDitherFrequency * std::sin(phase) *
-                   surface_normal;
-
-          if (stage_time >= kDitherCycles / kDitherFrequency) {
-            stage = SeatingStage::kSettle;
-            stage_start_time = time;
-            quiet_time = 0.0;
-            quiet_reference_R = R_EE;
-          }
-          break;
-        }
-
-        // -----------------------------------------------------------
-        // Holding the seating force until the face has come to rest,
-        // then recording the orientation that contact has selected.
-        // -----------------------------------------------------------
-        case SeatingStage::kSettle: {
-          const double stage_time = time - stage_start_time;
-          p_d = seat_contact_p - seat_push * surface_normal;
-
-          // Accumulating the time the orientation stays within the threshold.
-          if (orientationSeparationDeg(quiet_reference_R, R_EE) <=
-              kSettleQuietDeg) {
-            quiet_time += period.toSec();
-          } else {
-            quiet_reference_R = R_EE;
-            quiet_time = 0.0;
+            if (face_height >= kLiftClearance) {
+              stage = SeatingStage::kYaw;
+              stage_start_time = time;
+              stage_start_p = p_d;
+              stage_start_R = R_EE;
+              commanded_yaw =
+                  returning ? -yaw_total
+                  : (sample_index == 0) ? (M_PI / 180.0) * kInitialYawDeg
+                                        : (M_PI / 180.0) * kSampleYawStepDeg;
+            } else if (travel >= kLiftMaxTravel) {
+              lift_failed = true;
+            }
+            break;
           }
 
-          const bool settled = quiet_time >= kSettleQuietTime;
-          if (settled || stage_time >= kSettleTimeout) {
-            SeatingRecord record;
-            record.R_EE = R_EE;
-            record.seating_force = contact_force_norm;
-            record.released_tilt_deg =
-                orientationSeparationDeg(seat_release_R, R_EE);
-            record.settle_time = stage_time;
-            record.settled = settled;
-            records.push_back(record);
+          // -----------------------------------------------------------
+          // Rotating the reference about the surface normal at a bounded
+          // rate, then waiting until the measured yaw has followed.
+          // -----------------------------------------------------------
+          case SeatingStage::kYaw: {
+            const double stage_time = time - stage_start_time;
+            const double rate = (M_PI / 180.0) * kYawRateDeg;
+            const double travelled =
+                std::min(rate * stage_time, std::abs(commanded_yaw));
+            const double yaw =
+                commanded_yaw >= 0.0 ? travelled : -travelled;
+            R_d = Eigen::AngleAxisd(yaw, surface_normal).toRotationMatrix() *
+                  stage_start_R;
+            p_d = stage_start_p;
 
-            printf("T%zu seated | %5.1f N | released tilt %5.2f deg | %.2f s%s\n",
-                   sample_index + 1, record.seating_force,
-                   record.released_tilt_deg, record.settle_time,
-                   settled ? "" : " (timeout)");
+            // Ending the stage once the reference has stopped and dwelled.
+            const double command_time = std::abs(commanded_yaw) / rate;
+            if (stage_time >= command_time + kYawDwellTime) {
+              // Reporting how far the arm stayed behind the yaw reference [deg].
+              printf("T%zu yawed %+.1f deg | reference error %.2f deg\n",
+                     sample_index + 1, (180.0 / M_PI) * yaw,
+                     (180.0 / M_PI) * orientationError(R_EE, R_d).norm());
+              yaw_total += commanded_yaw;
+              if (returning) {
+                stage = SeatingStage::kDone;
+                break;
+              }
+              // Capturing the free-space wrench baseline before descending.
+              force_bias = external_force;
+              moment_bias = external_moment;
+              stage = SeatingStage::kDescend;
+              stage_start_time = time;
+              stage_start_p = p_d;
+            }
+            break;
+          }
 
-            ++sample_index;
-            if (sample_index >= kSampleCount) {
-              stage = SeatingStage::kDone;
+          // -----------------------------------------------------------
+          // Lowering the face along the surface normal until the
+          // estimated contact force rises above the detection threshold.
+          // -----------------------------------------------------------
+          case SeatingStage::kDescend: {
+            const double stage_time = time - stage_start_time;
+            const double travel =
+                std::min(kDescendSpeed * stage_time, kDescendMaxTravel);
+            p_d = stage_start_p - travel * surface_normal;
+            pdot_d = -kDescendSpeed * surface_normal;
+
+            if (contact_force_norm >= kContactForce) {
+              stage = SeatingStage::kSeat;
+              stage_start_time = time;
+              seat_contact_p = p_d;
+              seat_release_R = R_EE;
+              seat_push = 0.0;
+              printf("\nT%zu contact at %.1f mm face height | %.1f N\n",
+                     sample_index + 1, 1000.0 * face_height, contact_force_norm);
+            } else if (travel >= kDescendMaxTravel) {
+              descend_failed = true;
+            }
+            break;
+          }
+
+          // -----------------------------------------------------------
+          // Pressing the face onto the plane with the tilt stiffness
+          // released. The ramp stops at the commanded seating force, so
+          // contact alone decides the resting attitude of the face.
+          // -----------------------------------------------------------
+          case SeatingStage::kSeat: {
+            const double stage_time = time - stage_start_time;
+            if (contact_force_norm < kSeatingForce) {
+              seat_push = std::min(kSeatSpeed * stage_time, kSeatMaxPush);
+              pdot_d = -kSeatSpeed * surface_normal;
+            }
+            p_d = seat_contact_p - seat_push * surface_normal;
+
+            if (contact_force_norm >= kSeatingForce ||
+                seat_push >= kSeatMaxPush) {
+              stage = SeatingStage::kRelax;
+              stage_start_time = time;
+            }
+            break;
+          }
+
+          // -----------------------------------------------------------
+          // Unloading the contact once per dither cycle. Each cycle
+          // returns to the full seating force, so the stage begins and
+          // ends pressed and only the friction lock is interrupted.
+          // -----------------------------------------------------------
+          case SeatingStage::kRelax: {
+            const double stage_time = time - stage_start_time;
+            // Calculating the penetration that unloads to the relief force [m].
+            const double amplitude = std::max(
+                0.0, (kSeatingForce - kDitherReliefForce) / kSeatNormalStiffness);
+            const double phase = 2.0 * M_PI * kDitherFrequency * stage_time;
+            const double relief = 0.5 * (1.0 - std::cos(phase));
+            p_d = seat_contact_p - (seat_push - amplitude * relief) * surface_normal;
+            pdot_d = amplitude * M_PI * kDitherFrequency * std::sin(phase) *
+                     surface_normal;
+
+            if (stage_time >= kDitherCycles / kDitherFrequency) {
+              stage = SeatingStage::kSettle;
+              stage_start_time = time;
+              quiet_time = 0.0;
+              quiet_reference_R = R_EE;
+            }
+            break;
+          }
+
+          // -----------------------------------------------------------
+          // Holding the seating force until the face has come to rest,
+          // then recording the orientation that contact has selected.
+          // -----------------------------------------------------------
+          case SeatingStage::kSettle: {
+            const double stage_time = time - stage_start_time;
+            p_d = seat_contact_p - seat_push * surface_normal;
+
+            // Accumulating the time the orientation stays within the threshold.
+            if (orientationSeparationDeg(quiet_reference_R, R_EE) <=
+                kSettleQuietDeg) {
+              quiet_time += period.toSec();
             } else {
+              quiet_reference_R = R_EE;
+              quiet_time = 0.0;
+            }
+
+            const bool settled = quiet_time >= kSettleQuietTime;
+            if (settled || stage_time >= kSettleTimeout) {
+              SeatingRecord record;
+              record.R_EE = R_EE;
+              record.seating_force = contact_force_norm;
+              record.released_tilt_deg =
+                  orientationSeparationDeg(seat_release_R, R_EE);
+              record.settle_time = stage_time;
+              record.settled = settled;
+              records.push_back(record);
+
+              printf("T%zu seated | %5.1f N | released tilt %5.2f deg | %.2f s%s\n",
+                     sample_index + 1, record.seating_force,
+                     record.released_tilt_deg, record.settle_time,
+                     settled ? "" : " (timeout)");
+
+              ++sample_index;
+              // Unwinding the accumulated yaw after the last seating, so the
+              // arm ends the run at the orientation it started from.
+              returning = sample_index >= kSampleCount;
               stage = SeatingStage::kLift;
               stage_start_time = time;
               stage_start_p = p_d;
               stage_start_R = R_EE;
             }
+            break;
           }
-          break;
+
+          case SeatingStage::kDone:
+            p_d = p_EE;
+            R_d = R_EE;
+            break;
         }
 
-        case SeatingStage::kDone:
-          p_d = p_EE;
-          R_d = R_EE;
-          break;
+        // Printing stage progress at the terminal update period.
+        if (time >= next_debug_time && stage != SeatingStage::kDone) {
+          printf("  %-7s t=%5.2f s | face %6.1f mm | e_R %5.2f deg | %5.1f N\n",
+                 stageName(stage), time - stage_start_time,
+                 1000.0 * face_height,
+                 (180.0 / M_PI) * orientationError(R_EE, R_d).norm(),
+                 contact_force_norm);
+          next_debug_time = time + kProgressPeriod;
+        }
+
+        // Calculating the pose error [m, rad] and velocity error [m/s, rad/s].
+        Vec6 dx;
+        dx.head<3>() = p_d - p_EE;
+        dx.tail<3>() = orientationError(R_EE, R_d);
+        Vec6 dv;
+        dv.head<3>() = pdot_d - pdot;
+        dv.tail<3>() = -omega;
+
+        // Calculating the decoupled Cartesian wrench at the TCP [N, N m]. No
+        // compliance center is used, so no lever enters the commanded wrench.
+        Vec6 wrench;
+        wrench.head<3>() = Kp * dx.head<3>() + Dp * dv.head<3>();
+        wrench.tail<3>() = KR * dx.tail<3>() + DR * dv.tail<3>();
+
+        // Summing task, nullspace, and Coriolis torque [N m].
+        const Array7 coriolis_array = model.coriolis(state);
+        Map<const Vec7> coriolis(coriolis_array.data());
+        const Vec7 tau_nullspace =
+            computeNullspaceTorque(config, model, state, J, dq);
+        const Vec7 commanded_torque =
+            J.transpose() * wrench + tau_nullspace + coriolis;
+
+        // Ending the procedure before a configured joint-limit margin is crossed.
+        int joint_out = 0;
+        if (!withinJointLimits(state.q, joint_out)) {
+          joint_limit_abort.store(joint_out);
+          return MotionFinished(Torques(vec7ToArray(commanded_torque)));
+        }
+
+        if (stage == SeatingStage::kDone || abort_requested.load() ||
+            lift_failed || descend_failed) {
+          return MotionFinished(Torques(vec7ToArray(commanded_torque)));
+        }
+        return Torques(vec7ToArray(commanded_torque));
+      });
+    } catch (...) {
+      // Stopping the poller before the exception leaves this scope, since a
+      // running thread would otherwise end the program without its message.
+      cancel_input.store(true);
+      if (input_thread.joinable()) {
+        input_thread.join();
       }
-
-      // Printing stage progress at the terminal update period.
-      if (time >= next_debug_time && stage != SeatingStage::kDone) {
-        printf("  %-7s t=%5.2f s | face %6.1f mm | e_R %5.2f deg | %5.1f N\n",
-               stageName(stage), time - stage_start_time,
-               1000.0 * face_height,
-               (180.0 / M_PI) * orientationError(R_EE, R_d).norm(),
-               contact_force_norm);
-        next_debug_time = time + kProgressPeriod;
-      }
-
-      // Calculating the pose error [m, rad] and velocity error [m/s, rad/s].
-      Vec6 dx;
-      dx.head<3>() = p_d - p_EE;
-      dx.tail<3>() = orientationError(R_EE, R_d);
-      Vec6 dv;
-      dv.head<3>() = pdot_d - pdot;
-      dv.tail<3>() = -omega;
-
-      // Calculating the decoupled Cartesian wrench at the TCP [N, N m]. No
-      // compliance center is used, so no lever enters the commanded wrench.
-      Vec6 wrench;
-      wrench.head<3>() = Kp * dx.head<3>() + Dp * dv.head<3>();
-      wrench.tail<3>() = KR * dx.tail<3>() + DR * dv.tail<3>();
-
-      // Summing task, nullspace, and Coriolis torque [N m].
-      const Array7 coriolis_array = model.coriolis(state);
-      Map<const Vec7> coriolis(coriolis_array.data());
-      const Vec7 tau_nullspace =
-          computeNullspaceTorque(config, model, state, J, dq);
-      const Vec7 commanded_torque =
-          J.transpose() * wrench + tau_nullspace + coriolis;
-
-      // Ending the procedure before a configured joint-limit margin is crossed.
-      int joint_out = 0;
-      if (!withinJointLimits(state.q, joint_out)) {
-        joint_limit_abort.store(joint_out);
-        return MotionFinished(Torques(vec7ToArray(commanded_torque)));
-      }
-
-      if (stage == SeatingStage::kDone || abort_requested.load() ||
-          lift_failed || descend_failed) {
-        return MotionFinished(Torques(vec7ToArray(commanded_torque)));
-      }
-      return Torques(vec7ToArray(commanded_torque));
-    });
+      throw;
+    }
 
     // Stopping and joining the terminal poller after control has ended.
     cancel_input.store(true);
@@ -552,6 +574,7 @@ int main() {
     }
 
     // Collecting the seated orientations used for the axis solution.
+    // The final seating is held back and validates the solution.
     std::vector<Mat3> calibration_samples;
     for (std::size_t i = 0; i < kEstimationSampleCount; ++i) {
       calibration_samples.push_back(records[i].R_EE);
@@ -624,8 +647,8 @@ int main() {
            calibrated_axis_ee(0),
            calibrated_axis_ee(1),
            calibrated_axis_ee(2));
-    printf("T1-T3 axis spread     = %.4f deg\n", calibration_spread_deg);
-    printf("T4 validation error   = %.4f deg\n", validation_error_deg);
+    printf("estimation spread     = %.4f deg\n", calibration_spread_deg);
+    printf("validation error      = %.4f deg\n", validation_error_deg);
     printf("surface consistency   = %.4f deg\n", plane_consistency_error_deg);
     printf("change from configured axis = %.4f deg\n",
            configured_correction_deg);
@@ -636,7 +659,7 @@ int main() {
     printf("tool_axis_ee_y = %.9f\n", calibrated_axis_ee(1));
     printf("tool_axis_ee_z = %.9f\n", calibrated_axis_ee(2));
 
-    printf("\nA small T1-T3 spread and T4 error indicate a repeatable axis.\n");
+    printf("\nA small spread and validation error indicate a repeatable axis.\n");
     printf("The surface-consistency error checks the calibrated axis against\n"
            "the plane normal. Repeat the procedure after editing the file; the\n"
            "reported change from the configured axis then approaches zero.\n");

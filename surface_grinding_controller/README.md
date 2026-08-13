@@ -169,7 +169,7 @@ normal stored in `params/surface.conf`.
 
 ## Automatic grinding-tool axis calibration
 
-`measure_tool_axis_auto` records the same four orientations without hand
+`measure_tool_axis_auto` records the same kind of seatings without hand
 guidance. The robot retracts the face, yaws about the calibrated surface
 normal, lowers until contact, and presses the face onto the plane. Once contact
 is detected, the rotational stiffness about both surface tangents is set to
@@ -178,6 +178,9 @@ therefore follows from the contact geometry, not from the configured tool axis,
 so the measurement does not assume the value it determines. Stiffness about the
 surface normal stays active to hold the commanded yaw. No virtual compliance
 center is used, so no lever enters the commanded wrench.
+
+Six seatings are recorded, spread over 90 deg of yaw. The first five solve the
+axis and the last one validates it.
 
 Before running the tool:
 
@@ -201,17 +204,36 @@ Alternatively, build and start it with one command:
 make run_measure_tool_axis_auto
 ```
 
-Pressing Enter stops the sequence at any time. The tool reports one line per
-seating with the seating force, the settling time, and two diagnostics. The
-tilt moment is the contact moment across the plane and approaches zero when the
-complete face has reached the surface. The released tilt is how far the face
-rotated after the tilt stiffness was removed, which measures how far the
-configured axis was from the physical one.
+Pressing Enter stops the sequence at any time.
+
+### Why the contact is unloaded before it is measured
+
+Static friction at the contact scales with the normal force, exactly as the
+restoring moment does. Pressing harder therefore leaves the same fraction of
+the misalignment locked in, and measurements confirm this: raising the seating
+force from 40 N to 80 N grew the axis spread from 0.14 to 0.79 deg and the
+validation error from 0.49 to 1.39 deg. The larger tilt released at 80 N is the
+face turning further before it jams, not seating better.
+
+The seating stage therefore unloads the contact four times before the face is
+measured. Each cycle returns to the full force, so the stage begins and ends
+pressed and only the friction lock is interrupted.
+
+### Reading the result
+
+The tool reports one line per seating with the seating force, the settling
+time, and the tilt released after the stiffness was removed. The released tilt
+measures how far the face was from the plane when contact began, so it is
+largest on the first seating of a fresh start and small afterwards.
 
 The axis solution, its validation, and the printed `tool_orientation.conf`
-entries match the guided tool. Both share the same estimator. Running the
-procedure again after editing the file drives the reported change from the
-configured axis toward zero.
+entries match the guided tool, which shares the same estimator.
+
+The spread and validation error describe one run. They do not describe how far
+apart two runs land: seating scatter from an uneven face and from play in the
+gripper dominates, and repeated runs have differed by around 0.7 to 1.0 deg
+while agreeing to 0.2 to 0.3 deg within a run. Average several runs when the
+axis direction matters at that level.
 
 ## Startup menu
 
