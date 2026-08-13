@@ -2,10 +2,13 @@
 // Automatic grinding-tool axis calibration tool
 // ============================================================================
 // Defines the unattended grinding-tool-axis calibration procedure. The robot
-// seats the tool face on the calibrated plane at four yaw orientations. Tilt
-// stiffness is released once contact is established, so each resting attitude
-// follows from contact alone and not from the configured tool axis. Solving the
-// end-effector direction that the four seatings share then gives the axis.
+// seats the tool face on the plane at several yaw orientations. Tilt stiffness
+// is released once contact is established, so each resting attitude follows
+// from contact alone and not from the configured tool axis. Solving the
+// end-effector direction the seatings share then gives the axis.
+//
+// The same seatings also measure the plane they rest on, so the tool reports
+// both the tool-axis and the surface entries without a second procedure.
 #include "controller_api.h"
 
 #include <cerrno>
@@ -95,6 +98,7 @@ enum class SeatingStage {
 /// Stores what one seating measured, for the per-sample result table.
 struct SeatingRecord {
   Mat3 R_EE = Mat3::Identity();      // Seated end-effector orientation [-].
+  Vec3 face_center = Vec3::Zero();   // Contact-face centre in the base frame [m].
   double seating_force = 0.0;        // Contact-force change at capture [N].
   double released_tilt_deg = 0.0;    // Face rotation after releasing tilt [deg].
   double settle_time = 0.0;          // Time from release to rest [s].
@@ -113,6 +117,18 @@ const char* stageName(SeatingStage stage) {
     case SeatingStage::kDone: return "done";
   }
   return "unknown";
+}
+
+// Transforming a unit normal into the configured x- and y-axis tilts [deg].
+// The inverse relation is n = R_y(b) R_x(a) [0,0,1]^T, matching measure_plane.
+void tiltAnglesFromNormal(const Vec3& normal,
+                          double& tilt_x_deg,
+                          double& tilt_y_deg) {
+  const double tilt_x_rad =
+      std::asin(std::max(-1.0, std::min(1.0, -normal(1))));
+  const double tilt_y_rad = std::atan2(normal(0), normal(2));
+  tilt_x_deg = (180.0 / M_PI) * tilt_x_rad;
+  tilt_y_deg = (180.0 / M_PI) * tilt_y_rad;
 }
 
 // Building a base-frame gain from its diagonal in the surface frame.
@@ -460,6 +476,7 @@ int main() {
             if (settled || stage_time >= kSettleTimeout) {
               SeatingRecord record;
               record.R_EE = R_EE;
+              record.face_center = face_center;
               record.seating_force = contact_force_norm;
               record.released_tilt_deg =
                   orientationSeparationDeg(seat_release_R, R_EE);
@@ -652,6 +669,64 @@ int main() {
     printf("surface consistency   = %.4f deg\n", plane_consistency_error_deg);
     printf("change from configured axis = %.4f deg\n",
            configured_correction_deg);
+
+    // Measuring the plane the seatings rest on. The face turns about its own
+    // axis, so the seated centres sit nearly on top of one another and cannot
+    // fit a plane between them. Their mean is taken as one point on it and the
+    // seated tool axis as its normal, which is what measure_plane does from a
+    // single hand-held pose, averaged here over every seating instead.
+    Vec3 measured_surface_point = Vec3::Zero();
+    for (const SeatingRecord& record : records) {
+      measured_surface_point += record.face_center;
+    }
+    measured_surface_point /= static_cast<double>(records.size());
+
+    // Selecting the outward normal convention with a positive base z component.
+    Vec3 measured_normal = mean_axis_base;
+    if (measured_normal(2) < 0.0) {
+      measured_normal = -measured_normal;
+    }
+
+    // Calculating how far the seated centres scatter along the normal. This
+    // is the repeatability of the seating height, not a flatness measure.
+    double worst_plane_offset_mm = 0.0;
+    for (const SeatingRecord& record : records) {
+      worst_plane_offset_mm = std::max(
+          worst_plane_offset_mm,
+          std::abs(1000.0 * measured_normal.dot(record.face_center -
+                                                measured_surface_point)));
+    }
+
+    double measured_tilt_x_deg = 0.0;
+    double measured_tilt_y_deg = 0.0;
+    tiltAnglesFromNormal(measured_normal, measured_tilt_x_deg,
+                         measured_tilt_y_deg);
+
+    // Reporting the measured plane against the configured one.
+    printf("\nMEASURED PLANE\n");
+    printf("point [mm]     = [%+8.2f, %+8.2f, %+8.2f]\n",
+           1000.0 * measured_surface_point(0),
+           1000.0 * measured_surface_point(1),
+           1000.0 * measured_surface_point(2));
+    printf("configured [mm]= [%+8.2f, %+8.2f, %+8.2f]\n",
+           1000.0 * config.surface_point(0),
+           1000.0 * config.surface_point(1),
+           1000.0 * config.surface_point(2));
+    printf("tilt a(x) = %+7.4f deg  (configured %+7.4f)\n",
+           measured_tilt_x_deg, config.surface_tilt_x_deg);
+    printf("tilt b(y) = %+7.4f deg  (configured %+7.4f)\n",
+           measured_tilt_y_deg, config.surface_tilt_y_deg);
+    printf("seating height scatter = %.2f mm\n",
+           worst_plane_offset_mm);
+    printf("\nThe normal below is the same measurement as the tool axis above.\n");
+    printf("Writing both from one run leaves no independent check, since a\n");
+    printf("seated face then reads zero by construction. Move the plane only\n");
+    printf("when it is known to have moved:\n");
+    printf("surface_point_x = %.9f\n", measured_surface_point(0));
+    printf("surface_point_y = %.9f\n", measured_surface_point(1));
+    printf("surface_point_z = %.9f\n", measured_surface_point(2));
+    printf("surface_tilt_x_deg = %.9f\n", measured_tilt_x_deg);
+    printf("surface_tilt_y_deg = %.9f\n", measured_tilt_y_deg);
 
     // Printing values ready for params/tool_orientation.conf.
     printf("\nCopy the calibrated values to params/tool_orientation.conf:\n");
