@@ -184,8 +184,8 @@ Before running the tool:
 1. Calibrate the workpiece plane and store it in `params/surface.conf`.
 2. Switch the grinder off and keep the payload configured, since the released
    tilt axes rely on gravity compensation.
-3. Position the tool face between 2 mm and 150 mm above the plane and roughly
-   parallel to it.
+3. Position the tool face on the plane, or up to 150 mm above it, and
+   roughly parallel to it.
 4. Keep the working area clear. The robot moves without further confirmation.
 
 Build the tool and start it separately:

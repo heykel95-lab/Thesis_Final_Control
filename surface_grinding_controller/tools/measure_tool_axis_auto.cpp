@@ -21,12 +21,15 @@ constexpr std::size_t kEstimationSampleCount = 3;
 // Defining the commanded yaw about the surface normal between seatings [deg].
 constexpr double kInitialYawDeg = -45.0;
 constexpr double kSampleYawStepDeg = 30.0;
-constexpr double kYawRateDeg = 15.0;              // Commanded yaw rate [deg/s].
-constexpr double kYawSettledRad = 0.010;          // Reached-yaw threshold [rad].
+constexpr double kYawRateDeg = 30.0;              // Commanded yaw rate [deg/s].
+// Defining the dwell after the yaw reference stops [s]. A dwell is used
+// instead of an orientation-error threshold, because joint friction can hold
+// the arm just outside any threshold tight enough to be meaningful.
+constexpr double kYawDwellTime = 1.0;
 
 // Defining the transport impedance used while the tool is clear of the plane.
-constexpr double kTransportStiffness = 1200.0;    // [N/m]
-constexpr double kTransportTiltStiffness = 60.0;  // [N m/rad]
+constexpr double kTransportStiffness = 1200.0;     // [N/m]
+constexpr double kTransportTiltStiffness = 120.0;  // [N m/rad]
 
 // Defining the seating impedance. Tangential stiffness stays low so the face
 // can slide the small distance that pivoting onto the plane requires.
@@ -42,22 +45,38 @@ constexpr double kTiltDamping = 4.0;       // [N m s/rad]
 
 // Defining the transport geometry and speeds.
 constexpr double kLiftClearance = 0.025;      // Face height before yawing [m].
-constexpr double kLiftSpeed = 0.020;          // Retraction speed [m/s].
+constexpr double kLiftSpeed = 0.040;          // Retraction speed [m/s].
 constexpr double kLiftMaxTravel = 0.080;      // Retraction travel limit [m].
-constexpr double kDescendSpeed = 0.004;       // Approach speed [m/s].
+constexpr double kDescendSpeed = 0.008;       // Approach speed [m/s].
 constexpr double kDescendMaxTravel = 0.060;   // Approach travel limit [m].
 
 // Defining the seating press and the rest condition evaluated afterwards.
 constexpr double kContactForce = 5.0;         // Contact-detection threshold [N].
 constexpr double kSeatingForce = 40.0;        // Commanded seating force [N].
-constexpr double kSeatSpeed = 0.004;          // Virtual penetration rate [m/s].
-constexpr double kSeatMaxPush = 0.030;        // Virtual penetration limit [m].
-constexpr double kSettleQuietRate = 0.004;    // Rest angular rate [rad/s].
+constexpr double kSeatSpeed = 0.012;          // Virtual penetration rate [m/s].
+constexpr double kSeatMaxPush = 0.050;        // Virtual penetration limit [m].
+// Defining rest as an orientation that stops changing. The measured angular
+// rate is not used, because its noise exceeds any threshold tight enough to
+// separate a settled face from a drifting one.
+constexpr double kSettleQuietDeg = 0.02;      // Rest orientation change [deg].
 constexpr double kSettleQuietTime = 0.75;     // Required quiet duration [s].
-constexpr double kSettleTimeout = 6.0;        // Settling timeout [s].
+constexpr double kSettleTimeout = 4.0;        // Settling timeout [s].
+
+// Defining the seating dither. Static friction at the contact scales with the
+// normal force, just as the restoring moment does, so pressing harder does not
+// seat the face further. Briefly unloading the contact releases the friction
+// and lets the face relax one step closer to the plane on every cycle.
+constexpr double kDitherCycles = 4.0;         // Unloading cycles [-].
+constexpr double kDitherFrequency = 1.0;      // Unloading rate [Hz].
+constexpr double kDitherReliefForce = 10.0;   // Force at the bottom of a cycle [N].
+
+// Defining the terminal update period of the stage progress line [s].
+constexpr double kProgressPeriod = 0.5;
 
 // Defining the height band accepted for the tool face at program start [m].
-constexpr double kStartHeightMin = 0.002;
+// A small negative height is accepted, since a face resting on the plane
+// reads slightly below it and the first stage retracts before yawing.
+constexpr double kStartHeightMin = -0.005;
 constexpr double kStartHeightMax = 0.150;
 
 /// Selects the active stage of one seating cycle.
@@ -66,6 +85,7 @@ enum class SeatingStage {
   kYaw,      // Rotating the commanded orientation about the surface normal.
   kDescend,  // Lowering the face until the contact force is detected.
   kSeat,     // Releasing the tilt stiffness and ramping the seating force.
+  kRelax,    // Unloading the contact repeatedly to release static friction.
   kSettle,   // Waiting for the released face to come to rest.
   kDone      // All seatings recorded.
 };
@@ -74,7 +94,6 @@ enum class SeatingStage {
 struct SeatingRecord {
   Mat3 R_EE = Mat3::Identity();      // Seated end-effector orientation [-].
   double seating_force = 0.0;        // Contact-force change at capture [N].
-  double tilt_moment = 0.0;          // Contact moment across the plane [N m].
   double released_tilt_deg = 0.0;    // Face rotation after releasing tilt [deg].
   double settle_time = 0.0;          // Time from release to rest [s].
   bool settled = false;              // Indicates the rest condition was met.
@@ -87,6 +106,7 @@ const char* stageName(SeatingStage stage) {
     case SeatingStage::kYaw: return "yaw";
     case SeatingStage::kDescend: return "descend";
     case SeatingStage::kSeat: return "seat";
+    case SeatingStage::kRelax: return "relax";
     case SeatingStage::kSettle: return "settle";
     case SeatingStage::kDone: return "done";
   }
@@ -220,6 +240,8 @@ int main() {
     double commanded_yaw = 0.0;
     double seat_push = 0.0;
     double quiet_time = 0.0;
+    Mat3 quiet_reference_R = R_start;
+    double next_debug_time = 0.0;
 
     // Initializing the free-space wrench baseline captured before each descent.
     Vec3 force_bias = Vec3::Zero();
@@ -263,8 +285,9 @@ int main() {
       const double contact_force_norm = contact_force.norm();
 
       // Selecting the impedance of the active stage.
-      const bool seating =
-          stage == SeatingStage::kSeat || stage == SeatingStage::kSettle;
+      const bool seating = stage == SeatingStage::kSeat ||
+                           stage == SeatingStage::kRelax ||
+                           stage == SeatingStage::kSettle;
       const Mat3& Kp = seating ? Kp_seat : Kp_transport;
       const Mat3& KR = seating ? KR_seat : KR_transport;
 
@@ -314,9 +337,13 @@ int main() {
                 stage_start_R;
           p_d = stage_start_p;
 
-          const bool reached = travelled >= std::abs(commanded_yaw) - 1e-12;
-          if (reached &&
-              orientationError(R_EE, R_d).norm() <= kYawSettledRad) {
+          // Ending the stage once the reference has stopped and dwelled.
+          const double command_time = std::abs(commanded_yaw) / rate;
+          if (stage_time >= command_time + kYawDwellTime) {
+            // Reporting how far the arm stayed behind the yaw reference [deg].
+            printf("T%zu yawed %+.1f deg | reference error %.2f deg\n",
+                   sample_index + 1, (180.0 / M_PI) * yaw,
+                   (180.0 / M_PI) * orientationError(R_EE, R_d).norm());
             // Capturing the free-space wrench baseline before descending.
             force_bias = external_force;
             moment_bias = external_moment;
@@ -367,9 +394,33 @@ int main() {
 
           if (contact_force_norm >= kSeatingForce ||
               seat_push >= kSeatMaxPush) {
+            stage = SeatingStage::kRelax;
+            stage_start_time = time;
+          }
+          break;
+        }
+
+        // -----------------------------------------------------------
+        // Unloading the contact once per dither cycle. Each cycle
+        // returns to the full seating force, so the stage begins and
+        // ends pressed and only the friction lock is interrupted.
+        // -----------------------------------------------------------
+        case SeatingStage::kRelax: {
+          const double stage_time = time - stage_start_time;
+          // Calculating the penetration that unloads to the relief force [m].
+          const double amplitude = std::max(
+              0.0, (kSeatingForce - kDitherReliefForce) / kSeatNormalStiffness);
+          const double phase = 2.0 * M_PI * kDitherFrequency * stage_time;
+          const double relief = 0.5 * (1.0 - std::cos(phase));
+          p_d = seat_contact_p - (seat_push - amplitude * relief) * surface_normal;
+          pdot_d = amplitude * M_PI * kDitherFrequency * std::sin(phase) *
+                   surface_normal;
+
+          if (stage_time >= kDitherCycles / kDitherFrequency) {
             stage = SeatingStage::kSettle;
             stage_start_time = time;
             quiet_time = 0.0;
+            quiet_reference_R = R_EE;
           }
           break;
         }
@@ -382,39 +433,28 @@ int main() {
           const double stage_time = time - stage_start_time;
           p_d = seat_contact_p - seat_push * surface_normal;
 
-          // Accumulating the time the angular rate stays below the threshold.
-          if (omega.norm() <= kSettleQuietRate) {
+          // Accumulating the time the orientation stays within the threshold.
+          if (orientationSeparationDeg(quiet_reference_R, R_EE) <=
+              kSettleQuietDeg) {
             quiet_time += period.toSec();
           } else {
+            quiet_reference_R = R_EE;
             quiet_time = 0.0;
           }
 
           const bool settled = quiet_time >= kSettleQuietTime;
           if (settled || stage_time >= kSettleTimeout) {
-            // Transferring the moment from the TCP to the contact face [N m]:
-            // M_contact = M_TCP + r_contact x f, r_contact = p_EE - p_contact.
-            const Vec3 r_contact = p_EE - face_center;
-            const Vec3 contact_moment = (external_moment - moment_bias) +
-                                        r_contact.cross(contact_force);
-            // Removing the component about the normal, which the yaw
-            // stiffness carries and which says nothing about seating.
-            const Vec3 tilt_moment =
-                contact_moment -
-                surface_normal * surface_normal.dot(contact_moment);
-
             SeatingRecord record;
             record.R_EE = R_EE;
             record.seating_force = contact_force_norm;
-            record.tilt_moment = tilt_moment.norm();
             record.released_tilt_deg =
                 orientationSeparationDeg(seat_release_R, R_EE);
             record.settle_time = stage_time;
             record.settled = settled;
             records.push_back(record);
 
-            printf("T%zu seated | %5.1f N | tilt moment %5.2f N m | "
-                   "released tilt %5.2f deg | %.2f s%s\n",
-                   sample_index + 1, record.seating_force, record.tilt_moment,
+            printf("T%zu seated | %5.1f N | released tilt %5.2f deg | %.2f s%s\n",
+                   sample_index + 1, record.seating_force,
                    record.released_tilt_deg, record.settle_time,
                    settled ? "" : " (timeout)");
 
@@ -435,6 +475,16 @@ int main() {
           p_d = p_EE;
           R_d = R_EE;
           break;
+      }
+
+      // Printing stage progress at the terminal update period.
+      if (time >= next_debug_time && stage != SeatingStage::kDone) {
+        printf("  %-7s t=%5.2f s | face %6.1f mm | e_R %5.2f deg | %5.1f N\n",
+               stageName(stage), time - stage_start_time,
+               1000.0 * face_height,
+               (180.0 / M_PI) * orientationError(R_EE, R_d).norm(),
+               contact_force_norm);
+        next_debug_time = time + kProgressPeriod;
       }
 
       // Calculating the pose error [m, rad] and velocity error [m/s, rad/s].
@@ -567,15 +617,6 @@ int main() {
     configured_axis_ee.normalize();
     const double configured_correction_deg =
         angleBetweenUnitVectorsDeg(calibrated_axis_ee, configured_axis_ee);
-
-    // Reporting the seating quality that supports the solution.
-    printf("\nSEATING QUALITY\n");
-    double worst_tilt_moment = 0.0;
-    for (const SeatingRecord& record : records) {
-      worst_tilt_moment = std::max(worst_tilt_moment, record.tilt_moment);
-    }
-    printf("largest tilt moment   = %.3f N m\n", worst_tilt_moment);
-    printf("A small tilt moment indicates the face reached the plane.\n");
 
     // Reporting the calibrated EE-frame axis and validation results.
     printf("\nCALIBRATION RESULT\n");
