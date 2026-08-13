@@ -54,7 +54,7 @@ Selection [s/h/t/g/i/o/c/r/f/b/e]:
   KR [t1,t2,n]     = [    180.0,     180.0,      90.0] Nm/rad
   DR [t1,t2,n]     = [     15.3,      25.0,       2.0] Nms/rad  auto (factor 1.90)
 orient:     t=  0.0 s | axis_err=  4.0 deg | spin_err=  0.6 deg
-orient:     t=  0.2 s | axis_err=  2.7 deg | spin_err=  0.4 deg
+orient:     t=  0.2 s | axis_err=  2.8 deg | spin_err=  0.4 deg
 orient:     t=  0.4 s | axis_err=  1.0 deg | spin_err=  0.2 deg
 orient:     t=  0.6 s | axis_err=  0.8 deg | spin_err=  0.2 deg
 orient:     t=  0.8 s | axis_err=  0.8 deg | spin_err=  0.2 deg
@@ -67,18 +67,18 @@ Orientation reached: axis_err=0.7 deg | spin_err=0.2 deg
   KR [t1,t2,n]     = [    180.0,     180.0,      90.0] Nm/rad
   DR [t1,t2,n]     = [     15.3,      25.0,       2.0] Nms/rad  auto (factor 1.90)
   descend to         20 mm clearance at 0.100 m/s
-descend:    t=  0.0 s | distance=   0.1 mm | height=+126.1 mm (target 20.0) | force=  0.0 N
-descend:    t=  0.2 s | distance=  20.2 mm | height=+115.1 mm (target 20.0) | force=  2.5 N
-descend:    t=  0.4 s | distance=  40.3 mm | height= +98.8 mm (target 20.0) | force=  2.6 N
-descend:    t=  0.6 s | distance=  60.4 mm | height= +81.7 mm (target 20.0) | force=  1.3 N
-descend:    t=  0.8 s | distance=  80.5 mm | height= +64.4 mm (target 20.0) | force=  2.4 N
-descend:    t=  1.0 s | distance= 100.6 mm | height= +46.8 mm (target 20.0) | force=  1.4 N
-descend:    t=  1.2 s | distance= 120.7 mm | height= +29.4 mm (target 20.0) | force=  3.3 N
+descend:    t=  0.0 s | distance=   0.1 mm | height=+125.9 mm (target 20.0) | force= -0.0 N
+descend:    t=  0.2 s | distance=  20.2 mm | height=+115.0 mm (target 20.0) | force=  2.5 N
+descend:    t=  0.4 s | distance=  40.3 mm | height= +99.1 mm (target 20.0) | force=  2.6 N
+descend:    t=  0.6 s | distance=  60.4 mm | height= +82.1 mm (target 20.0) | force=  1.1 N
+descend:    t=  0.8 s | distance=  80.5 mm | height= +64.9 mm (target 20.0) | force=  2.0 N
+descend:    t=  1.0 s | distance= 100.6 mm | height= +47.5 mm (target 20.0) | force=  2.0 N
+descend:    t=  1.2 s | distance= 120.7 mm | height= +30.0 mm (target 20.0) | force=  2.6 N
 
-Clearance reached: distance=131.5 mm | height=20.0 mm | target=20.0 mm | force=3.2 N
+Clearance reached: distance=132.4 mm | height=20.0 mm | target=20.0 mm | force=3.1 N
   offset_ee        = [     20.0,      60.0,      20.0] mm
-  p_EE_at_contact  = [    518.4,       3.0,      44.7] mm
-  contact_point    = [    537.0,     -56.7,       1.3] mm
+  p_EE_at_contact  = [    518.4,       2.8,      44.7] mm
+  contact_point    = [    536.9,     -56.9,       1.3] mm
   edge_offset      = [     18.6,     -59.7,     -43.3] mm
 
 -- phase: setup --------------------------------------------------------------
@@ -90,59 +90,59 @@ Clearance reached: distance=131.5 mm | height=20.0 mm | target=20.0 mm | force=3
   Dp [t1,t2,n]     = [    232.2,     172.8,     112.5] Ns/m     auto
   KR [t1,t2,n]     = [      5.0,       5.0,      50.0] Nm/rad
   DR [t1,t2,n]     = [      1.4,       2.0,       0.9] Nms/rad  auto
-  p_c [EE]         = [      0.0,     -60.0,       0.0] mm       commanded in the tool frame
+  p_c [EE]         = [      0.0,     -60.0,      -0.0] mm       commanded in the tool frame
   r_c [t1,t2,n]    = [      0.0,     -59.9,      -4.1] mm       p_TCP - p_c, in the plane
-setup:     t=  0.0 s | tip=  0.0 deg | F=  0.0 N | M=  0.0 Nm (limit 150.0) | contact= 19.9 mm
-setup:     t=  0.2 s | tip=  0.6 deg | F=  0.3 N | M=  0.5 Nm (limit 150.0) | contact=  7.3 mm
-setup:     t=  0.4 s | tip=  1.3 deg | F= 18.9 N | M=  9.9 Nm (limit 150.0) | contact=  2.9 mm
-setup:     t=  0.6 s | tip=  1.3 deg | F= 14.7 N | M=  8.0 Nm (limit 150.0) | contact=  3.1 mm
-setup:     t=  0.8 s | tip=  1.4 deg | F= 20.2 N | M= 10.8 Nm (limit 150.0) | contact=  3.2 mm
-setup:     t=  1.0 s | tip=  1.5 deg | F= 25.3 N | M= 13.4 Nm (limit 150.0) | contact=  3.3 mm
-setup:     t=  1.2 s | tip=  2.6 deg | F= 27.2 N | M= 14.2 Nm (limit 150.0) | contact=  3.5 mm
-setup:     t=  1.4 s | tip=  3.2 deg | F= 35.3 N | M= 19.0 Nm (limit 150.0) | contact=  3.4 mm
-setup:     t=  1.6 s | tip=  3.2 deg | F= 41.0 N | M= 21.8 Nm (limit 150.0) | contact=  3.6 mm
-setup:     t=  1.8 s | tip=  3.2 deg | F= 46.7 N | M= 24.7 Nm (limit 150.0) | contact=  3.8 mm
-setup:     t=  2.0 s | tip=  3.2 deg | F= 52.1 N | M= 27.4 Nm (limit 150.0) | contact=  3.9 mm
-setup:     t=  2.2 s | tip=  3.2 deg | F= 57.7 N | M= 30.4 Nm (limit 150.0) | contact=  4.1 mm
-setup:     t=  2.4 s | tip=  3.2 deg | F= 63.1 N | M= 33.1 Nm (limit 150.0) | contact=  4.2 mm
-setup:     t=  2.6 s | tip=  3.2 deg | F= 68.7 N | M= 36.0 Nm (limit 150.0) | contact=  4.3 mm
-setup:     t=  2.8 s | tip=  3.2 deg | F= 74.0 N | M= 38.8 Nm (limit 150.0) | contact=  4.5 mm
-setup:     t=  3.0 s | tip=  3.3 deg | F= 79.8 N | M= 41.8 Nm (limit 150.0) | contact=  4.6 mm
-setup:     t=  3.2 s | tip=  3.3 deg | F= 85.4 N | M= 44.7 Nm (limit 150.0) | contact=  4.7 mm
-setup:     t=  3.4 s | tip=  3.3 deg | F= 80.7 N | M= 42.4 Nm (limit 150.0) | contact=  4.6 mm
-setup:     t=  3.6 s | tip=  3.3 deg | F= 80.6 N | M= 42.4 Nm (limit 150.0) | contact=  4.6 mm
-setup:     t=  3.8 s | tip=  3.3 deg | F= 80.6 N | M= 42.4 Nm (limit 150.0) | contact=  4.6 mm
-setup:     t=  4.0 s | tip=  3.3 deg | F= 80.5 N | M= 42.3 Nm (limit 150.0) | contact=  4.6 mm
-setup:     t=  4.2 s | tip=  3.3 deg | F= 80.5 N | M= 42.3 Nm (limit 150.0) | contact=  4.6 mm
-setup:     t=  4.4 s | tip=  3.3 deg | F= 80.4 N | M= 42.3 Nm (limit 150.0) | contact=  4.6 mm
-setup:     t=  4.6 s | tip=  3.3 deg | F= 80.5 N | M= 42.3 Nm (limit 150.0) | contact=  4.6 mm
-setup:     t=  4.8 s | tip=  3.3 deg | F= 80.4 N | M= 42.2 Nm (limit 150.0) | contact=  4.6 mm
+setup:     t=  0.0 s | ee=  0.0 deg | F=  0.1 N | M=  0.1 Nm (limit 150.0) | contact= 19.9 mm
+setup:     t=  0.2 s | ee=  0.6 deg | F=  0.4 N | M=  0.5 Nm (limit 150.0) | contact=  7.4 mm
+setup:     t=  0.4 s | ee=  1.3 deg | F= 19.6 N | M= 10.2 Nm (limit 150.0) | contact=  3.1 mm
+setup:     t=  0.6 s | ee=  1.4 deg | F= 15.0 N | M=  8.2 Nm (limit 150.0) | contact=  3.2 mm
+setup:     t=  0.8 s | ee=  1.4 deg | F= 20.1 N | M= 10.8 Nm (limit 150.0) | contact=  3.3 mm
+setup:     t=  1.0 s | ee=  1.5 deg | F= 25.5 N | M= 13.5 Nm (limit 150.0) | contact=  3.4 mm
+setup:     t=  1.2 s | ee=  2.5 deg | F= 28.0 N | M= 14.7 Nm (limit 150.0) | contact=  3.6 mm
+setup:     t=  1.4 s | ee=  3.2 deg | F= 35.1 N | M= 18.9 Nm (limit 150.0) | contact=  3.6 mm
+setup:     t=  1.6 s | ee=  3.2 deg | F= 40.8 N | M= 21.7 Nm (limit 150.0) | contact=  3.8 mm
+setup:     t=  1.8 s | ee=  3.2 deg | F= 46.5 N | M= 24.6 Nm (limit 150.0) | contact=  3.9 mm
+setup:     t=  2.0 s | ee=  3.2 deg | F= 52.1 N | M= 27.5 Nm (limit 150.0) | contact=  4.1 mm
+setup:     t=  2.2 s | ee=  3.2 deg | F= 57.7 N | M= 30.4 Nm (limit 150.0) | contact=  4.2 mm
+setup:     t=  2.4 s | ee=  3.2 deg | F= 62.8 N | M= 33.0 Nm (limit 150.0) | contact=  4.4 mm
+setup:     t=  2.6 s | ee=  3.2 deg | F= 68.7 N | M= 36.0 Nm (limit 150.0) | contact=  4.5 mm
+setup:     t=  2.8 s | ee=  3.2 deg | F= 74.1 N | M= 38.8 Nm (limit 150.0) | contact=  4.6 mm
+setup:     t=  3.0 s | ee=  3.3 deg | F= 79.8 N | M= 41.8 Nm (limit 150.0) | contact=  4.7 mm
+setup:     t=  3.2 s | ee=  3.3 deg | F= 85.4 N | M= 44.7 Nm (limit 150.0) | contact=  4.9 mm
+setup:     t=  3.4 s | ee=  3.3 deg | F= 80.5 N | M= 42.3 Nm (limit 150.0) | contact=  4.8 mm
+setup:     t=  3.6 s | ee=  3.3 deg | F= 80.3 N | M= 42.2 Nm (limit 150.0) | contact=  4.8 mm
+setup:     t=  3.8 s | ee=  3.3 deg | F= 80.3 N | M= 42.2 Nm (limit 150.0) | contact=  4.8 mm
+setup:     t=  4.0 s | ee=  3.3 deg | F= 80.3 N | M= 42.2 Nm (limit 150.0) | contact=  4.8 mm
+setup:     t=  4.2 s | ee=  3.3 deg | F= 80.2 N | M= 42.2 Nm (limit 150.0) | contact=  4.8 mm
+setup:     t=  4.4 s | ee=  3.3 deg | F= 80.2 N | M= 42.1 Nm (limit 150.0) | contact=  4.8 mm
+setup:     t=  4.6 s | ee=  3.3 deg | F= 80.2 N | M= 42.1 Nm (limit 150.0) | contact=  4.8 mm
+setup:     t=  4.8 s | ee=  3.3 deg | F= 80.1 N | M= 42.1 Nm (limit 150.0) | contact=  4.8 mm
 
 ==============================================================================
   SETUP RESULT
 ==============================================================================
-  stop: time | t=5.0 s | tip=3.3 deg | F=80.3 N | M=42.2 Nm
-  contact_from_start = [-2.9, +0.2, -3.6] mm | norm=4.6 mm
-  tcp_from_contact  = [-20.9, +60.5, +17.3] mm | norm=66.3 mm
-  alignment: before=4.28 deg | after=2.39 deg | gain=+1.90 deg
-  alignment components [t1,t2,n] deg: before=[-4.27,-0.31,-0.00] | after=[-1.43,-1.91,+0.00]
+  stop: time | t=5.0 s | ee=3.3 deg | F=80.1 N | M=42.1 Nm
+  contact_from_start = [-3.0, +0.1, -3.7] mm | norm=4.8 mm
+  tcp_from_contact  = [-21.0, +60.4, +17.3] mm | norm=66.3 mm
+  deviation: before=4.28 deg | after=2.46 deg | gain=+1.82 deg
+  deviation components [t1,t2,n] deg: before=[-4.27,-0.33,-0.00] | after=[-1.47,-1.97,+0.00]
 
 -- setup surface-frame breakdown ---------------------------------------------
   frame              alignment-target [tangent1, tangent2, normal]
-  force        [N]      = [    +2.40,     -2.40,    -80.24]
-  tcp_disp     [mm]     = [    -1.83,     +1.55,    -26.05]
-  contact_disp [mm]     = [    -2.80,     +0.29,     -3.65]
-  Kp_eff=F/tcp [N/m]    = [  -1309.2,   -1544.7,    3080.2]
-  M_contact    [Nm]     = [   -10.17,    +40.42,     -1.27]
-  tip_angle    [deg]    = [    +2.84,     -1.61,     +0.30]
-  KR_eff=M/ang [Nm/rad] = [   -204.9,   -1437.9,    -241.0]
+  force        [N]      = [    +2.45,     -2.29,    -80.06]
+  tcp_disp     [mm]     = [    -1.93,     +1.48,    -26.06]
+  contact_disp [mm]     = [    -2.96,     +0.22,     -3.73]
+  Kp_eff=F/tcp [N/m]    = [  -1264.7,   -1552.4,    3071.6]
+  M_contact    [Nm]     = [   -10.08,    +40.33,     -1.21]
+  tip_angle    [deg]    = [    +2.81,     -1.66,     +0.33]
+  KR_eff=M/ang [Nm/rad] = [   -205.8,   -1390.3,    -209.6]
   frame              tool face [length, width, tool axis]
-  M_contact    [Nm]     = [   -40.30,    +10.35,     +2.62]
+  M_contact    [Nm]     = [   -40.21,    +10.28,     +2.59]
 
 -- center of compliance ------------------------------------------------------
   definition         r_c = p_TCP - p_c
-  p_TCP [x,y,z]    = [    516.1,       3.8,      18.6] mm
-  p_c [EE]         = [     -0.0,     -60.0,       0.0] mm
+  p_TCP [x,y,z]    = [    516.0,       3.6,      18.6] mm
+  p_c [EE]         = [      0.0,     -60.0,      -0.0] mm
   r_c [t1,t2,n]    = [     -0.4,     -60.0,      -1.1] mm
                      p_c resolved at end of setup
 
@@ -157,23 +157,23 @@ setup:     t=  4.8 s | tip=  3.3 deg | F= 80.4 N | M= 42.2 Nm (limit 150.0) | co
 
   K_TCP [N/m, Nm/rad | rows fx..mz, cols tx..rz]:
            tx        ty        tz    |    rx        ry        rz
-  fx [    2000  -0.7871   -28.44 |   -1.707   -1.143     -120 ]
-  fy [ -0.7871     1999   -45.62 |   -1.583  0.01846   0.8361 ]
-  fz [  -28.44   -45.62    351.8 |    21.08  -0.1224    1.688 ]
+  fx [    2000  -0.7871   -28.44 |   -1.707   -1.078     -120 ]
+  fy [ -0.7871     1999   -45.62 |   -1.647  0.02035   0.9201 ]
+  fz [  -28.44   -45.62    351.8 |    21.08  -0.1381    1.686 ]
      ---------------------------+---------------------------
-  mx [  -1.707   -1.583    21.08 |    6.277  0.01413   0.8774 ]
-  my [  -1.143  0.01846  -0.1224 |  0.01413    5.035    1.313 ]
-  mz [    -120   0.8361    1.688 |   0.8774    1.313    57.15 ]
+  mx [  -1.707   -1.647    21.08 |    6.277  0.01319   0.8773 ]
+  my [  -1.078  0.02035  -0.1381 |  0.01319    5.035    1.309 ]
+  mz [    -120   0.9201    1.686 |   0.8773    1.309    57.15 ]
 
   D_TCP [Ns/m, Nms/rad]:
            tx        ty        tz    |    rx        ry        rz
-  fx [   232.2  -0.0571   -2.063 |  -0.1238  -0.1332   -13.93 ]
-  fy [ -0.0571    172.8   -1.667 | -0.0002863 0.000691  0.07162 ]
-  fz [  -2.063   -1.667    112.6 |    6.753 -0.04324   0.1231 ]
+  fx [   232.2  -0.0571   -2.063 |  -0.1238  -0.1257   -13.93 ]
+  fy [ -0.0571    172.8   -1.668 | -0.005827 0.0007594  0.07888 ]
+  fz [  -2.063   -1.668    112.6 |    6.753 -0.04804    0.123 ]
      ---------------------------+---------------------------
-  mx [ -0.1238 -0.0002863    6.753 |    1.774 -0.00282 -0.000725 ]
-  my [ -0.1332 0.000691 -0.04324 | -0.00282    1.978 -0.02194 ]
-  mz [  -13.93  0.07162   0.1231 | -0.000725 -0.02194    1.733 ]
+  mx [ -0.1238 -0.005827    6.753 |    1.774 -0.003107 -0.0007281 ]
+  my [ -0.1257 0.0007594 -0.04804 | -0.003107    1.978 -0.02241 ]
+  mz [  -13.93  0.07888    0.123 | -0.0007281 -0.02241    1.732 ]
 
 [GATE] Set up finished (still pressing). Press Enter to start the grind (e+Enter stops).
 
@@ -181,23 +181,23 @@ Stop requested with e + Enter. Finishing control loop...
 
 -- joint motion [deg] --------------------------------------------------------
   joint       start    final    delta
-  q1            0.9      1.9     +1.0
+  q1            0.9      1.9     +1.1
   q2           12.1     30.3    +18.1
-  q3           -0.5     -1.3     -0.7
+  q3           -0.5     -1.3     -0.8
   q4         -130.9   -128.8     +2.1
-  q5           -0.1      0.4     +0.5
-  q6          142.9    154.7    +11.8
-  q7           44.7     45.8     +1.1
+  q5           -0.1      0.5     +0.7
+  q6          142.9    154.6    +11.7
+  q7           44.7     45.7     +1.0
 
 ==============================================================================
   FINAL RESULT
 ==============================================================================
-  p_d              = [    513.9,      -4.2,    -215.2] mm
-  p_EE             = [    516.1,       3.8,      18.6] mm
-  e_p              = [     -2.2,      -8.0,    -233.8] mm
-  e_R              = [     2.85,     -1.60,      0.30] deg
+  p_d              = [    513.9,      -4.4,    -215.2] mm
+  p_EE             = [    516.0,       3.6,      18.6] mm
+  e_p              = [     -2.1,      -7.9,    -233.8] mm
+  e_R              = [     2.81,     -1.65,      0.33] deg
 ------------------------------------------------------------------------------
-  position error     233.96 mm
+  position error     233.94 mm
   rotation error     3.28 deg
   csv                logs/surface_grinding_controller_log.csv
 ------------------------------------------------------------------------------

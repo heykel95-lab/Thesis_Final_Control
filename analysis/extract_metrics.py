@@ -50,9 +50,11 @@ FIELDS = (
      re.compile(r"stop:.*\|\s*(?:ee|grip|dev|defl|tip)=([-\d.]+)\s*deg")),
     ("force_norm_n", re.compile(r"stop:.*\|\s*F=([-\d.]+)\s*N")),
     ("moment_norm_nm", re.compile(r"stop:.*\|\s*M=([-\d.]+)\s*Nm")),
-    ("align_before_deg", re.compile(r"alignment:\s*before=([-\d.]+)")),
-    ("align_after_deg", re.compile(r"alignment:.*after=([-\d.]+)")),
     # Archives written before the rename carry "alignment:".
+    ("deviation_before_deg",
+     re.compile(r"(?:deviation|alignment):\s*before=([-\d.]+)")),
+    ("deviation_after_deg",
+     re.compile(r"(?:deviation|alignment):.*after=([-\d.]+)")),
     ("deviation_gain_deg",
      re.compile(r"(?:deviation|alignment):.*gain=([-+\d.]+)")),
 )
