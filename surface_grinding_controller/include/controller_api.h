@@ -422,9 +422,10 @@ void printApproachDescendDebug(double phase_time,
                                double target_height_mm,
                                double force_n);
 
-/// Prints setup tilt, force, moment, and tool-feature displacement.
+/// Prints the contact deflection, force, moment, and contact displacement.
+/// @param deflection_deg Rotation from the orientation held at first contact [deg].
 void printSetupDebug(double phase_time,
-                     double tip_deg,
+                     double deflection_deg,
                      double force_n,
                      double moment_nm,
                      double moment_limit_nm,

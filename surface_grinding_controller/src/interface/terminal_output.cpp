@@ -449,13 +449,13 @@ void printApproachDescendDebug(double phase_time,
 }
 
 void printSetupDebug(double phase_time,
-                     double tip_deg,
+                     double deflection_deg,
                      double force_n,
                      double moment_nm,
                      double moment_limit_nm,
                      double contact_mm) {
-  printf("setup:     t=%5.1f s | tip=%5.1f deg | F=%5.1f N | M=%5.1f Nm (limit %.1f) | contact=%5.1f mm\n",
-         phase_time, tip_deg, force_n, moment_nm, moment_limit_nm, contact_mm);
+  printf("setup:     t=%5.1f s | defl=%5.1f deg | F=%5.1f N | M=%5.1f Nm (limit %.1f) | contact=%5.1f mm\n",
+         phase_time, deflection_deg, force_n, moment_nm, moment_limit_nm, contact_mm);
 }
 
 void printGrindDebug(double phase_time,

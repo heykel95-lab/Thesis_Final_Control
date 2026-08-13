@@ -201,13 +201,14 @@ def setup_metrics(path):
     t = d["time"][setup]
     out["setup_duration_s"] = float(t[-1] - t[0])
 
-    # Tip angle: rotation away from the orientation frozen at the clearance
-    # transition. This is how far the tool TURNED.
+    # Contact deflection: rotation away from the orientation frozen at the
+    # clearance transition. This is how far the tool TURNED, with no reference
+    # to the plane, so no calibration enters it.
     e_r = np.sqrt(d["e_R_x"][setup] ** 2
                   + d["e_R_y"][setup] ** 2
                   + d["e_R_z"][setup] ** 2)
-    out["tip_final_deg"] = float(np.degrees(e_r[-1]))
-    out["tip_max_deg"] = float(np.degrees(e_r.max()))
+    out["contact_deflection_final_deg"] = float(np.degrees(e_r[-1]))
+    out["contact_deflection_max_deg"] = float(np.degrees(e_r.max()))
 
     # Alignment: residual angle to the configured surface. This is how FLAT it
     # ended up, which is the quantity the thesis calls e_R before/after.
@@ -266,7 +267,7 @@ def setup_metrics(path):
     out["tau_max_Nm"] = float(np.abs(tau).max())
     out["tau_norm_max_Nm"] = float(np.linalg.norm(tau, axis=0).max())
 
-    # Equilibrium check: how much the tip still moved over the last 20% of the
+    # Equilibrium check: how much the tool still moved over the last 20% of the
     # phase. Large values mean the reported number is a transient, not an
     # equilibrium, which invalidates the quasi-static reading.
     last = max(2, len(e_r) // 5)
@@ -354,8 +355,10 @@ def parse_setup_report(terminal_log_path):
             if line.startswith("stop:"):
                 for part in line.split("|"):
                     part = part.strip()
-                    if part.startswith("tip="):
-                        out["report_tip_deg"] = float(part[4:].split()[0])
+                    # Archives written before the rename carry "tip=".
+                    if part.startswith(("defl=", "tip=")):
+                        out["report_contact_deflection_deg"] = float(
+                            part.split("=", 1)[1].split()[0])
                     elif part.startswith("F="):
                         out["report_force_N"] = float(part[2:].split()[0])
                     elif part.startswith("M="):

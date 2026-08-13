@@ -81,17 +81,17 @@ void printSurfaceFrameBreakdown(const ControllerConfig& params,
 void reportSetupResult(const ControllerConfig& params,
                        const Mat3& R_base_surface,
                        const SetupReport& r) {
-  // Calculating final passive tip rotation [deg] and contact displacements [mm].
-  const double actual_tip_deg =
+  // Calculating the final contact deflection [deg] and displacements [mm].
+  const double contact_deflection_deg =
       (180.0 / M_PI) * orientationError(r.R_EE, r.R_contact_start).norm();
   const Vec3 contact_from_start_mm =
       1000.0 * (r.tool_contact_point - r.first_contact_point);
   const Vec3 tcp_from_contact_mm = 1000.0 * (r.p_EE - r.first_contact_point);
 
   printBanner("SETUP RESULT");
-  printf("  stop: %s | t=%.1f s | tip=%.1f deg | F=%.1f N | M=%.1f Nm\n",
+  printf("  stop: %s | t=%.1f s | defl=%.1f deg | F=%.1f N | M=%.1f Nm\n",
          r.stopped_on_moment ? "moment" : "time",
-         r.phase_time, actual_tip_deg, r.force_delta_norm, r.moment_delta_norm);
+         r.phase_time, contact_deflection_deg, r.force_delta_norm, r.moment_delta_norm);
   printf("  contact_from_start = [%+.1f, %+.1f, %+.1f] mm | norm=%.1f mm\n",
          contact_from_start_mm(0), contact_from_start_mm(1),
          contact_from_start_mm(2), contact_from_start_mm.norm());
