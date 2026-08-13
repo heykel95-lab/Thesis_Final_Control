@@ -170,6 +170,22 @@ Vec3 applyRotationalAxisMask(
     const ControllerConfig& params, Vec3 e_R, const Mat3& R_base_surface);
 
 // ---------------------------------------------------------------------------
+// Tool-axis estimation
+// ---------------------------------------------------------------------------
+
+/// Returns the angle between two unit directions [deg].
+double angleBetweenUnitVectorsDeg(const Vec3& first, const Vec3& second);
+
+/// Returns the magnitude of the relative orientation between two samples [deg].
+double orientationSeparationDeg(const Mat3& first, const Mat3& second);
+
+/// Estimates the EE-frame axis whose base direction is common to all samples.
+/// @param samples Seated end-effector orientations in the base frame [-].
+/// @param nominal_axis_ee Configured tool axis selecting the returned sign [-].
+Vec3 estimateInvariantAxis(const std::vector<Mat3>& samples,
+                           const Vec3& nominal_axis_ee);
+
+// ---------------------------------------------------------------------------
 // Terminal formatting
 // ---------------------------------------------------------------------------
 

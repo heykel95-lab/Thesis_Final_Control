@@ -20,6 +20,7 @@ manual guidance.
 | `params/` | Stores robot, geometry, controller, safety, and experiment settings. |
 | `tools/measure_plane.cpp` | Calibrates one point and the orientation of the workpiece plane. |
 | `tools/measure_tool_axis.cpp` | Calibrates the grinding-tool axis in the end-effector frame. |
+| `tools/measure_tool_axis_auto.cpp` | Calibrates the same axis without hand guidance. |
 
 The main execution sequence is:
 
@@ -165,6 +166,52 @@ Copy these values to `params/tool_orientation.conf`. The reported T1--T3 axis
 spread and T4 validation error indicate the repeatability of the calibration.
 The surface-consistency error compares the calibrated tool direction with the
 normal stored in `params/surface.conf`.
+
+## Automatic grinding-tool axis calibration
+
+`measure_tool_axis_auto` records the same four orientations without hand
+guidance. The robot retracts the face, yaws about the calibrated surface
+normal, lowers until contact, and presses the face onto the plane. Once contact
+is detected, the rotational stiffness about both surface tangents is set to
+zero and only rotational damping remains. The resting attitude of each seating
+therefore follows from the contact geometry, not from the configured tool axis,
+so the measurement does not assume the value it determines. Stiffness about the
+surface normal stays active to hold the commanded yaw. No virtual compliance
+center is used, so no lever enters the commanded wrench.
+
+Before running the tool:
+
+1. Calibrate the workpiece plane and store it in `params/surface.conf`.
+2. Switch the grinder off and keep the payload configured, since the released
+   tilt axes rely on gravity compensation.
+3. Position the tool face between 2 mm and 150 mm above the plane and roughly
+   parallel to it.
+4. Keep the working area clear. The robot moves without further confirmation.
+
+Build the tool and start it separately:
+
+```bash
+make measure_tool_axis_auto
+./tools/measure_tool_axis_auto
+```
+
+Alternatively, build and start it with one command:
+
+```bash
+make run_measure_tool_axis_auto
+```
+
+Pressing Enter stops the sequence at any time. The tool reports one line per
+seating with the seating force, the settling time, and two diagnostics. The
+tilt moment is the contact moment across the plane and approaches zero when the
+complete face has reached the surface. The released tilt is how far the face
+rotated after the tilt stiffness was removed, which measures how far the
+configured axis was from the physical one.
+
+The axis solution, its validation, and the printed `tool_orientation.conf`
+entries match the guided tool. Both share the same estimator. Running the
+procedure again after editing the file drives the reported change from the
+configured axis toward zero.
 
 ## Startup menu
 

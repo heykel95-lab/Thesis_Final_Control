@@ -35,6 +35,7 @@ CORE_SRCS := src/config/parameter_io.cpp \
              src/control/robot_support.cpp \
              src/interface/terminal_output.cpp \
              src/interface/operator_interface.cpp \
+             src/control/tool_axis_estimation.cpp \
              src/report/csv_logging.cpp \
              src/report/setup_evaluation.cpp
 
@@ -60,10 +61,15 @@ MEASURE_PLANE_BIN := $(TOOLS_DIR)/$(MEASURE_PLANE_TARGET)
 MEASURE_TOOL_AXIS_TARGET := measure_tool_axis
 MEASURE_TOOL_AXIS_SRC := $(TOOLS_DIR)/measure_tool_axis.cpp
 MEASURE_TOOL_AXIS_BIN := $(TOOLS_DIR)/$(MEASURE_TOOL_AXIS_TARGET)
+MEASURE_TOOL_AXIS_AUTO_TARGET := measure_tool_axis_auto
+MEASURE_TOOL_AXIS_AUTO_SRC := $(TOOLS_DIR)/measure_tool_axis_auto.cpp
+MEASURE_TOOL_AXIS_AUTO_BIN := $(TOOLS_DIR)/$(MEASURE_TOOL_AXIS_AUTO_TARGET)
 TOOL_OBJS := $(CORE_OBJS) $(EXAMPLES_COMMON_OBJ)
 
-.PHONY: all run run_measure_plane run_measure_tool_axis check clean \
-        $(MEASURE_PLANE_TARGET) $(MEASURE_TOOL_AXIS_TARGET)
+.PHONY: all run run_measure_plane run_measure_tool_axis \
+        run_measure_tool_axis_auto check clean \
+        $(MEASURE_PLANE_TARGET) $(MEASURE_TOOL_AXIS_TARGET) \
+        $(MEASURE_TOOL_AXIS_AUTO_TARGET)
 
 all: $(TARGET)
 
@@ -90,6 +96,10 @@ $(MEASURE_TOOL_AXIS_TARGET): $(MEASURE_TOOL_AXIS_BIN)
 $(MEASURE_TOOL_AXIS_BIN): $(MEASURE_TOOL_AXIS_SRC) $(TOOL_OBJS) $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(MEASURE_TOOL_AXIS_SRC) $(TOOL_OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
 
+$(MEASURE_TOOL_AXIS_AUTO_TARGET): $(MEASURE_TOOL_AXIS_AUTO_BIN)
+$(MEASURE_TOOL_AXIS_AUTO_BIN): $(MEASURE_TOOL_AXIS_AUTO_SRC) $(TOOL_OBJS) $(RUN_OBJS) $(HEADERS)
+	$(CXX) $(CXXFLAGS) $(MEASURE_TOOL_AXIS_AUTO_SRC) $(TOOL_OBJS) $(RUN_OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
+
 # ------------------------------------------------------------------------------
 # Common commands
 # ------------------------------------------------------------------------------
@@ -103,9 +113,13 @@ run_measure_plane: $(MEASURE_PLANE_BIN)
 run_measure_tool_axis: $(MEASURE_TOOL_AXIS_BIN)
 	./$(MEASURE_TOOL_AXIS_BIN)
 
+run_measure_tool_axis_auto: $(MEASURE_TOOL_AXIS_AUTO_BIN)
+	./$(MEASURE_TOOL_AXIS_AUTO_BIN)
+
 check: $(TARGET)
 	ldd ./$(TARGET) | grep franka
 
 clean:
 	rm -rf $(BUILD)
-	rm -f $(TARGET) $(MEASURE_PLANE_BIN) $(MEASURE_TOOL_AXIS_BIN)
+	rm -f $(TARGET) $(MEASURE_PLANE_BIN) $(MEASURE_TOOL_AXIS_BIN) \
+	      $(MEASURE_TOOL_AXIS_AUTO_BIN)

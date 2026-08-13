@@ -14,18 +14,6 @@ namespace {
 constexpr double kCalibrationLinearDamping = 20.0;   // [N s/m]
 constexpr double kCalibrationTiltDamping = 3.0;      // [N m s/rad]
 
-// Converting the angle between two unit directions to degrees [deg].
-double angleBetweenUnitVectorsDeg(const Vec3& first, const Vec3& second) {
-  const double dot = std::max(-1.0, std::min(1.0, first.dot(second)));
-  return (180.0 / M_PI) * std::acos(dot);
-}
-
-// Calculating the magnitude of the relative orientation between samples [deg].
-double orientationSeparationDeg(const Mat3& first, const Mat3& second) {
-  const Eigen::AngleAxisd relative(first.transpose() * second);
-  return (180.0 / M_PI) * std::abs(relative.angle());
-}
-
 // Running active hand guidance until Enter and returning the captured orientation.
 Mat3 guideAndCaptureOrientation(Robot& robot,
                                 const Model& model,
@@ -145,38 +133,6 @@ Mat3 guideAndCaptureOrientation(Robot& robot,
   return T_EE.block<3, 3>(0, 0);
 }
 
-// Estimating the EE-frame axis that has the same base direction in T1--T3.
-Vec3 estimateInvariantAxis(const std::array<Mat3, 3>& samples,
-                           const Vec3& nominal_axis_ee) {
-  // Building the least-squares matrix for pairwise orientation differences [-].
-  Mat3 normal_matrix = Mat3::Zero();
-  for (std::size_t i = 0; i < samples.size(); ++i) {
-    for (std::size_t j = i + 1; j < samples.size(); ++j) {
-      const Mat3 difference = samples[i] - samples[j];
-      normal_matrix += difference.transpose() * difference;
-    }
-  }
-
-  // Selecting the unit eigenvector with the smallest residual [-].
-  Eigen::SelfAdjointEigenSolver<Mat3> solver(normal_matrix);
-  if (solver.info() != Eigen::Success) {
-    throw std::runtime_error("Tool-axis eigenvalue decomposition failed.");
-  }
-  Vec3 axis_ee = solver.eigenvectors().col(0).normalized();
-
-  // Selecting the sign that remains closest to the configured nominal axis [-].
-  Vec3 reference_axis = nominal_axis_ee;
-  if (reference_axis.norm() < 1e-9) {
-    reference_axis = Vec3(0.0, 0.0, 1.0);
-  }
-  reference_axis.normalize();
-  if (axis_ee.dot(reference_axis) < 0.0) {
-    axis_ee = -axis_ee;
-  }
-
-  return axis_ee;
-}
-
 }  // namespace
 
 int main() {
@@ -216,7 +172,7 @@ int main() {
     Model model = robot.loadModel();
 
     // Capturing T1 with free gravity-compensated manual guidance.
-    std::array<Mat3, 3> calibration_samples;
+    std::vector<Mat3> calibration_samples(3, Mat3::Identity());
     calibration_samples[0] = guideAndCaptureOrientation(
         robot, model, config.manual_guidance_damping, surface_normal_base,
         false, "T1 - calibration sample 1",

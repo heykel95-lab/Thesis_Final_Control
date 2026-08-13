@@ -1,0 +1,8 @@
+run_id:   P_orient_tight
+repeats:  3
+
+purpose:
+  Tighter orientation convergence at a 10 deg offset about t1, with no lever.
+
+pass criterion:
+  The alignment angle at the clearance transition should be nearer the commanded 10 deg than the 8.69 deg reached with the 2 deg threshold.
