@@ -156,8 +156,8 @@ def main():
                r"In-plane compliance-centre position [mm]",
                out("CASE_M_inplane.pdf"))
     plot_sweep(stats, "S5_normal_",
-               [("m060", -60), ("p000", 0), ("p040", 40),
-                ("p060", 60), ("p090", 90)],
+               [("m090", -90), ("m060", -60), ("m040", -40), ("p000", 0),
+                ("p040", 40), ("p060", 60), ("p090", 90)],
                r"Tool-axis compliance-centre position [mm]",
                out("CASE_N_toolaxis.pdf"))
     print(f"wrote three figures to {os.path.abspath(args.out_dir)}")

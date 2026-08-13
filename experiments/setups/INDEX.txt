@@ -16,7 +16,9 @@ S4_tangential_m050
 S4_tangential_p000
 S4_tangential_p020
 S4_tangential_p050
+S5_normal_m090
 S5_normal_m060
+S5_normal_m040
 S5_normal_p000
 S5_normal_p040
 S5_normal_p060

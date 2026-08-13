@@ -118,8 +118,12 @@ def lever_magnitude(axis):
 S4_POSITIONS = [-0.050, -0.020, 0.0, 0.020, 0.050]
 
 # Normal lever positions swept by S5 [m], along the tool axis. Positive values
-# place the centre further from the tool along its own axis.
-S5_POSITIONS = [-0.060, 0.0, 0.040, 0.060, 0.120]
+# place the centre further from the tool along its own axis. The sweep is
+# symmetric, so a monotonic trend can be claimed over the whole range rather
+# than resting on a single interval below the tool centre. It stops at 90 mm
+# because 120 mm loads joint 6 to 21.4 N m against its 12 N m limit and the
+# motion aborts; the sweep below the centre stays near 6 N m throughout.
+S5_POSITIONS = [-0.090, -0.060, -0.040, 0.0, 0.040, 0.060, 0.090]
 
 # The commanded offset S4 and S5 hold fixed while they sweep the lever.
 SWEEP_OFFSET = ("t1_10deg", 10.0, 0.0)
