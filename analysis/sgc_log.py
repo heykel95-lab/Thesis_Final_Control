@@ -127,19 +127,26 @@ def read_csv(path, columns=None):
     return {name: data[:, i] for i, name in enumerate(names)}, header
 
 
-def has_alignment_metric(header):
-    return "alignment_angle_deg" in header
+# Archives written before the rename carry the alignment_ names. Both are
+# accepted so every trial ever recorded still reads.
+DEVIATION_TOTAL = ("angular_deviation_deg", "alignment_angle_deg")
+DEVIATION_COMPONENTS = (
+    ("angular_deviation_t1_deg", "alignment_error_t1_deg"),
+    ("angular_deviation_t2_deg", "alignment_error_t2_deg"),
+    ("angular_deviation_normal_deg", "alignment_error_normal_deg"),
+)
 
 
-def has_alignment_components(header):
-    return all(
-        name in header
-        for name in (
-            "alignment_error_t1_deg",
-            "alignment_error_t2_deg",
-            "alignment_error_normal_deg",
-        )
-    )
+def deviation_column(header):
+    """Return the total-deviation column this log uses, or None."""
+    return next((c for c in DEVIATION_TOTAL if c in header), None)
+
+
+def deviation_component_columns(header):
+    """Return the three component columns this log uses, or None."""
+    found = [next((c for c in pair if c in header), None)
+             for pair in DEVIATION_COMPONENTS]
+    return found if all(found) else None
 
 
 def phase_mask(phase, wanted):
@@ -171,24 +178,20 @@ def setup_metrics(path):
     ]
     with open(path) as f:
         header = [h.strip() for h in f.readline().strip().split(",")]
-    if has_alignment_metric(header):
-        wanted.append("alignment_angle_deg")
-    if has_alignment_components(header):
-        wanted.extend(
-            [
-                "alignment_error_t1_deg",
-                "alignment_error_t2_deg",
-                "alignment_error_normal_deg",
-            ]
-        )
+    total_column = deviation_column(header)
+    component_columns = deviation_component_columns(header)
+    if total_column:
+        wanted.append(total_column)
+    if component_columns:
+        wanted.extend(component_columns)
 
     d, header = read_csv(path, wanted)
 
     out = {
         "n_rows": len(d["time"]),
         "duration_s": float(d["time"][-1] - d["time"][0]) if len(d["time"]) else np.nan,
-        "has_alignment_metric": has_alignment_metric(header),
-        "has_alignment_components": has_alignment_components(header),
+        "has_deviation_metric": total_column is not None,
+        "has_deviation_components": component_columns is not None,
     }
 
     setup = phase_mask(d["phase"], PHASE_SET_UP)
@@ -201,50 +204,50 @@ def setup_metrics(path):
     t = d["time"][setup]
     out["setup_duration_s"] = float(t[-1] - t[0])
 
-    # Angular deviation: rotation away from the orientation frozen at the
-    # clearance transition. This is how far the tool TURNED, with no reference
-    # to the plane, so no calibration enters it.
+    # End-effector deviation: how far the end-effector turned away from the
+    # orientation frozen at the clearance transition. It comes from joint
+    # angles alone, so neither the tool axis nor the plane enters it.
     e_r = np.sqrt(d["e_R_x"][setup] ** 2
                   + d["e_R_y"][setup] ** 2
                   + d["e_R_z"][setup] ** 2)
-    out["angular_deviation_final_deg"] = float(np.degrees(e_r[-1]))
-    out["angular_deviation_max_deg"] = float(np.degrees(e_r.max()))
+    out["end_effector_deviation_final_deg"] = float(np.degrees(e_r[-1]))
+    out["end_effector_deviation_max_deg"] = float(np.degrees(e_r.max()))
 
-    # Alignment: residual angle to the configured surface. This is how FLAT it
-    # ended up, which is the quantity the thesis calls e_R before/after.
-    if out["has_alignment_metric"]:
-        a = d["alignment_angle_deg"][setup]
-        out["align_before_deg"] = float(a[0])
-        out["align_after_deg"] = float(a[-1])
-        out["align_gain_deg"] = float(a[0] - a[-1])
+    # Angular deviation: residual angle to the configured surface. This is how
+    # FLAT the tool ended up, and it is the quantity the thesis reports.
+    if total_column:
+        a = d[total_column][setup]
+        out["deviation_before_deg"] = float(a[0])
+        out["deviation_after_deg"] = float(a[-1])
+        out["deviation_gain_deg"] = float(a[0] - a[-1])
         total_change = float(a[0] - a[-1])
         if total_change > 0.0:
             target = float(a[0] - 0.9 * total_change)
             reached = np.where(a <= target)[0]
-            out["alignment_time90_s"] = (
+            out["deviation_time90_s"] = (
                 float(t[reached[0]] - t[0]) if reached.size else np.nan
             )
         else:
-            out["alignment_time90_s"] = np.nan
+            out["deviation_time90_s"] = np.nan
     else:
-        out["align_before_deg"] = np.nan
-        out["align_after_deg"] = np.nan
-        out["align_gain_deg"] = np.nan
-        out["alignment_time90_s"] = np.nan
+        out["deviation_before_deg"] = np.nan
+        out["deviation_after_deg"] = np.nan
+        out["deviation_gain_deg"] = np.nan
+        out["deviation_time90_s"] = np.nan
 
-    if out["has_alignment_components"]:
-        for axis in ("t1", "t2"):
-            values = d[f"alignment_error_{axis}_deg"][setup]
-            out[f"align_{axis}_before_deg"] = float(values[0])
-            out[f"align_{axis}_after_deg"] = float(values[-1])
-            out[f"align_{axis}_improve_deg"] = float(
+    if component_columns:
+        for axis, column in zip(("t1", "t2"), component_columns[:2]):
+            values = d[column][setup]
+            out[f"deviation_{axis}_before_deg"] = float(values[0])
+            out[f"deviation_{axis}_after_deg"] = float(values[-1])
+            out[f"deviation_{axis}_improve_deg"] = float(
                 abs(values[0]) - abs(values[-1])
             )
     else:
         for axis in ("t1", "t2"):
-            out[f"align_{axis}_before_deg"] = np.nan
-            out[f"align_{axis}_after_deg"] = np.nan
-            out[f"align_{axis}_improve_deg"] = np.nan
+            out[f"deviation_{axis}_before_deg"] = np.nan
+            out[f"deviation_{axis}_after_deg"] = np.nan
+            out[f"deviation_{axis}_improve_deg"] = np.nan
 
     # Contact force relative to the bias captured at the clearance transition.
     fx = d["external_force_x"][setup] - d["contact_force_bias_x"][setup]
@@ -355,9 +358,9 @@ def parse_setup_report(terminal_log_path):
             if line.startswith("stop:"):
                 for part in line.split("|"):
                     part = part.strip()
-                    # Archives predating the renames carry "tip=" or "defl=".
-                    if part.startswith(("dev=", "defl=", "tip=")):
-                        out["report_angular_deviation_deg"] = float(
+                    # Archives predating the renames carry tip= or defl=.
+                    if part.startswith(("ee=", "grip=", "dev=", "defl=", "tip=")):
+                        out["report_end_effector_deviation_deg"] = float(
                             part.split("=", 1)[1].split()[0])
                     elif part.startswith("F="):
                         out["report_force_N"] = float(part[2:].split()[0])

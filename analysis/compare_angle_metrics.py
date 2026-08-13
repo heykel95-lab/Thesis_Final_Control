@@ -63,6 +63,21 @@ plt.rcParams.update({
 
 SETUP_PHASE = 2  # ControlPhase::kSetup
 
+# Archives written before the rename carry the alignment_ column names.
+COLUMN_ALIASES = {
+    "angular_deviation_deg": "alignment_angle_deg",
+    "angular_deviation_t1_deg": "alignment_error_t1_deg",
+    "angular_deviation_t2_deg": "alignment_error_t2_deg",
+}
+
+
+def column(row, name):
+    """Return one value by its current name, falling back to the archived one."""
+    if name in row:
+        return float(row[name])
+    return float(row[COLUMN_ALIASES[name]])
+
+
 
 def load_trial(trial_dir):
     """Return set-up time, alignment angle, and angular deviation for a trial."""
@@ -83,7 +98,9 @@ def load_trial(trial_dir):
 
     setup = d["phase"] == SETUP_PHASE
     t = d["time"][setup]
-    alignment = d["alignment_angle_deg"][setup]
+    total = ("angular_deviation_deg" if "angular_deviation_deg" in d
+             else "alignment_angle_deg")
+    alignment = d[total][setup]
     # Calculating the deviation from the orientation the set-up phase holds
     # frozen as its reference from first contact [deg].
     deviation = np.degrees(np.sqrt(d["e_R_x"][setup] ** 2 +
@@ -97,10 +114,10 @@ def load_metrics():
     gain, deviation, label = [], [], []
     with open(METRICS) as f:
         for row in csv.DictReader(f):
-            if not row.get("align_gain_deg") or not row.get("angular_deviation_deg"):
+            if not row.get("deviation_gain_deg") or not row.get("end_effector_deviation_deg"):
                 continue
-            gain.append(float(row["align_gain_deg"]))
-            deviation.append(float(row["angular_deviation_deg"]))
+            gain.append(float(row["deviation_gain_deg"]))
+            deviation.append(float(row["end_effector_deviation_deg"]))
             label.append(row["run_id"])
     return np.array(gain), np.array(deviation), label
 

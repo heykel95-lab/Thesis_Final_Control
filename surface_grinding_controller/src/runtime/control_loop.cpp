@@ -1090,10 +1090,10 @@ RunResult runControlLoop(ControllerConfig& params,
       row.tool_contact_offset_ee = tool_contact_offset_ee;
       row.e_p = e_p;
       row.e_R = e_R;
-      row.alignment_error_surface =
+      row.angular_deviation_surface =
           R_base_surface.transpose() *
           toolSurfaceAlignmentErrorBase(params, R_EE, R_base_surface);
-      row.alignment_angle = row.alignment_error_surface.norm();
+      row.angular_deviation = row.angular_deviation_surface.norm();
       row.pdot = pdot;
       row.pdot_d = desired.pdot_d;
       row.omega = omega;

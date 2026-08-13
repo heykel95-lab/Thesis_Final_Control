@@ -34,8 +34,8 @@ struct LogData {
 
   Vec3 e_p;  // Translational error p_d - p_EE [m].
   Vec3 e_R;  // Orientation error in base frame [rad].
-  Vec3 alignment_error_surface; // Tool-axis error in [tangent1,tangent2,normal] [rad].
-  double alignment_angle;       // Residual tool-axis misalignment [rad].
+  Vec3 angular_deviation_surface; // Deviation in [tangent1,tangent2,normal] [rad].
+  double angular_deviation;       // Residual tool-to-plane deviation [rad].
 
   Vec3 pdot;    // Measured TCP linear velocity [m/s].
   Vec3 pdot_d;  // Desired TCP linear velocity [m/s].

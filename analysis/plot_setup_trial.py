@@ -96,7 +96,7 @@ COLUMNS = (
     "time", "phase",
     "p_EE_x", "p_EE_y", "p_EE_z",
     "tool_contact_x", "tool_contact_y", "tool_contact_z",
-    "alignment_angle_deg",
+    "angular_deviation_deg",
     "external_force_x", "external_force_y", "external_force_z",
     "external_moment_x", "external_moment_y", "external_moment_z",
     "contact_force_bias_x", "contact_force_bias_y", "contact_force_bias_z",
@@ -157,7 +157,7 @@ def plot_trial(d, press, m_tcp, m_lever, m_contact, axis, out_path):
     i = tilt_axis_index(axis)
     fig, axes = plt.subplots(3, 1, figsize=(5.4, 6.0), sharex=True)
 
-    axes[0].plot(d["time"], d["alignment_angle_deg"], color=SERIES_BLACK)
+    axes[0].plot(d["time"], d["angular_deviation_deg"], color=SERIES_BLACK)
     axes[0].set_ylabel(MISALIGNMENT_LABEL)
 
     axes[1].plot(d["time"], press, color=SERIES_BLACK)

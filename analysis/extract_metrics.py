@@ -45,14 +45,16 @@ PARAM_KEYS = (
 FIELDS = (
     ("stop_reason", re.compile(r"^\s*stop:\s*(\w+)")),
     ("phase_time_s", re.compile(r"stop:.*\|\s*t=([-\d.]+)\s*s")),
-    # Archives predating the renames carry "tip=" or "defl=".
-    ("angular_deviation_deg",
-     re.compile(r"stop:.*\|\s*(?:dev|defl|tip)=([-\d.]+)\s*deg")),
+    # Archives predating the renames carry tip=, defl= or dev=.
+    ("end_effector_deviation_deg",
+     re.compile(r"stop:.*\|\s*(?:ee|grip|dev|defl|tip)=([-\d.]+)\s*deg")),
     ("force_norm_n", re.compile(r"stop:.*\|\s*F=([-\d.]+)\s*N")),
     ("moment_norm_nm", re.compile(r"stop:.*\|\s*M=([-\d.]+)\s*Nm")),
     ("align_before_deg", re.compile(r"alignment:\s*before=([-\d.]+)")),
     ("align_after_deg", re.compile(r"alignment:.*after=([-\d.]+)")),
-    ("align_gain_deg", re.compile(r"alignment:.*gain=([-+\d.]+)")),
+    # Archives written before the rename carry "alignment:".
+    ("deviation_gain_deg",
+     re.compile(r"(?:deviation|alignment):.*gain=([-+\d.]+)")),
 )
 
 # Surface-frame rows of the breakdown block, each three signed numbers.
@@ -154,7 +156,7 @@ def collect(results_dir):
 
             report = parse_report(os.path.join(trial, "terminal.log"))
             row.update(report)
-            if "align_gain_deg" not in report:
+            if "deviation_gain_deg" not in report:
                 row["note"] = "no set-up report in transcript"
             rows.append(row)
     return rows

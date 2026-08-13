@@ -48,6 +48,21 @@ plt.rcParams.update({
 
 SETUP_PHASE = 2  # ControlPhase::kSetup
 
+# Archives written before the rename carry the alignment_ column names.
+COLUMN_ALIASES = {
+    "angular_deviation_deg": "alignment_angle_deg",
+    "angular_deviation_t1_deg": "alignment_error_t1_deg",
+    "angular_deviation_t2_deg": "alignment_error_t2_deg",
+}
+
+
+def column(row, name):
+    """Return one value by its current name, falling back to the archived one."""
+    if name in row:
+        return float(row[name])
+    return float(row[COLUMN_ALIASES[name]])
+
+
 DEFAULT_TRIALS = [
     ("S1_none_t1_10deg/r01", "no lever"),
     ("S5_normal_p090/r01", "90 mm along the tool axis"),
@@ -64,8 +79,8 @@ def load(trial):
         for row in csv.DictReader(f):
             time.append(float(row["time"]))
             phase.append(float(row["phase"]))
-            t1.append(float(row["alignment_error_t1_deg"]))
-            t2.append(float(row["alignment_error_t2_deg"]))
+            t1.append(column(row, "angular_deviation_t1_deg"))
+            t2.append(column(row, "angular_deviation_t2_deg"))
     setup = np.array(phase) == SETUP_PHASE
     t = np.array(time)[setup]
     return t - t[0], np.array(t1)[setup], np.array(t2)[setup]

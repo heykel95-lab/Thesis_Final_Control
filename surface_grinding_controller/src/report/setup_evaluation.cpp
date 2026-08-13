@@ -81,17 +81,17 @@ void printSurfaceFrameBreakdown(const ControllerConfig& params,
 void reportSetupResult(const ControllerConfig& params,
                        const Mat3& R_base_surface,
                        const SetupReport& r) {
-  // Calculating the final angular deviation [deg] and displacements [mm].
-  const double angular_deviation_deg =
+  // Calculating the final end-effector deviation [deg] and displacements [mm].
+  const double end_effector_deviation_deg =
       (180.0 / M_PI) * orientationError(r.R_EE, r.R_contact_start).norm();
   const Vec3 contact_from_start_mm =
       1000.0 * (r.tool_contact_point - r.first_contact_point);
   const Vec3 tcp_from_contact_mm = 1000.0 * (r.p_EE - r.first_contact_point);
 
   printBanner("SETUP RESULT");
-  printf("  stop: %s | t=%.1f s | dev=%.1f deg | F=%.1f N | M=%.1f Nm\n",
+  printf("  stop: %s | t=%.1f s | ee=%.1f deg | F=%.1f N | M=%.1f Nm\n",
          r.stopped_on_moment ? "moment" : "time",
-         r.phase_time, angular_deviation_deg, r.force_delta_norm, r.moment_delta_norm);
+         r.phase_time, end_effector_deviation_deg, r.force_delta_norm, r.moment_delta_norm);
   printf("  contact_from_start = [%+.1f, %+.1f, %+.1f] mm | norm=%.1f mm\n",
          contact_from_start_mm(0), contact_from_start_mm(1),
          contact_from_start_mm(2), contact_from_start_mm.norm());
@@ -99,14 +99,14 @@ void reportSetupResult(const ControllerConfig& params,
          tcp_from_contact_mm(0), tcp_from_contact_mm(1), tcp_from_contact_mm(2),
          tcp_from_contact_mm.norm());
 
-  // Evaluating tool alignment before and after the setup motion [deg].
+  // Evaluating the tool-to-plane deviation before and after set-up [deg].
   const double align_before_deg =
       (180.0 / M_PI) *
       toolSurfaceMisalignmentAngle(params, r.R_contact_start, R_base_surface);
   const double align_after_deg =
       (180.0 / M_PI) *
       toolSurfaceMisalignmentAngle(params, r.R_EE, R_base_surface);
-  printf("  alignment: before=%.2f deg | after=%.2f deg | gain=%+.2f deg\n",
+  printf("  deviation: before=%.2f deg | after=%.2f deg | gain=%+.2f deg\n",
          align_before_deg, align_after_deg, align_before_deg - align_after_deg);
   const Vec3 align_before_surface_deg =
       (180.0 / M_PI) * R_base_surface.transpose() *
@@ -115,7 +115,7 @@ void reportSetupResult(const ControllerConfig& params,
   const Vec3 align_after_surface_deg =
       (180.0 / M_PI) * R_base_surface.transpose() *
       toolSurfaceAlignmentErrorBase(params, r.R_EE, R_base_surface);
-  printf("  alignment components [t1,t2,n] deg: before=[%+.2f,%+.2f,%+.2f] | "
+  printf("  deviation components [t1,t2,n] deg: before=[%+.2f,%+.2f,%+.2f] | "
          "after=[%+.2f,%+.2f,%+.2f]\n",
          align_before_surface_deg(0), align_before_surface_deg(1),
          align_before_surface_deg(2), align_after_surface_deg(0),

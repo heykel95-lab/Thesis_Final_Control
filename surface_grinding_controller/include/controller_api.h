@@ -422,10 +422,10 @@ void printApproachDescendDebug(double phase_time,
                                double target_height_mm,
                                double force_n);
 
-/// Prints the angular deviation, force, moment, and contact displacement.
-/// @param deviation_deg Rotation from the orientation held at first contact [deg].
+/// Prints the end-effector deviation, force, moment, and displacement.
+/// @param ee_deviation_deg End-effector rotation since first contact [deg].
 void printSetupDebug(double phase_time,
-                     double deviation_deg,
+                     double ee_deviation_deg,
                      double force_n,
                      double moment_nm,
                      double moment_limit_nm,

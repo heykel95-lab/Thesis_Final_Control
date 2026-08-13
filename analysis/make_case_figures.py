@@ -73,8 +73,8 @@ def load():
     stats = collections.defaultdict(list)
     with open(METRICS) as f:
         for row in csv.DictReader(f):
-            if row.get("align_gain_deg"):
-                stats[row["run_id"]].append(float(row["align_gain_deg"]))
+            if row.get("deviation_gain_deg"):
+                stats[row["run_id"]].append(float(row["deviation_gain_deg"]))
     return {k: (statistics.mean(v),
                 statistics.stdev(v) if len(v) > 1 else 0.0)
             for k, v in stats.items()}
