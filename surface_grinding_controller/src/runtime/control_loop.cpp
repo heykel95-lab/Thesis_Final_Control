@@ -621,17 +621,24 @@ RunResult runControlLoop(ControllerConfig& params,
         edge_target_log = edge_target;
         push_log = push;
 
-        // Calculating contact-force [N] and contact-moment [N m] changes.
-        const double force_delta_norm =
-            (external_force - contact_force_bias).norm();
-        const double moment_delta_norm =
-            (external_moment - contact_moment_bias).norm();
+        // Calculating the contact-force change since first contact [N].
+        const Vec3 external_force_delta = external_force - contact_force_bias;
+        const double force_delta_norm = external_force_delta.norm();
+
+        // Referencing the moment to the TCP [N m]. O_F_ext_hat_K reports the
+        // moment about the base origin, so the lever of the TCP position has
+        // to come out before the moment describes anything at the tool. It
+        // dominates otherwise: 42 N m of base moment against 1 N m at the TCP.
+        const Vec3 external_moment_delta =
+            (external_moment - contact_moment_bias) -
+            p_EE.cross(external_force_delta);
+        const double moment_delta_norm = external_moment_delta.norm();
+
         // Transforming moment from the TCP to the contact point [N m]:
         // M_contact = M_TCP + r_contact x f with r_contact = p_EE - p_contact [m].
         const Vec3 r_contact = p_EE - tool_contact_point;
         const Vec3 contact_moment =
-            (external_moment - contact_moment_bias) +
-            r_contact.cross(external_force - contact_force_bias);
+            external_moment_delta + r_contact.cross(external_force_delta);
 
         const bool waiting_at_gate = gate_grind_armed && !gate_grind_passed;
         if (params.debug_period > 0.0 && time >= next_debug_time &&
