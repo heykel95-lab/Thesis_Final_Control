@@ -85,7 +85,16 @@ mkdir -p "$OUT"
 TRANSCRIPT="$OUT/terminal.log"
 
 # The controller writes its CSV paths relative to its own directory.
-( cd "$SGC" && "$BINARY" ) 2>&1 | tee "$TRANSCRIPT"
+#
+# stdbuf turns the buffering off entirely. Writing to a pipe, C stdio buffers
+# in 4 kB blocks, so a prompt that does not fill a block never reaches the
+# reader while the controller waits for the answer to it. Driven by
+# lib/auto_drive.py that deadlocks until the trial timeout: the reader waits
+# for a prompt sitting in the writer's buffer, and the writer waits for input.
+#
+# Line buffering is not enough. Every prompt here ends in ": " with no newline,
+# which is exactly what a line-buffered stream holds back.
+( cd "$SGC" && stdbuf -o0 -e0 "$BINARY" ) 2>&1 | tee "$TRANSCRIPT"
 STATUS="${PIPESTATUS[0]}"
 
 # Archiving happens whatever the exit status: an aborted trial is still

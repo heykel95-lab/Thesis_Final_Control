@@ -19,6 +19,7 @@ newline, so a line-based reader blocks on it forever.
 """
 
 import os
+import signal
 import subprocess
 import sys
 import threading
@@ -79,16 +80,25 @@ def main():
 
     replies = replies_for(run_id)
 
+    # Its own process group, so a timeout takes the controller down with
+    # run.sh. Killing run.sh alone leaves the controller holding the robot.
     proc = subprocess.Popen(
         [RUN_SH, run_id, repeat],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
+        start_new_session=True,
     )
+
+    def kill_group():
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+        except (ProcessLookupError, PermissionError):
+            proc.kill()
 
     timed_out = threading.Event()
     timer = threading.Timer(TRIAL_TIMEOUT_S, lambda: (timed_out.set(),
-                                                      proc.kill()))
+                                                      kill_group()))
     timer.daemon = True
     timer.start()
 
