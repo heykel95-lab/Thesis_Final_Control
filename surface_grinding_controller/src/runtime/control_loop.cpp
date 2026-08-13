@@ -152,8 +152,7 @@ RunResult runControlLoop(ControllerConfig& params,
   double gate_paused_time = 0.0;  // frozen descend clock while gated
   bool gate_grind_armed = false;
   bool gate_grind_passed = false;
-  double gate_grind_paused_time = 0.0;  // frozen push ramp while gated
-  bool setup_reported = false;          // the result prints once, at phase end
+  bool setup_reported = false;  // the result prints once, at phase end
   bool disturb_push_cued = false;       // scripted disturbance cues, once each
   bool disturb_hold_cued = false;
   bool disturb_release_cued = false;
@@ -256,7 +255,6 @@ RunResult runControlLoop(ControllerConfig& params,
       gate_paused_time = 0.0;
       gate_grind_armed = false;
       gate_grind_passed = false;
-      gate_grind_paused_time = 0.0;
       setup_reported = false;
       setup_push_start = -params.descend_surface_clearance;
       grind_push = 0.0;
@@ -610,11 +608,12 @@ RunResult runControlLoop(ControllerConfig& params,
         // Calculating elapsed setup time [s] and initializing push speed [m/s].
         const double phase_time = time - phase_start_time;
         double setup_push_velocity = 0.0;
-        // Calculating the bounded virtual penetration [m] while excluding
-        // operator-confirmation time.
+        // Calculating the bounded virtual penetration [m]. The ramp runs on the
+        // live phase clock, so waiting at the grinding gate keeps pressing
+        // deeper until the configured final penetration is reached.
         const double push =
-            setupPush(params, phase_time - gate_grind_paused_time,
-                      setup_push_start, setup_push_velocity);
+            setupPush(params, phase_time, setup_push_start,
+                      setup_push_velocity);
         // Assigning the desired pressed-edge position in the base frame [m].
         const Vec3 edge_target = first_contact_point + push * descend_direction;
         desired.p_d = edge_target - R_contact_start * tool_contact_offset_ee;
@@ -684,12 +683,11 @@ RunResult runControlLoop(ControllerConfig& params,
           if (!gate_grind_armed) {
             gate_grind_armed = true;
             signals.gate_continue.store(false);
-            printf("\n[GATE] Set up finished (holding the pressed pose). Press "
+            printf("\n[GATE] Set up finished (still pressing). Press "
                    "Enter to start the grind (e+Enter stops).\n");
           }
           if (!signals.gate_continue.load()) {
-            gate_grind_paused_time += period.toSec();
-            break;  // keep pressing, at the preload reached, while waiting
+            break;  // keep ramping the preload while waiting
           }
           gate_grind_passed = true;
           signals.gate_continue.store(false);
