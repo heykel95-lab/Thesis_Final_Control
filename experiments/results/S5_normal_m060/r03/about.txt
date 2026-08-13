@@ -1,0 +1,8 @@
+run_id:   S5_normal_m060
+repeats:  3
+
+purpose:
+  Tool-frame compliance centre -60 mm along the tool axis.
+
+pass criterion:
+  A response that is not symmetric about zero indicates a tangential component in the press.

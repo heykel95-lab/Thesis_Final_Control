@@ -1,0 +1,9 @@
+Compliance centre 90 mm along the tool axis.
+
+Replaces the 120 mm point, which loads joint 6 to 21.4 N m against its 12 N m
+limit and aborts the run. The sweep from -60 to +60 mm stays near 6 N m on that
+joint, so the wrist limit is what bounds the usable lever, not the mechanics.
+
+At 90 mm joint 6 peaks at 15.4 N m. That is above the nominal limit but below
+the level at which the motion aborts, which lies between 18.3 and 21.4 N m in
+the measurements.

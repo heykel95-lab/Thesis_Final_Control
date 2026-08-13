@@ -47,8 +47,8 @@ plt.rcParams.update({
 SETUP_PHASE = 2  # ControlPhase::kSetup
 
 DEFAULT_TRIALS = [
-    ("V_orient_stiff/r01", "no lever"),
-    ("V_best_check/r02", r"120 mm along the tool axis"),
+    ("S1_none_t1_10deg/r01", "no lever"),
+    ("S5_normal_p090/r01", r"90 mm along the tool axis"),
 ]
 
 
