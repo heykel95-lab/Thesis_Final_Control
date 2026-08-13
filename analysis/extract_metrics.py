@@ -14,9 +14,15 @@ note, rather than dropped. A campaign's failures are part of its record.
 
 import argparse
 import csv
+import glob
+import math
 import os
 import re
 import sys
+
+import numpy as np
+
+PHASE_SET_UP = 2  # ControlPhase::kSetup
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.normpath(os.path.join(HERE, ".."))
@@ -117,6 +123,64 @@ def parse_report(path):
     return row
 
 
+def surface_frame(tilt_x_deg, tilt_y_deg):
+    """Build [tangent1, tangent2, normal] in the base frame from the tilts."""
+    a = math.radians(tilt_x_deg)
+    b = math.radians(tilt_y_deg)
+    r_x = np.array([[1.0, 0.0, 0.0],
+                    [0.0, math.cos(a), -math.sin(a)],
+                    [0.0, math.sin(a), math.cos(a)]])
+    r_y = np.array([[math.cos(b), 0.0, math.sin(b)],
+                    [0.0, 1.0, 0.0],
+                    [-math.sin(b), 0.0, math.cos(b)]])
+    normal = r_y @ r_x @ np.array([0.0, 0.0, 1.0])
+    normal /= np.linalg.norm(normal)
+    tangent1 = np.array([1.0, 0.0, 0.0]) - normal * normal.dot([1.0, 0.0, 0.0])
+    tangent1 /= np.linalg.norm(tangent1)
+    return np.column_stack([tangent1, np.cross(normal, tangent1), normal])
+
+
+def contact_rotation(trial, params):
+    """Return the set-up rotation since first contact in surface axes [deg].
+
+    The set-up phase holds the orientation reached at first contact as its
+    reference, so the logged orientation error is the rotation away from it.
+    That comes from joint angles alone: no tool axis and no plane zero enter
+    it, which matters because the tool axis is only known to a degree or two
+    and drifts as the tool settles in the gripper. The plane enters solely as
+    the direction of the axes the rotation is resolved along.
+    """
+    logs = glob.glob(os.path.join(trial, "logs", "*.csv"))
+    if not logs:
+        return {}
+    try:
+        frame = surface_frame(float(params["surface_tilt_x_deg"]),
+                              float(params["surface_tilt_y_deg"]))
+    except (KeyError, ValueError):
+        return {}
+
+    rotation = []
+    with open(logs[0]) as f:
+        for record in csv.DictReader(f):
+            if float(record["phase"]) != PHASE_SET_UP:
+                continue
+            rotation.append([float(record["e_R_x"]),
+                             float(record["e_R_y"]),
+                             float(record["e_R_z"])])
+    if len(rotation) < 2:
+        return {}
+
+    final = np.degrees(np.array(rotation[-1])) @ frame
+    peak = np.abs(np.degrees(np.array(rotation)) @ frame).max(axis=0)
+    return {
+        "contact_rotation_t1_deg": final[0],
+        "contact_rotation_t2_deg": final[1],
+        "contact_rotation_normal_deg": final[2],
+        "contact_rotation_t1_max_deg": peak[0],
+        "contact_rotation_t2_max_deg": peak[1],
+    }
+
+
 def read_provenance(path):
     row = {}
     if not os.path.isfile(path):
@@ -158,6 +222,7 @@ def collect(results_dir):
 
             report = parse_report(os.path.join(trial, "terminal.log"))
             row.update(report)
+            row.update(contact_rotation(trial, params))
             if "deviation_gain_deg" not in report:
                 row["note"] = "no set-up report in transcript"
             rows.append(row)
