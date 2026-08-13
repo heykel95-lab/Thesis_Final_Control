@@ -4,7 +4,7 @@
 setup_translation_surface_frame = 1
 pause_hold_translation_surface_frame = 1
 pause_hold_rotation_surface_frame = 1
-pause_before_setup = 1
+pause_before_setup = 0
 pause_before_grind = 1
 use_virtual_compliance_center = 1
 tool_target_offset_tangent1_deg = 0.0

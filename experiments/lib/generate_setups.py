@@ -67,13 +67,17 @@ S5_POSITIONS = [-0.060, 0.0, 0.040, 0.060, 0.120]
 # The commanded offset S4 and S5 hold fixed while they sweep the lever.
 SWEEP_OFFSET = ("t1_10deg", 10.0, 0.0)
 
-# Applied to every trial: surface-frame translational stiffness, the gates
-# driven by lib/auto_drive.py, and the compliance-centre coupling active.
+# Applied to every trial: surface-frame translational stiffness, and the
+# compliance-centre coupling active.
+#
+# The clearance gate is disabled so a trial runs from the initial pose into
+# contact without stopping. The pre-grinding gate stays enabled and is where
+# lib/auto_drive.py ends the trial, after the set-up result has printed.
 COMMON = [
     ("setup_translation_surface_frame", "1"),
     ("pause_hold_translation_surface_frame", "1"),
     ("pause_hold_rotation_surface_frame", "1"),
-    ("pause_before_setup", "1"),
+    ("pause_before_setup", "0"),
     ("pause_before_grind", "1"),
     ("use_virtual_compliance_center", "1"),
 ]
