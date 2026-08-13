@@ -1,4 +1,4 @@
-# S5_normal_p120
+# S5_normal_p090
 # Applied on top of surface_grinding_controller/params/.
 # Only keys listed here differ from the nominal set.
 setup_translation_surface_frame = 1
@@ -13,4 +13,4 @@ compliance_center_in_tool_frame = 1
 compliance_lever_in_surface_frame = 0
 compliance_center_offset_ee_x = 0.000000
 compliance_center_offset_ee_y = 0.000000
-compliance_center_offset_ee_z = 0.120000
+compliance_center_offset_ee_z = 0.090

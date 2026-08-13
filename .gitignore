@@ -24,3 +24,4 @@ experiments/derived/
 
 # Superseded campaign, kept on disk because the raw logs are not tracked.
 experiments/results_prior/
+experiments/results_kr300/

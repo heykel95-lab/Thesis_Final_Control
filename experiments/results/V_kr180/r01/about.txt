@@ -1,0 +1,8 @@
+Trial for choosing the approach rotational stiffness.
+
+Identical to V_axis_check with the stiffness about both surface tangents at
+180 N m/rad, between the 90 that left 1.3 deg of the commanded tilt unreached
+and the 300 that doubled the torque chatter of the orientation phase.
+
+What it checks: the alignment reported at the start of set-up, and the
+high-frequency content of the commanded joint torque while orienting.
