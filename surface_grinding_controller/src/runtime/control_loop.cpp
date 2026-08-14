@@ -622,23 +622,23 @@ RunResult runControlLoop(ControllerConfig& params,
         push_log = push;
 
         // Calculating the contact-force change since first contact [N].
-        const Vec3 external_force_delta = external_force - contact_force_bias;
-        const double force_delta_norm = external_force_delta.norm();
+        const Vec3 df_ext = external_force - contact_force_bias;
+        const double df_ext_norm = df_ext.norm();
 
         // Referencing the moment to the TCP [N m]. O_F_ext_hat_K reports the
         // moment about the base origin, so the lever of the TCP position has
         // to come out before the moment describes anything at the tool. It
         // dominates otherwise: 42 N m of base moment against 1 N m at the TCP.
-        const Vec3 external_moment_delta =
+        const Vec3 m_tcp =
             (external_moment - contact_moment_bias) -
-            p_EE.cross(external_force_delta);
-        const double moment_delta_norm = external_moment_delta.norm();
+            p_EE.cross(df_ext);
+        const double m_tcp_norm = m_tcp.norm();
 
         // Transforming moment from the TCP to the contact point [N m]:
         // M_contact = M_TCP + r_contact x f with r_contact = p_EE - p_contact [m].
         const Vec3 r_contact = p_EE - tool_contact_point;
-        const Vec3 contact_moment =
-            external_moment_delta + r_contact.cross(external_force_delta);
+        const Vec3 m_contact =
+            m_tcp + r_contact.cross(df_ext);
 
         const bool waiting_at_gate = gate_grind_armed && !gate_grind_passed;
         if (params.debug_period > 0.0 && time >= next_debug_time &&
@@ -646,8 +646,8 @@ RunResult runControlLoop(ControllerConfig& params,
           // Measuring passive rotation from the first-contact orientation [rad].
           printSetupDebug(phase_time,
                           (180.0 / M_PI) * orientationError(R_EE, R_contact_start).norm(),
-                          force_delta_norm,
-                          moment_delta_norm,
+                          df_ext_norm,
+                          m_tcp_norm,
                           params.setup_moment_threshold,
                           1000.0 * (tool_contact_point - first_contact_point).norm());
           next_debug_time = time + params.debug_period;
@@ -656,7 +656,7 @@ RunResult runControlLoop(ControllerConfig& params,
         // Ending setup at the moment threshold [N m] or timeout [s].
         const bool stopped_on_moment =
             phase_time >= params.setup_min_time &&
-            moment_delta_norm >= params.setup_moment_threshold;
+            m_tcp_norm >= params.setup_moment_threshold;
         if (!gate_grind_armed && !stopped_on_moment &&
             phase_time < params.setup_timeout) {
           break;
@@ -668,13 +668,13 @@ RunResult runControlLoop(ControllerConfig& params,
           SetupReport report;
           report.stopped_on_moment = stopped_on_moment;
           report.phase_time = phase_time;
-          report.force_delta_norm = force_delta_norm;
-          report.moment_delta_norm = moment_delta_norm;
+          report.df_ext_norm = df_ext_norm;
+          report.m_tcp_norm = m_tcp_norm;
           report.p_EE = p_EE;
           report.R_EE = R_EE;
           report.tool_contact_point = tool_contact_point;
           report.external_force = external_force;
-          report.contact_moment = contact_moment;
+          report.m_contact = m_contact;
           report.first_contact_tcp = first_contact_tcp;
           report.first_contact_point = first_contact_point;
           report.R_contact_start = R_contact_start;

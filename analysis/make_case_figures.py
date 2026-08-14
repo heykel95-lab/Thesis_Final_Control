@@ -116,18 +116,18 @@ def main():
     stats = load()
 
     out = lambda name: os.path.join(args.out_dir, name)
-    plot_offsets(stats, out("CASE_JKL_frame.pdf"))
+    plot_offsets(stats, out("MAIN_JKL_frame.pdf"))
     plot_sweep(stats, "S4_tangential_",
                [("m050", -50), ("m020", -20), ("p000", 0),
                 ("p020", 20), ("p050", 50)],
                r"In-plane compliance-centre position [mm]",
-               out("CASE_M_inplane.pdf"),
+               out("MAIN_M_inplane.pdf"),
                r"tool frame, $10^\circ$ about $t_1$")
     plot_sweep(stats, "S5_normal_",
                [("m090", -90), ("m060", -60), ("m040", -40), ("p000", 0),
                 ("p040", 40), ("p060", 60), ("p090", 90)],
                r"Tool-axis compliance-centre position [mm]",
-               out("CASE_N_toolaxis.pdf"),
+               out("MAIN_N_toolaxis.pdf"),
                r"tool frame, $10^\circ$ about $t_1$")
     print(f"wrote three figures to {os.path.abspath(args.out_dir)}")
 

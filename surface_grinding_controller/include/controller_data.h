@@ -78,15 +78,15 @@ struct SetupReport {
   // Defining the phase termination and measured wrench changes.
   bool stopped_on_moment = false;   // true when the moment threshold ends setup.
   double phase_time = 0.0;          // Setup duration [s].
-  double force_delta_norm = 0.0;    // Contact-force change norm [N].
-  double moment_delta_norm = 0.0;   // Contact-moment change norm [N m].
+  double df_ext_norm = 0.0;         // Norm of the force change since contact [N].
+  double m_tcp_norm = 0.0;          // Norm of that change about the TCP [N m].
 
   // Defining the final pose and contact wrench in the base frame.
   Vec3 p_EE = Vec3::Zero();                 // Final TCP position [m].
   Mat3 R_EE = Mat3::Identity();             // Final EE orientation [-].
   Vec3 tool_contact_point = Vec3::Zero();   // Final tool-feature position [m].
   Vec3 external_force = Vec3::Zero();       // Final external force [N].
-  Vec3 contact_moment = Vec3::Zero(); // Moment at the contact point [N m].
+  Vec3 m_contact = Vec3::Zero();            // Moment about the contact point [N m].
 
   // Defining the first-contact reference in the base frame.
   Vec3 first_contact_tcp = Vec3::Zero();    // TCP position at contact [m].

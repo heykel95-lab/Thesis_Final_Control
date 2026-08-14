@@ -156,7 +156,7 @@ def main():
     print(f"largest disagreement   : {residual[worst]:+.3f} deg")
 
     shared_legend(fig, list(axes), ncol=2, bottom=0.20)
-    out = os.path.join(args.out_dir, "ANGLE_metric_comparison.pdf")
+    out = os.path.join(args.out_dir, "MAIN_DQ_metric_comparison.pdf")
     fig.savefig(out)
     fig.savefig(out.replace(".pdf", ".png"), dpi=160)
     plt.close(fig)

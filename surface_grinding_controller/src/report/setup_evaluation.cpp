@@ -34,12 +34,12 @@ void printSurfaceFrameBreakdown(const ControllerConfig& params,
                                 const SetupReport& r) {
   const Vec3 force_surf =
       R_base_surface.transpose() * (r.external_force - r.contact_force_bias);
-  const Vec3 moment_surf = R_base_surface.transpose() * r.contact_moment;
+  const Vec3 moment_surf = R_base_surface.transpose() * r.m_contact;
   const Vec3 tcp_disp_surf =
       R_base_surface.transpose() * (r.p_EE - r.first_contact_tcp);
   const Vec3 contact_disp_surf =
       R_base_surface.transpose() * (r.tool_contact_point - r.first_contact_point);
-  const Vec3 tip_surf =
+  const Vec3 ee_surf =
       R_base_surface.transpose() * orientationError(r.R_EE, r.R_contact_start);
 
   // Calculating effective translational [N/m] and rotational [N m/rad] ratios.
@@ -47,7 +47,7 @@ void printSurfaceFrameBreakdown(const ControllerConfig& params,
   char kr[3][16];
   for (int i = 0; i < 3; ++i) {
     formatRatio(kp[i], sizeof(kp[i]), force_surf(i), tcp_disp_surf(i), 5e-5);
-    formatRatio(kr[i], sizeof(kr[i]), moment_surf(i), tip_surf(i), 5e-4);
+    formatRatio(kr[i], sizeof(kr[i]), moment_surf(i), ee_surf(i), 5e-4);
   }
 
   printSection("setup surface-frame breakdown");
@@ -63,14 +63,14 @@ void printSurfaceFrameBreakdown(const ControllerConfig& params,
   printf("  Kp_eff=F/tcp [N/m]    = [%s, %s, %s]\n", kp[0], kp[1], kp[2]);
   printf("  M_contact    [Nm]     = [%+9.2f, %+9.2f, %+9.2f]\n",
          moment_surf(0), moment_surf(1), moment_surf(2));
-  printf("  tip_angle    [deg]    = [%+9.2f, %+9.2f, %+9.2f]\n",
-         (180.0 / M_PI) * tip_surf(0), (180.0 / M_PI) * tip_surf(1),
-         (180.0 / M_PI) * tip_surf(2));
+  printf("  ee_angle     [deg]    = [%+9.2f, %+9.2f, %+9.2f]\n",
+         (180.0 / M_PI) * ee_surf(0), (180.0 / M_PI) * ee_surf(1),
+         (180.0 / M_PI) * ee_surf(2));
   printf("  KR_eff=M/ang [Nm/rad] = [%s, %s, %s]\n", kr[0], kr[1], kr[2]);
 
   // Resolving the contact moment in tool-face axes to identify the tipping edge.
   const Mat3 R_base_face = makeToolFaceFrame(params, r.R_EE);
-  const Vec3 moment_face = R_base_face.transpose() * r.contact_moment;
+  const Vec3 moment_face = R_base_face.transpose() * r.m_contact;
   printf("  %-16s   tool face [length, width, tool axis]\n", "frame");
   printf("  M_contact    [Nm]     = [%+9.2f, %+9.2f, %+9.2f]\n",
          moment_face(0), moment_face(1), moment_face(2));
@@ -89,9 +89,9 @@ void reportSetupResult(const ControllerConfig& params,
   const Vec3 tcp_from_contact_mm = 1000.0 * (r.p_EE - r.first_contact_point);
 
   printBanner("SETUP RESULT");
-  printf("  stop: %s | t=%.1f s | ee=%.1f deg | F=%.1f N | M=%.1f Nm\n",
+  printf("  stop: %s | t=%.1f s | ee=%.1f deg | F=%.1f N | M_TCP=%.1f Nm\n",
          r.stopped_on_moment ? "moment" : "time",
-         r.phase_time, end_effector_deviation_deg, r.force_delta_norm, r.moment_delta_norm);
+         r.phase_time, end_effector_deviation_deg, r.df_ext_norm, r.m_tcp_norm);
   printf("  contact_from_start = [%+.1f, %+.1f, %+.1f] mm | norm=%.1f mm\n",
          contact_from_start_mm(0), contact_from_start_mm(1),
          contact_from_start_mm(2), contact_from_start_mm.norm());
