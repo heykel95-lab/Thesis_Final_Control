@@ -135,7 +135,7 @@ def main():
               f"M_contact t1 {m_contact[-1, 0]:+6.2f} N m")
 
     shared_legend(fig, [axes[0][0]], ncol=3, bottom=0.09)
-    out = os.path.join(args.out_dir, "MAIN_H_diagnostics.pdf")
+    out = os.path.join(args.out_dir, "MAIN_E_diagnostics.pdf")
     fig.savefig(out)
     fig.savefig(out.replace(".pdf", ".png"), dpi=160)
     plt.close(fig)

@@ -1,0 +1,6 @@
+run_id:        P5_mag_t2_p040
+repeat:        r03
+recorded:      2026-08-17T13:16:32+02:00
+commit:        5e6e237
+tree_state:    dirty
+exit_status:   0
