@@ -129,6 +129,10 @@ void reportSetupResult(const ControllerConfig& params,
   }
   printf("  deviation_min: %.2f deg at t=%.2f s\n",
          r.deviation_min_deg, r.t_deviation_min);
+  // One word the analysis can sort on. A run that never met the tolerance is
+  // still a measurement, and it is kept with the rest rather than dropped;
+  // whether it improved or worsened is read from the gain above.
+  printf("  align_status: %s\n", r.t_align >= 0.0 ? "aligned" : "not_aligned");
   const Vec3 align_before_surface_deg =
       (180.0 / M_PI) * R_base_surface.transpose() *
       toolSurfaceAlignmentErrorBase(

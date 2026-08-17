@@ -68,6 +68,9 @@ FIELDS = (
      re.compile(r"^\s*deviation_min:\s*([-\d.]+)\s*deg", re.M)),
     ("t_deviation_min_s",
      re.compile(r"^\s*deviation_min:.*at\s*t=([-\d.]+)\s*s", re.M)),
+    # aligned or not_aligned, so the runs that never met the tolerance can be
+    # sorted out without being thrown away.
+    ("align_status", re.compile(r"^\s*align_status:\s*(\w+)", re.M)),
     # Archives written before the rename carry "alignment:".
     ("deviation_before_deg",
      re.compile(r"(?:deviation|alignment):\s*before=([-\d.]+)")),
