@@ -33,7 +33,7 @@ import matplotlib.pyplot as plt
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from extract_metrics import surface_frame, read_params  # noqa: E402
-from figure_style import (apply_style, reference_line, shared_legend,  # noqa: E402
+from figure_style import (apply_style, reference_line,  # noqa: E402
                           thin, SERIES_COLOURS)
 
 RESULTS = os.path.join(HERE, "..", "experiments", "results")
@@ -98,6 +98,9 @@ def draw_axes(ax, t, values, ylabel):
     # Zero separates a restoring component from a driving one here, so the
     # line means something; the press axis below is left without one.
     reference_line(ax)
+    ax.margins(y=0.30)
+    ax.legend(loc="upper right", ncol=3, columnspacing=0.8,
+              handlelength=1.0, fontsize=7)
     if ylabel:
         ax.set_ylabel(ylabel)
 
@@ -134,7 +137,7 @@ def main():
               f"M_TCP t1 {m_tcp[-1, 0]:+6.2f} | "
               f"M_contact t1 {m_contact[-1, 0]:+6.2f} N m")
 
-    shared_legend(fig, [axes[0][0]], ncol=3, bottom=0.09)
+    fig.tight_layout()
     out = os.path.join(args.out_dir, "MAIN_E_diagnostics.pdf")
     fig.savefig(out)
     fig.savefig(out.replace(".pdf", ".png"), dpi=160)

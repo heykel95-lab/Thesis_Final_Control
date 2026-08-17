@@ -31,9 +31,13 @@ The normal force is negative while the tool presses. n_s points out of the
 plate, so the press runs along -n_s, and the commanded and estimated curves
 carry that sign alike.
 
-Commanded and estimated share one colour per condition and are told apart by
-the markers on the commanded curve. Neither is dashed, and neither is grey,
-which the figure style reserves for reference lines.
+Commanded and estimated are drawn in panels of their own rather than over each
+other, because they differ by an order of magnitude on the moment axis and the
+smaller of the two is unreadable when they share a scale.
+
+Each panel carries its own legend in its upper right corner. The deviation
+panel is annotated with the attitude the tool arrived with, so the figure can
+be read without the commanded offset, which the tool does not reach exactly.
 """
 
 import argparse
@@ -125,32 +129,40 @@ def main():
     os.makedirs(args.out_dir, exist_ok=True)
 
     selected = [tuple(a.split("=", 1)) for a in args.trials]
-    fig, axes = plt.subplots(3, 1, figsize=(5.8, 7.0), sharex=True)
+    fig, axes = plt.subplots(5, 1, figsize=(5.8, 9.6), sharex=True)
 
-    for (trial, label), colour in zip(selected, SERIES_COLOURS):
+    for index, ((trial, label), colour) in enumerate(zip(selected,
+                                                         SERIES_COLOURS)):
         t, tilt, fn_cmd, fn_ext, m_cmd, m_ext = thin(*load(trial, args.axis))
-        marked = dict(color=colour, marker="o", markevery=90,
-                      markerfacecolor="white", markeredgewidth=1.1,
-                      markersize=4.5)
-        axes[0].plot(t, tilt, color=colour, label=label)
-        axes[1].plot(t, fn_ext, color=colour, label=f"estimated, {label}")
-        axes[1].plot(t, fn_cmd, label=f"commanded, {label}", **marked)
-        axes[2].plot(t, m_ext, color=colour, label=f"estimated, {label}")
-        axes[2].plot(t, m_cmd, label=f"commanded, {label}", **marked)
+        for ax, series in zip(axes, (tilt, fn_cmd, fn_ext, m_cmd, m_ext)):
+            ax.plot(t, series, color=colour, label=label)
+        # Naming the attitude the tool arrived with, at the left edge of the
+        # deviation panel. The conditions start within a tenth of a degree of
+        # each other, so the labels are stacked rather than left to overprint.
+        axes[0].annotate(f"{tilt[0]:.2f}", xy=(t[0], tilt[0]),
+                         xytext=(4, -11 * index - 4),
+                         textcoords="offset points",
+                         color=colour, fontsize=8)
         print(f"{trial:26s} e_tilt {tilt[0]:6.2f} -> {tilt[-1]:6.2f} deg | "
               f"Fn_ext {fn_ext[-1]:7.1f} N | M_ext {m_ext[-1]:+6.2f} N m")
 
     axis_name = AXIS_LABEL[args.axis]
-    axes[0].set_ylabel(r"$e_{\mathrm{tilt}}$ [$^\circ$]")
-    axes[1].set_ylabel(r"$F_n$ [N]")
-    axes[2].set_ylabel(rf"$M_{{\mathrm{{align}}}}$ about {axis_name} [N m]")
-    axes[2].set_xlabel("Time from first contact [s]")
-    # Zero separates a flat tool from a tilted one, and a restoring moment from
-    # a driving one. The force panel is left without a line.
-    reference_line(axes[0])
-    reference_line(axes[2])
-
-    shared_legend(fig, [axes[0], axes[2]], ncol=2, bottom=0.12)
+    labels = [r"$e_{\mathrm{tilt}}$ [$^\circ$]",
+              r"$F_{n,\mathrm{cmd}}$ [N]",
+              r"$F_{n,\mathrm{ext}}$ [N]",
+              rf"$M_{{\mathrm{{align,cmd}}}}$ about {axis_name} [N m]",
+              rf"$M_{{\mathrm{{align,ext}}}}$ about {axis_name} [N m]"]
+    for ax, text in zip(axes, labels):
+        ax.set_ylabel(text)
+        # Zero separates a flat tool from a tilted one, and a restoring moment
+        # from a driving one. The press panels are left without a line.
+        if "F_" not in text:
+            reference_line(ax)
+        # Headroom so the corner legend sits above the data rather than on it.
+        ax.margins(y=0.28)
+        ax.legend(loc="upper right")
+    axes[-1].set_xlabel("Time from first contact [s]")
+    fig.tight_layout()
     out = os.path.join(args.out_dir, f"{args.out}.pdf")
     fig.savefig(out)
     fig.savefig(out.replace(".pdf", ".png"), dpi=160)

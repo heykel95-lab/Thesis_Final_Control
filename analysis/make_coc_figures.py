@@ -31,7 +31,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 METRICS = os.path.join(HERE, "..", "experiments", "derived", "metrics.csv")
 
 sys.path.insert(0, HERE)
-from figure_style import (apply_style, reference_line, shared_legend,  # noqa: E402
+from figure_style import (apply_style, reference_line,  # noqa: E402
                           SERIES_COLOURS, SERIES_MARKERS)
 
 apply_style()
@@ -104,7 +104,10 @@ def draw_sweep(entries, xlabel, out_path, figsize=(5.8, 3.4)):
     reference_line(ax)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(GAIN_LABEL)
-    shared_legend(fig, [ax], ncol=2, bottom=0.20)
+    # Headroom so the corner legend sits above the data rather than on it.
+    ax.margins(y=0.30)
+    ax.legend(loc="upper right")
+    fig.tight_layout()
     fig.savefig(out_path)
     fig.savefig(out_path.replace(".pdf", ".png"), dpi=160)
     plt.close(fig)
