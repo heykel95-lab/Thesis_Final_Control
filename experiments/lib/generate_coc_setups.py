@@ -181,6 +181,26 @@ def build():
                 "can be read directly.",
             )
 
+    # The commanded zero. Nothing is asked of the tool, so what remains after
+    # set-up is the floor the arrangement leaves: the calibration, the mount
+    # clearance and whatever the contact itself imposes. Every residual
+    # reported elsewhere is read against it. The second entry carries the
+    # assisting offset at that same zero, where the tool-frame and
+    # surface-frame definitions describe one point, so it is also the
+    # consistency check the frame comparison rests on.
+    for position in (0.0, LEVER_M):
+        run_id = f"P6_zero_{position_tag(position)}"
+        setups[run_id] = (
+            offset_keys(0.0, 0.0)
+            + (no_lever() if position == 0.0
+               else tool_frame_lever(scaled(LEVER_OFFSET_EE["t1"], position))),
+            f"No commanded offset, centre {1000 * position:+.0f} mm along the "
+            f"tangent that assists a positive offset about t1.",
+            "The residual here is the floor of the arrangement. A centre "
+            "displaced at zero offset should not move a tool that is already "
+            "flat, and the pair is what the frame comparison is read against.",
+        )
+
     return setups
 
 

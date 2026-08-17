@@ -1,0 +1,8 @@
+run_id:   P6_zero_p040
+repeats:  3
+
+purpose:
+  No commanded offset, centre +40 mm along the tangent that assists a positive offset about t1.
+
+pass criterion:
+  The residual here is the floor of the arrangement. A centre displaced at zero offset should not move a tool that is already flat, and the pair is what the frame comparison is read against.

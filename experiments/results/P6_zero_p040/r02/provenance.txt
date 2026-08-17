@@ -1,0 +1,6 @@
+run_id:        P6_zero_p040
+repeat:        r02
+recorded:      2026-08-17T13:57:06+02:00
+commit:        c0857e9
+tree_state:    dirty
+exit_status:   0
