@@ -155,15 +155,23 @@ def main():
               r"$F_{n,\mathrm{ext}}$ [N]",
               rf"$M_{{{sub},\mathrm{{cmd}}}}$ [N m]",
               rf"$M_{{{sub},\mathrm{{ext}}}}$ [N m]"]
-    for ax, text in zip(axes, labels):
+    # The deviation panel keeps the upper right corner, which its curves leave
+    # free and which the start-value annotations at the left edge do not reach.
+    # The rest take whichever corner is clearest.
+    corners = ["upper right", "best", "best", "best", "best"]
+    for ax, text, corner in zip(axes, labels, corners):
         ax.set_ylabel(text)
         # Zero separates a flat tool from a tilted one, and a restoring moment
         # from a driving one. The press panels are left without a line.
         if "F_" not in text:
             reference_line(ax)
         # Headroom so the corner legend sits above the data rather than on it.
-        ax.margins(y=0.28)
-        ax.legend(loc="upper right")
+        # The labels name the condition in full, so they are wide and need
+        # more room than a bare series name would.
+        ax.margins(y=0.45)
+        # A legend printed over the data is worse than one in a different
+        # corner of the same panel.
+        ax.legend(loc=corner, fontsize=7, labelspacing=0.3)
     axes[-1].set_xlabel("Time from first contact [s]")
     fig.tight_layout()
     out = os.path.join(args.out_dir, f"{args.out}.pdf")
