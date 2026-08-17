@@ -82,6 +82,15 @@ FIELDS = (
 
 # Surface-frame rows of the breakdown block, each three signed numbers.
 VECTOR_ROWS = (
+    # The attitude the tool actually held when contact began, and the one it
+    # ended on, resolved on the surface axes. The commanded offset is carried
+    # separately in the parameter columns, and the two differ: the orientation
+    # phase exits on a tolerance against joint friction, so a commanded ten
+    # degrees arrives as somewhat less.
+    ("deviation_before",
+     re.compile(r"deviation components.*?before=\[(.*?)\]", re.M)),
+    ("deviation_after",
+     re.compile(r"deviation components.*?after=\[(.*?)\]", re.M)),
     ("force", re.compile(r"^\s*force\s*\[N\]\s*=\s*\[(.*)\]", re.M)),
     ("moment_contact", re.compile(r"^\s*M_contact\s*\[Nm\]\s*=\s*\[(.*)\]", re.M)),
     ("tcp_disp_mm", re.compile(r"^\s*tcp_disp\s*\[mm\]\s*=\s*\[(.*)\]", re.M)),
