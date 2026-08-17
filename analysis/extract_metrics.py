@@ -49,7 +49,7 @@ PARAM_KEYS = (
 )
 
 FIELDS = (
-    ("stop_reason", re.compile(r"^\s*stop:\s*(\w+)")),
+    ("stop_reason", re.compile(r"^\s*stop:\s*(\w+)", re.M)),
     ("phase_time_s", re.compile(r"stop:.*\|\s*t=([-\d.]+)\s*s")),
     # Archives predating the renames carry tip=, defl= or dev=.
     ("end_effector_deviation_deg",
@@ -59,7 +59,7 @@ FIELDS = (
     ("moment_norm_nm", re.compile(r"stop:.*\|\s*M(?:_TCP)?=([-\d.]+)\s*Nm")),
     # Absent from archives written before the criterion was observed, and
     # printed as "not reached" when the run never settled inside it.
-    ("t_align_s", re.compile(r"^\s*t_align:\s*([\d.]+)\s*s")),
+    ("t_align_s", re.compile(r"^\s*t_align:\s*([\d.]+)\s*s", re.M)),
     # Archives written before the rename carry "alignment:".
     ("deviation_before_deg",
      re.compile(r"(?:deviation|alignment):\s*before=([-\d.]+)")),
@@ -71,10 +71,10 @@ FIELDS = (
 
 # Surface-frame rows of the breakdown block, each three signed numbers.
 VECTOR_ROWS = (
-    ("force", re.compile(r"^\s*force\s*\[N\]\s*=\s*\[(.*)\]")),
-    ("moment_contact", re.compile(r"^\s*M_contact\s*\[Nm\]\s*=\s*\[(.*)\]")),
-    ("tcp_disp_mm", re.compile(r"^\s*tcp_disp\s*\[mm\]\s*=\s*\[(.*)\]")),
-    ("contact_disp_mm", re.compile(r"^\s*contact_disp\s*\[mm\]\s*=\s*\[(.*)\]")),
+    ("force", re.compile(r"^\s*force\s*\[N\]\s*=\s*\[(.*)\]", re.M)),
+    ("moment_contact", re.compile(r"^\s*M_contact\s*\[Nm\]\s*=\s*\[(.*)\]", re.M)),
+    ("tcp_disp_mm", re.compile(r"^\s*tcp_disp\s*\[mm\]\s*=\s*\[(.*)\]", re.M)),
+    ("contact_disp_mm", re.compile(r"^\s*contact_disp\s*\[mm\]\s*=\s*\[(.*)\]", re.M)),
 )
 
 AXES = ("t1", "t2", "n")
