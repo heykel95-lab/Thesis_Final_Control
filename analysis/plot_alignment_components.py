@@ -96,7 +96,7 @@ def main():
         print(f"{label:26s} t1 {t1[0]:+6.2f} -> {t1[-1]:+6.2f} | "
               f"t2 {t2[0]:+6.2f} -> {t2[-1]:+6.2f}")
 
-    out = os.path.join(args.out_dir, "MAIN_N_components.pdf")
+    out = os.path.join(args.out_dir, "MAIN_H_components.pdf")
     fig.savefig(out)
     fig.savefig(out.replace(".pdf", ".png"), dpi=160)
     plt.close(fig)

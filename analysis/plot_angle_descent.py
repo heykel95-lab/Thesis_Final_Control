@@ -97,7 +97,7 @@ def main():
     ax.set_ylim(bottom=-0.4)
     shared_legend(fig, [ax], ncol=2)
 
-    out = os.path.join(args.out_dir, "MAIN_N_descent.pdf")
+    out = os.path.join(args.out_dir, "MAIN_H_descent.pdf")
     fig.savefig(out)
     fig.savefig(out.replace(".pdf", ".png"), dpi=160)
     plt.close(fig)
