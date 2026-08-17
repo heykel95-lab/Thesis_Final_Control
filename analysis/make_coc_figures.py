@@ -38,12 +38,14 @@ apply_style()
 
 GAIN_LABEL = r"Change in angular deviation [$^\circ$]"
 
-# The four groups of the sweep, in the order they are drawn.
+# The four groups of the sweep, in the order they are drawn. Their legend
+# labels are formed from the measured orientation at first contact below; the
+# nominal commanded offset is deliberately not used as a substitute for it.
 GROUPS = [
-    ("P2_t1_pos", r"$+10^\circ$ about $t_1$"),
-    ("P2_t1_neg", r"$-10^\circ$ about $t_1$"),
-    ("P2_t2_pos", r"$+10^\circ$ about $t_2$"),
-    ("P2_t2_neg", r"$-10^\circ$ about $t_2$"),
+    ("P2_t1_pos", "t1"),
+    ("P2_t1_neg", "t1"),
+    ("P2_t2_pos", "t2"),
+    ("P2_t2_neg", "t2"),
 ]
 
 # Positions the campaign carried [mm]. 80 was measured before the magnitude
@@ -62,6 +64,7 @@ def load():
                 continue
             for key in ("deviation_gain_deg", "deviation_after_deg",
                         "deviation_before_deg",
+                        "deviation_before_t1", "deviation_before_t2",
                         "contact_rotation_t1_deg", "contact_rotation_t2_deg"):
                 try:
                     groups[run][key].append(float(row[key]))
@@ -87,6 +90,18 @@ def tag(position):
     return f"{'m' if position < 0 else 'p'}{abs(position):03d}"
 
 
+def initial_label(groups, runs, axis, linebreak=False):
+    """Name a series by its measured signed orientation before set-up."""
+    key = f"deviation_before_{axis}"
+    values = [value for run in runs for value in groups.get(run, {}).get(key, [])]
+    if not values:
+        raise ValueError(f"no {key} values for {runs}")
+    separator = "\n" if linebreak else " "
+    tangent = "t_1" if axis == "t1" else "t_2"
+    return (f"initial{separator}${statistics.mean(values):+.2f}^\\circ$ "
+            f"about ${tangent}$")
+
+
 def sweep(groups, prefix, positions):
     """Return the positions, means and deviations present for one group."""
     x, y, err = [], [], []
@@ -101,7 +116,7 @@ def sweep(groups, prefix, positions):
 
 
 def draw_sweep(entries, xlabel, out_path, figsize=(5.8, 3.4),
-               ylabel=GAIN_LABEL):
+               ylabel=GAIN_LABEL, headroom=0.30):
     fig, ax = plt.subplots(figsize=figsize)
     for (x, y, err, label), colour, marker in zip(entries, SERIES_COLOURS,
                                                   SERIES_MARKERS):
@@ -112,7 +127,7 @@ def draw_sweep(entries, xlabel, out_path, figsize=(5.8, 3.4),
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     # Headroom so the corner legend sits above the data rather than on it.
-    ax.margins(y=0.30)
+    ax.margins(y=headroom)
     ax.legend(loc="upper right")
     fig.tight_layout()
     fig.savefig(out_path)
@@ -132,11 +147,12 @@ def main():
     # D -- the contact alone, one bar per group at the zero position.
     fig, ax = plt.subplots(figsize=(5.6, 3.2))
     labels, values, errors = [], [], []
-    for prefix, label in GROUPS:
-        value = stat(groups, f"{prefix}_p000", "deviation_gain_deg")
+    for prefix, axis in GROUPS:
+        run = f"{prefix}_p000"
+        value = stat(groups, run, "deviation_gain_deg")
         if value is None:
             continue
-        labels.append(label)
+        labels.append(initial_label(groups, [run], axis, linebreak=True))
         values.append(value[0])
         errors.append(value[1])
     ax.bar(range(len(values)), values, yerr=errors, capsize=3,
@@ -159,9 +175,8 @@ def main():
             ("B", "B_trans", r"Translational stiffness across the commanded"
              " tangent [N/m]", [300, 800, 2000], "MAIN_B_KP.pdf")):
         entries = []
-        for axis, label in (("t1", r"$+10^\circ$ about $t_1$"),
-                            ("t2", r"$+10^\circ$ about $t_2$")):
-            x, y, err = [], [], []
+        for axis in ("t1", "t2"):
+            x, y, err, runs = [], [], [], []
             for v in values:
                 # The shared value of every other case is the Case-D trial.
                 run = (f"P2_{axis}_pos_p000" if v in (5, 2000)
@@ -173,8 +188,10 @@ def main():
                 x.append(v)
                 y.append(stats[0])
                 err.append(stats[1])
+                runs.append(run)
             if x:
-                entries.append((np.array(x), np.array(y), np.array(err), label))
+                entries.append((np.array(x), np.array(y), np.array(err),
+                                initial_label(groups, runs, axis)))
         if entries:
             draw_sweep(entries, xlabel, out(name),
                        ylabel=r"Set-up rotation about the commanded tangent"
@@ -182,10 +199,11 @@ def main():
 
     # E -- the tangential sweep, all four groups on one panel.
     entries = []
-    for prefix, label in GROUPS:
+    for prefix, axis in GROUPS:
         x, y, err = sweep(groups, prefix, POSITIONS)
         if len(x):
-            entries.append((x, y, err, label))
+            runs = [f"{prefix}_{tag(position)}" for position in x]
+            entries.append((x, y, err, initial_label(groups, runs, axis)))
     draw_sweep(entries, "Centre position along the assisting tangent [mm]",
                out("MAIN_E_sign.pdf"), figsize=(5.8, 3.8))
 
@@ -198,14 +216,16 @@ def main():
         err = np.append(err, zero[1])
         order = np.argsort(x)
         x, y, err = x[order], y[order], err[order]
-    draw_sweep([(x, y, err, r"$+10^\circ$ about $t_1$")],
+    runs = [f"P3_axis_{tag(position)}" for position in POSITIONS if position]
+    runs.append("P2_t1_pos_p000")
+    draw_sweep([(x, y, err, initial_label(groups, runs, "t1"))],
                "Centre position along the tool axis [mm]",
                out("MAIN_G_toolaxis.pdf"))
 
     # H -- the same two positions at both commanded magnitudes.
     entries = []
-    for axis, marker_label in (("t1", r"$t_1$"), ("t2", r"$t_2$")):
-        x, y, err = [], [], []
+    for axis in ("t1", "t2"):
+        x, y, err, runs = [], [], [], []
         for position, prefix in ((0, f"P5_mag_{axis}_p000"),
                                  (40, f"P5_mag_{axis}_p040")):
             value = stat(groups, prefix, "deviation_gain_deg")
@@ -214,24 +234,26 @@ def main():
             x.append(position)
             y.append(value[0])
             err.append(value[1])
+            runs.append(prefix)
         if x:
             entries.append((np.array(x), np.array(y), np.array(err),
-                            rf"$+5^\circ$ about {marker_label}"))
-    for axis, marker_label in (("t1", r"$t_1$"), ("t2", r"$t_2$")):
-        x, y, err = [], [], []
+                            initial_label(groups, runs, axis)))
+    for axis in ("t1", "t2"):
+        x, y, err, runs = [], [], [], []
         for position in (0, 40):
-            value = stat(groups, f"P2_{axis}_pos_{tag(position)}",
-                         "deviation_gain_deg")
+            run = f"P2_{axis}_pos_{tag(position)}"
+            value = stat(groups, run, "deviation_gain_deg")
             if value is None:
                 continue
             x.append(position)
             y.append(value[0])
             err.append(value[1])
+            runs.append(run)
         if x:
             entries.append((np.array(x), np.array(y), np.array(err),
-                            rf"$+10^\circ$ about {marker_label}"))
+                            initial_label(groups, runs, axis)))
     draw_sweep(entries, "Centre position along the assisting tangent [mm]",
-               out("MAIN_H_magnitude.pdf"), figsize=(5.8, 3.8))
+               out("MAIN_H_magnitude.pdf"), figsize=(5.8, 3.8), headroom=0.75)
 
 
 if __name__ == "__main__":

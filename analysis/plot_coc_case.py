@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Draw one centre-of-compliance case in the fixed three-panel order.
 
-  python3 analysis/plot_coc_case.py TRIAL=LABEL [...] --axis t1 --out NAME
+  python3 analysis/plot_coc_case.py TRIAL=DETAIL [...] --axis t1 --out NAME
 
 Every case is read the same way, top to bottom:
 
@@ -56,7 +56,7 @@ import matplotlib.pyplot as plt
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from extract_metrics import surface_frame, read_params  # noqa: E402
+from extract_metrics import parse_report, surface_frame, read_params  # noqa: E402
 from figure_style import (apply_style, reference_line, shared_legend,  # noqa: E402
                           thin, SERIES_COLOURS)
 
@@ -85,6 +85,19 @@ def configured_lever_ee(directory):
     return np.array([
         float(params.get(f"compliance_center_offset_ee_{a}", 0.0))
         for a in "xyz"])
+
+
+def initial_label(directory, axis, detail):
+    """Name a curve by its measured signed orientation before set-up."""
+    report = parse_report(os.path.join(directory, "terminal.log"))
+    key = f"deviation_before_{axis}"
+    try:
+        angle = float(report[key])
+    except (KeyError, ValueError):
+        raise SystemExit(f"no {key} in the set-up report under {directory}")
+    tangent = "t_1" if axis == "t1" else "t_2"
+    suffix = f", {detail}" if detail else ""
+    return rf"initial ${angle:+.2f}^\circ$ about ${tangent}${suffix}"
 
 
 def load(trial, axis):
@@ -124,7 +137,7 @@ def load(trial, axis):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("trials", nargs="+", metavar="TRIAL=LABEL")
+    p.add_argument("trials", nargs="+", metavar="TRIAL=DETAIL")
     p.add_argument("--axis", default="t1", choices=sorted(AXIS_COLUMN))
     p.add_argument("--out", default="COC_case")
     p.add_argument("--out-dir", default=os.path.join(HERE, "..", "figures"))
@@ -134,8 +147,10 @@ def main():
     selected = [tuple(a.split("=", 1)) for a in args.trials]
     fig, axes = plt.subplots(5, 1, figsize=(5.8, 9.6), sharex=True)
 
-    for index, ((trial, label), colour) in enumerate(zip(selected,
-                                                         SERIES_COLOURS)):
+    for index, ((trial, detail), colour) in enumerate(zip(selected,
+                                                          SERIES_COLOURS)):
+        directory = os.path.join(RESULTS, trial)
+        label = initial_label(directory, args.axis, detail)
         t, tilt, fn_cmd, fn_ext, m_cmd, m_ext = thin(*load(trial, args.axis))
         for ax, series in zip(axes, (tilt, fn_cmd, fn_ext, m_cmd, m_ext)):
             ax.plot(t, series, color=colour, label=label)
@@ -168,7 +183,7 @@ def main():
         # Headroom so the corner legend sits above the data rather than on it.
         # The labels name the condition in full, so they are wide and need
         # more room than a bare series name would.
-        ax.margins(y=0.45)
+        ax.margins(y=0.85 if ax is axes[0] else 0.45)
         # A legend printed over the data is worse than one in a different
         # corner of the same panel.
         ax.legend(loc=corner, fontsize=7, labelspacing=0.3)
