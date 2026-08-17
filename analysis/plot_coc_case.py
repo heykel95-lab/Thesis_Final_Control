@@ -13,14 +13,19 @@ Every case is read the same way, top to bottom:
   3  alignment moment  the moment about the commanded tilt axis, again
                        commanded against estimated.
 
-The estimated moment is taken about the centre of compliance,
+Both moments are referred to the TCP, which is the only point at which the
+commanded and the estimated one can be compared without a contact model in
+between. The commanded moment is the rotational half of the impedance wrench,
+which the coupled law already forms at the TCP; the estimated one is the
+external moment with the base-origin lever removed.
 
-  M_CoC = r_eff x df_ext,   r_eff = p_contact - p_CoC,
-
-which is the lever the contact force actually turns the tool through. It is
-not the M_contact of the results chapter, which is referred to the contact
-point instead. A run with no lever leaves the centre on the TCP, so the same
-expression covers both and no case has to be separated.
+Referring them to the centre of compliance instead was tried and dropped. The
+moment there is nearly constant, which is what the point shift is built to do,
+so it says little about what distinguishes the conditions. Forming it as
+r_eff x df_ext, with r_eff running from the centre to the contact point, is
+worse than uninformative: it treats the pressed face as a point force at the
+geometric extreme of the face and returns values the measured external moment
+contradicts.
 
 The sign is kept rather than reduced to a magnitude. With r_eff running from
 the centre to the contact, the moment that flattens the tool carries the same
@@ -63,6 +68,9 @@ SETUP_PHASE = 2  # ControlPhase::kSetup
 
 AXIS_COLUMN = {"t1": 0, "t2": 1, "n": 2}
 AXIS_LABEL = {"t1": r"$t_1$", "t2": r"$t_2$", "n": r"$n$"}
+# The axis rides in the subscript, so a panel names the component it carries
+# rather than describing it: M_{t1,cmd} instead of "M_cmd about t1".
+AXIS_SUBSCRIPT = {"t1": "t_1", "t2": "t_2", "n": "n"}
 
 
 def vec(row, prefix):
@@ -92,14 +100,8 @@ def load(trial, axis):
     tilt_axis = frame[:, AXIS_COLUMN[axis]]
 
     with open(logs[0]) as f:
-        reader = csv.DictReader(f)
-        has_r_eff = "r_eff_x" in (reader.fieldnames or [])
-        if not has_r_eff and np.linalg.norm(configured_lever_ee(directory)) > 1e-9:
-            raise SystemExit(
-                f"{trial} was archived without r_eff and carries a shifted "
-                "compliance centre, so the moment about that centre cannot be "
-                "recovered. Rerun it with the current controller.")
-        rows = [r for r in reader if float(r["phase"]) == SETUP_PHASE]
+        rows = [r for r in csv.DictReader(f)
+                if float(r["phase"]) == SETUP_PHASE]
 
     time, tilt, fn_cmd, fn_ext, m_cmd, m_ext = [], [], [], [], [], []
     for row in rows:
@@ -109,10 +111,11 @@ def load(trial, axis):
         fn_cmd.append(float(normal @ vec(row, "f")))
         fn_ext.append(float(normal @ df))
         m_cmd.append(float(tilt_axis @ vec(row, "m")))
-        # With no r_eff column the centre sat on the TCP, checked above.
-        r_eff = (vec(row, "r_eff") if has_r_eff
-                 else vec(row, "tool_contact") - vec(row, "p_EE"))
-        m_ext.append(float(tilt_axis @ np.cross(r_eff, df)))
+        # Removing the base-origin lever, so the estimate describes the tool.
+        p_ee = vec(row, "p_EE")
+        m_tcp = (vec(row, "external_moment") - vec(row, "contact_moment_bias")
+                 - np.cross(p_ee, df))
+        m_ext.append(float(tilt_axis @ m_tcp))
 
     t = np.array(time)
     return (t - t[0], np.array(tilt), np.array(fn_cmd), np.array(fn_ext),
@@ -146,12 +149,12 @@ def main():
         print(f"{trial:26s} e_tilt {tilt[0]:6.2f} -> {tilt[-1]:6.2f} deg | "
               f"Fn_ext {fn_ext[-1]:7.1f} N | M_ext {m_ext[-1]:+6.2f} N m")
 
-    axis_name = AXIS_LABEL[args.axis]
+    sub = AXIS_SUBSCRIPT[args.axis]
     labels = [r"$e_{\mathrm{tilt}}$ [$^\circ$]",
               r"$F_{n,\mathrm{cmd}}$ [N]",
               r"$F_{n,\mathrm{ext}}$ [N]",
-              rf"$M_{{\mathrm{{align,cmd}}}}$ about {axis_name} [N m]",
-              rf"$M_{{\mathrm{{align,ext}}}}$ about {axis_name} [N m]"]
+              rf"$M_{{{sub},\mathrm{{cmd}}}}$ [N m]",
+              rf"$M_{{{sub},\mathrm{{ext}}}}$ [N m]"]
     for ax, text in zip(axes, labels):
         ax.set_ylabel(text)
         # Zero separates a flat tool from a tilted one, and a restoring moment
