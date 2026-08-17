@@ -31,11 +31,17 @@ struct LogData {
   Vec3 first_contact_point;     // Tool-feature position at first contact [m].
   Vec3 edge_target;             // Desired tool-feature position [m].
   Vec3 tool_contact_offset_ee;  // Feature offset in EE frame [m].
+  Vec3 p_CoC;   // Centre of compliance, p_TCP - r_c [m]. Equals p_EE when the
+                // lever is zero, so the centre is the TCP in that case.
+  Vec3 r_eff;   // Lever the contact force acts through, p_contact - p_CoC [m].
 
   Vec3 e_p;  // Translational error p_d - p_EE [m].
   Vec3 e_R;  // Orientation error in base frame [rad].
   Vec3 angular_deviation_surface; // Deviation in [tangent1,tangent2,normal] [rad].
   double angular_deviation;       // Residual tool-to-plane deviation [rad].
+  double t_align;                 // Time from first contact at which the
+                                  // deviation first fell inside the tolerance
+                                  // and stayed there [s]; negative until then.
 
   Vec3 pdot;    // Measured TCP linear velocity [m/s].
   Vec3 pdot_d;  // Desired TCP linear velocity [m/s].
@@ -80,6 +86,9 @@ struct SetupReport {
   double phase_time = 0.0;          // Setup duration [s].
   double df_ext_norm = 0.0;         // Norm of the force change since contact [N].
   double m_tcp_norm = 0.0;          // Norm of that change about the TCP [N m].
+  double t_align = -1.0;            // Alignment time [s], negative if the
+                                    // deviation never settled inside the
+                                    // tolerance for the required hold.
 
   // Defining the final pose and contact wrench in the base frame.
   Vec3 p_EE = Vec3::Zero();                 // Final TCP position [m].

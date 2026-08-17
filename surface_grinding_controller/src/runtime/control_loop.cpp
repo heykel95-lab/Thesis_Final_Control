@@ -161,6 +161,13 @@ RunResult runControlLoop(ControllerConfig& params,
   double setup_push_start = -params.descend_surface_clearance;
   double grind_push = 0.0;
 
+  // Tracking the offline alignment criterion. The phase clock at which the
+  // deviation entered the tolerance is kept, and only once it has stayed
+  // inside for the configured hold does that entry time become the reported
+  // alignment time. Neither value is read by the control law.
+  double align_entered_at = -1.0;
+  double t_align = -1.0;
+
   // Initializing phase-dependent damping matrices.
   PhaseDampingCache damping = manualPhaseDampingCache(gains);
 
@@ -426,6 +433,9 @@ RunResult runControlLoop(ControllerConfig& params,
     DesiredTranslationCommand desired{p_start, Vec3::Zero()};
     Vec3 edge_target_log = first_contact_point;
     double push_log = 0.0;
+    // The compliance centre sits on the TCP until a lever moves it.
+    Vec3 p_CoC_log = p_EE;
+    Vec3 r_eff_log = tool_contact_point - p_EE;
     // Selecting stiff Cartesian hold only while a phase gate blocks.
     bool pause_hold_active = false;
 
@@ -640,6 +650,31 @@ RunResult runControlLoop(ControllerConfig& params,
         const Vec3 m_contact =
             m_tcp + r_contact.cross(df_ext);
 
+        // Locating the centre of compliance and the lever the contact force
+        // acts through [m]. A zero lever leaves the centre on the TCP, so the
+        // same two lines cover both the referenced and the shifted case.
+        const Vec3 r_c_log =
+            complianceLeverBase(params, R_EE, R_base_surface);
+        p_CoC_log = p_EE - r_c_log;
+        r_eff_log = tool_contact_point - p_CoC_log;
+
+        // Observing the alignment criterion. It only reads the deviation and
+        // the clock, and never feeds the phase exit or the command.
+        const double deviation_deg =
+            (180.0 / M_PI) *
+            toolSurfaceMisalignmentAngle(params, R_EE, R_base_surface);
+        if (deviation_deg < params.setup_align_tolerance_deg) {
+          if (align_entered_at < 0.0) {
+            align_entered_at = phase_time;
+          } else if (t_align < 0.0 &&
+                     phase_time - align_entered_at >=
+                         params.setup_align_hold_time) {
+            t_align = align_entered_at;
+          }
+        } else {
+          align_entered_at = -1.0;
+        }
+
         const bool waiting_at_gate = gate_grind_armed && !gate_grind_passed;
         if (params.debug_period > 0.0 && time >= next_debug_time &&
             !waiting_at_gate && intro_printed_for == phase) {
@@ -670,6 +705,7 @@ RunResult runControlLoop(ControllerConfig& params,
           report.phase_time = phase_time;
           report.df_ext_norm = df_ext_norm;
           report.m_tcp_norm = m_tcp_norm;
+          report.t_align = t_align;
           report.p_EE = p_EE;
           report.R_EE = R_EE;
           report.tool_contact_point = tool_contact_point;
@@ -1095,12 +1131,15 @@ RunResult runControlLoop(ControllerConfig& params,
       row.first_contact_point = first_contact_point;
       row.edge_target = edge_target_log;
       row.tool_contact_offset_ee = tool_contact_offset_ee;
+      row.p_CoC = p_CoC_log;
+      row.r_eff = r_eff_log;
       row.e_p = e_p;
       row.e_R = e_R;
       row.angular_deviation_surface =
           R_base_surface.transpose() *
           toolSurfaceAlignmentErrorBase(params, R_EE, R_base_surface);
       row.angular_deviation = row.angular_deviation_surface.norm();
+      row.t_align = t_align;
       row.pdot = pdot;
       row.pdot_d = desired.pdot_d;
       row.omega = omega;

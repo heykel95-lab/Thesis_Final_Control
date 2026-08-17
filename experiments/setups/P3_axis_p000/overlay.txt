@@ -1,0 +1,16 @@
+# P3_axis_p000
+# Applied on top of surface_grinding_controller/params/.
+# Only keys listed here differ from the nominal set.
+setup_translation_surface_frame = 1
+pause_hold_translation_surface_frame = 1
+pause_hold_rotation_surface_frame = 1
+pause_before_setup = 0
+pause_before_grind = 1
+use_virtual_compliance_center = 1
+tool_target_offset_tangent1_deg = 10.0
+tool_target_offset_tangent2_deg = 0.0
+compliance_center_in_tool_frame = 0
+compliance_lever_in_surface_frame = 1
+r_tcp_from_compliance_center_surface_tangent1 = 0.0
+r_tcp_from_compliance_center_surface_tangent2 = 0.0
+r_tcp_from_compliance_center_surface_normal = 0.0

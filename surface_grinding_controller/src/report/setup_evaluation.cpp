@@ -108,6 +108,16 @@ void reportSetupResult(const ControllerConfig& params,
       toolSurfaceMisalignmentAngle(params, r.R_EE, R_base_surface);
   printf("  deviation: before=%.2f deg | after=%.2f deg | gain=%+.2f deg\n",
          align_before_deg, align_after_deg, align_before_deg - align_after_deg);
+  // The alignment time is observed, not enforced, so a run that never settled
+  // inside the tolerance reports that rather than a number.
+  if (r.t_align >= 0.0) {
+    printf("  t_align: %.2f s | tolerance=%.2f deg | hold=%.2f s\n",
+           r.t_align, params.setup_align_tolerance_deg,
+           params.setup_align_hold_time);
+  } else {
+    printf("  t_align: not reached | tolerance=%.2f deg | hold=%.2f s\n",
+           params.setup_align_tolerance_deg, params.setup_align_hold_time);
+  }
   const Vec3 align_before_surface_deg =
       (180.0 / M_PI) * R_base_surface.transpose() *
       toolSurfaceAlignmentErrorBase(

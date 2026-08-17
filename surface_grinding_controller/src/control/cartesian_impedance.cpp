@@ -253,6 +253,21 @@ Vec3 toolSurfaceAlignmentErrorBase(
   return error.axis() * error.angle();
 }
 
+Vec3 complianceLeverBase(
+    const ControllerConfig& params,
+    const Mat3& R_EE,
+    const Mat3& R_base_surface) {
+  if (!params.use_virtual_compliance_center) {
+    return Vec3::Zero();
+  }
+  if (params.compliance_center_in_tool_frame) {
+    // Transforming the tool-frame center offset into the base-frame lever [m].
+    return -(R_EE * params.compliance_center_offset_ee);
+  }
+  // Transforming the surface-frame lever into the robot base frame [m].
+  return R_base_surface * params.r_tcp_from_compliance_center_surface;
+}
+
 double toolSurfaceMisalignmentAngle(
     const ControllerConfig& params,
     const Mat3& R_EE,

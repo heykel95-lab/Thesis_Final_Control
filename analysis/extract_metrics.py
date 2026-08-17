@@ -57,6 +57,9 @@ FIELDS = (
     ("force_norm_n", re.compile(r"stop:.*\|\s*F=([-\d.]+)\s*N")),
     # Archives predating the rename carry a bare M=.
     ("moment_norm_nm", re.compile(r"stop:.*\|\s*M(?:_TCP)?=([-\d.]+)\s*Nm")),
+    # Absent from archives written before the criterion was observed, and
+    # printed as "not reached" when the run never settled inside it.
+    ("t_align_s", re.compile(r"^\s*t_align:\s*([\d.]+)\s*s")),
     # Archives written before the rename carry "alignment:".
     ("deviation_before_deg",
      re.compile(r"(?:deviation|alignment):\s*before=([-\d.]+)")),

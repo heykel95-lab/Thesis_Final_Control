@@ -1,0 +1,8 @@
+run_id:   P2_t1_pos_m080
+repeats:  3
+
+purpose:
+  Commanded offset +10 deg about t1, centre -80 mm along the assisting tangent.
+
+pass criterion:
+  The assisting direction is expected to reverse with the sign of the commanded offset. A position that helps at one sign should hinder at the other.

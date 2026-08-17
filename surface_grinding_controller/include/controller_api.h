@@ -153,6 +153,18 @@ Vec3 toolSurfaceAlignmentErrorBase(
     const Mat3& R_EE,
     const Mat3& R_base_surface);
 
+/// Returns the compliance lever r_c = p_TCP - p_CoC in the base frame [m].
+///
+/// The lever is configured either in the tool frame or in the surface frame,
+/// and the impedance resolves it inline. This returns the same vector for the
+/// logger, which needs the centre as a position rather than as a gain shift.
+/// A zero lever puts the centre on the TCP, so the returned vector is zero and
+/// no case has to be separated: p_CoC = p_TCP - r_c holds either way.
+Vec3 complianceLeverBase(
+    const ControllerConfig& params,
+    const Mat3& R_EE,
+    const Mat3& R_base_surface);
+
 /// Returns the residual angle between the tool axis and its target [rad].
 double toolSurfaceMisalignmentAngle(
     const ControllerConfig& params,

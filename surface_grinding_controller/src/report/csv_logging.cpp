@@ -52,11 +52,14 @@ void writeLogToCsv(
            << "first_contact_x,first_contact_y,first_contact_z,"
            << "edge_target_x,edge_target_y,edge_target_z,"
            << "tool_contact_offset_ee_x,tool_contact_offset_ee_y,tool_contact_offset_ee_z,"
+           << "p_CoC_x,p_CoC_y,p_CoC_z,"
+           << "r_eff_x,r_eff_y,r_eff_z,"
            << "e_p_x,e_p_y,e_p_z,"
            << "e_R_x,e_R_y,e_R_z,"
            << "angular_deviation_t1_deg,angular_deviation_t2_deg,"
            << "angular_deviation_normal_deg,"
            << "angular_deviation_deg,"
+           << "t_align,"
            << "pdot_x,pdot_y,pdot_z,"
            << "pdot_d_x,pdot_d_y,pdot_d_z,"
            << "omega_x,omega_y,omega_z,"
@@ -91,10 +94,13 @@ void writeLogToCsv(
     writeVec3(log_file, row.first_contact_point);
     writeVec3(log_file, row.edge_target);
     writeVec3(log_file, row.tool_contact_offset_ee);
+    writeVec3(log_file, row.p_CoC);
+    writeVec3(log_file, row.r_eff);
     writeVec3(log_file, row.e_p);
     writeVec3(log_file, row.e_R);
     writeVec3(log_file, (180.0 / M_PI) * row.angular_deviation_surface);
     log_file << (180.0 / M_PI) * row.angular_deviation << ",";
+    log_file << row.t_align << ",";
     writeVec3(log_file, row.pdot);
     writeVec3(log_file, row.pdot_d);
     writeVec3(log_file, row.omega);

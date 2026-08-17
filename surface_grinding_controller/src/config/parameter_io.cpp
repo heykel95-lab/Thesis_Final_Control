@@ -422,6 +422,10 @@ ControllerConfig readControllerConfig(const std::vector<std::string>& filenames)
   p.setup_moment_threshold = getDouble("setup_moment_threshold", p.setup_moment_threshold);
   p.setup_push_speed = getDouble("setup_push_speed", p.setup_push_speed);
   p.setup_push_end = getDouble("setup_push_end", p.setup_push_end);
+  p.setup_align_tolerance_deg =
+      getDouble("setup_align_tolerance_deg", p.setup_align_tolerance_deg);
+  p.setup_align_hold_time =
+      getDouble("setup_align_hold_time", p.setup_align_hold_time);
   p.setup_Kp_diag = getVec3Xyz("setup_Kp", p.setup_Kp_diag);
   p.setup_Dp_diag = getVec3Xyz("setup_Dp", p.setup_Dp_diag);
   p.setup_translation_surface_frame =

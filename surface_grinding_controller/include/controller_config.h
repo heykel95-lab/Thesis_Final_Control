@@ -134,6 +134,10 @@ struct ControllerConfig {
   double setup_moment_threshold = 60.0;  // Moment-change threshold [N m].
   double setup_push_speed = 0.0;         // Virtual penetration rate [m/s].
   double setup_push_end = 0.0;           // Final virtual penetration [m].
+  // Offline alignment criterion. It is observed and logged only: reaching it
+  // does not end the phase, so the run still lasts its configured duration.
+  double setup_align_tolerance_deg = 2.0; // Deviation counted as aligned [deg].
+  double setup_align_hold_time = 0.3;     // Time it must stay inside it [s].
 
   // Base-frame translational gains [x, y, z].
   Vec3 setup_Kp_diag = Vec3(40.0, 40.0, 5500.0); // [N/m].
