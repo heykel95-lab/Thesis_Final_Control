@@ -97,9 +97,16 @@ cmd_series() {
       esac
     fi
     any=1
+    # One retry. The controller recovers the robot itself on the next start,
+    # so a dropped real-time packet or a cleared reflex costs a trial rather
+    # than the campaign. A second failure is not transient and stops the run,
+    # because powering on through a real one would only repeat it.
     if ! run_one "$id" "$repeat"; then
-      echo "stopped: $id r$repeat did not archive" >&2
-      return 1
+      echo "retrying: $id r$repeat" >&2
+      if ! run_one "$id" "$repeat"; then
+        echo "stopped: $id r$repeat did not archive twice" >&2
+        return 1
+      fi
     fi
   done < <(pending)
 
