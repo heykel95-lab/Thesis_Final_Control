@@ -138,6 +138,12 @@ struct ControllerConfig {
   // does not end the phase, so the run still lasts its configured duration.
   double setup_align_tolerance_deg = 2.0; // Deviation counted as aligned [deg].
   double setup_align_hold_time = 0.3;     // Time it must stay inside it [s].
+  // A second, relative criterion. An absolute tolerance is only reached by the
+  // conditions that align well, so it says nothing about the ones that do not.
+  // This one is measured against the deviation the trial started from, which
+  // is known as soon as contact is made, and is therefore comparable across
+  // conditions that end far apart.
+  double setup_align_fraction = 0.5;      // Fraction of the initial deviation.
 
   // Base-frame translational gains [x, y, z].
   Vec3 setup_Kp_diag = Vec3(40.0, 40.0, 5500.0); // [N/m].

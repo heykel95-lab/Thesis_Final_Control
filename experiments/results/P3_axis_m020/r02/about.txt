@@ -1,0 +1,8 @@
+run_id:   P3_axis_m020
+repeats:  3
+
+purpose:
+  Commanded offset +10 deg about t1, centre -20 mm along the tool axis.
+
+pass criterion:
+  Separates how far the centre sits from which direction it sits in. The alignment time is read from the log alongside the residual, so a faster correction and a smaller one are told apart.

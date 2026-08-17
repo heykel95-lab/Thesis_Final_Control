@@ -426,6 +426,8 @@ ControllerConfig readControllerConfig(const std::vector<std::string>& filenames)
       getDouble("setup_align_tolerance_deg", p.setup_align_tolerance_deg);
   p.setup_align_hold_time =
       getDouble("setup_align_hold_time", p.setup_align_hold_time);
+  p.setup_align_fraction =
+      getDouble("setup_align_fraction", p.setup_align_fraction);
   p.setup_Kp_diag = getVec3Xyz("setup_Kp", p.setup_Kp_diag);
   p.setup_Dp_diag = getVec3Xyz("setup_Dp", p.setup_Dp_diag);
   p.setup_translation_surface_frame =

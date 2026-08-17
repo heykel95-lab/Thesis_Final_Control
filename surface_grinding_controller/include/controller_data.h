@@ -89,6 +89,13 @@ struct SetupReport {
   double t_align = -1.0;            // Alignment time [s], negative if the
                                     // deviation never settled inside the
                                     // tolerance for the required hold.
+  double t_align_fraction = -1.0;   // Time the deviation first fell below the
+                                    // configured fraction of its value at
+                                    // first contact [s], negative if never.
+  double deviation_min_deg = 0.0;   // Smallest deviation reached [deg].
+  double t_deviation_min = 0.0;     // When it was reached [s]. Both are always
+                                    // defined, so a condition that never
+                                    // aligns still reports how close it came.
 
   // Defining the final pose and contact wrench in the base frame.
   Vec3 p_EE = Vec3::Zero();                 // Final TCP position [m].

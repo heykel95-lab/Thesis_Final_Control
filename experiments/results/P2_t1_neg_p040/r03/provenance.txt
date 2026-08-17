@@ -1,0 +1,6 @@
+run_id:        P2_t1_neg_p040
+repeat:        r03
+recorded:      2026-08-17T12:56:47+02:00
+commit:        da8ef31
+tree_state:    dirty
+exit_status:   0

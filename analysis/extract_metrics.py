@@ -60,6 +60,14 @@ FIELDS = (
     # Absent from archives written before the criterion was observed, and
     # printed as "not reached" when the run never settled inside it.
     ("t_align_s", re.compile(r"^\s*t_align:\s*([\d.]+)\s*s", re.M)),
+    # The relative crossing, and the closest approach with its time. The last
+    # two are written by every run, including those that never align.
+    ("t_align_fraction_s",
+     re.compile(r"^\s*t_align_fraction:\s*([\d.]+)\s*s", re.M)),
+    ("deviation_min_deg",
+     re.compile(r"^\s*deviation_min:\s*([-\d.]+)\s*deg", re.M)),
+    ("t_deviation_min_s",
+     re.compile(r"^\s*deviation_min:.*at\s*t=([-\d.]+)\s*s", re.M)),
     # Archives written before the rename carry "alignment:".
     ("deviation_before_deg",
      re.compile(r"(?:deviation|alignment):\s*before=([-\d.]+)")),

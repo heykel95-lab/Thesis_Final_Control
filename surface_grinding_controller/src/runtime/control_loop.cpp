@@ -167,6 +167,13 @@ RunResult runControlLoop(ControllerConfig& params,
   // alignment time. Neither value is read by the control law.
   double align_entered_at = -1.0;
   double t_align = -1.0;
+  // The relative criterion and the closest approach. The deviation at first
+  // contact is captured on the first set-up sample, so both are available
+  // while the phase runs and neither depends on how the phase ends.
+  double deviation_at_contact_deg = -1.0;
+  double t_align_fraction = -1.0;
+  double deviation_min_deg = 0.0;
+  double t_deviation_min = 0.0;
 
   // Initializing phase-dependent damping matrices.
   PhaseDampingCache damping = manualPhaseDampingCache(gains);
@@ -675,6 +682,23 @@ RunResult runControlLoop(ControllerConfig& params,
           align_entered_at = -1.0;
         }
 
+        // Capturing the deviation the phase started from, then the closest
+        // approach to flat and the crossing of the relative threshold.
+        if (deviation_at_contact_deg < 0.0) {
+          deviation_at_contact_deg = deviation_deg;
+          deviation_min_deg = deviation_deg;
+          t_deviation_min = phase_time;
+        }
+        if (deviation_deg < deviation_min_deg) {
+          deviation_min_deg = deviation_deg;
+          t_deviation_min = phase_time;
+        }
+        if (t_align_fraction < 0.0 &&
+            deviation_deg <
+                params.setup_align_fraction * deviation_at_contact_deg) {
+          t_align_fraction = phase_time;
+        }
+
         const bool waiting_at_gate = gate_grind_armed && !gate_grind_passed;
         if (params.debug_period > 0.0 && time >= next_debug_time &&
             !waiting_at_gate && intro_printed_for == phase) {
@@ -706,6 +730,9 @@ RunResult runControlLoop(ControllerConfig& params,
           report.df_ext_norm = df_ext_norm;
           report.m_tcp_norm = m_tcp_norm;
           report.t_align = t_align;
+          report.t_align_fraction = t_align_fraction;
+          report.deviation_min_deg = deviation_min_deg;
+          report.t_deviation_min = t_deviation_min;
           report.p_EE = p_EE;
           report.R_EE = R_EE;
           report.tool_contact_point = tool_contact_point;

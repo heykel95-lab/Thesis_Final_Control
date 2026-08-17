@@ -1,0 +1,6 @@
+run_id:        P4_frame_00deg
+repeat:        r01
+recorded:      2026-08-17T12:49:01+02:00
+commit:        da8ef31
+tree_state:    clean
+exit_status:   0

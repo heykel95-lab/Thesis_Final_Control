@@ -1,0 +1,6 @@
+run_id:        P2_t1_pos_m010
+repeat:        r02
+recorded:      2026-08-17T12:51:37+02:00
+commit:        da8ef31
+tree_state:    dirty
+exit_status:   0

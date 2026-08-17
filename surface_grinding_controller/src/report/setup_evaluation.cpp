@@ -118,6 +118,17 @@ void reportSetupResult(const ControllerConfig& params,
     printf("  t_align: not reached | tolerance=%.2f deg | hold=%.2f s\n",
            params.setup_align_tolerance_deg, params.setup_align_hold_time);
   }
+  // The relative crossing and the closest approach. The second pair is always
+  // defined, so a condition that never aligns still reports how close it came.
+  if (r.t_align_fraction >= 0.0) {
+    printf("  t_align_fraction: %.2f s | fraction=%.2f of the deviation at "
+           "contact\n", r.t_align_fraction, params.setup_align_fraction);
+  } else {
+    printf("  t_align_fraction: not reached | fraction=%.2f of the deviation "
+           "at contact\n", params.setup_align_fraction);
+  }
+  printf("  deviation_min: %.2f deg at t=%.2f s\n",
+         r.deviation_min_deg, r.t_deviation_min);
   const Vec3 align_before_surface_deg =
       (180.0 / M_PI) * R_base_surface.transpose() *
       toolSurfaceAlignmentErrorBase(
