@@ -102,6 +102,15 @@ cmd_series() {
     # than the campaign. A second failure is not transient and stops the run,
     # because powering on through a real one would only repeat it.
     if ! run_one "$id" "$repeat"; then
+      # A trial that aborts has already created its directory, and run.sh
+      # refuses to write into one that exists. An archive without a set-up
+      # report carries nothing, so it is removed before the retry.
+      tag="$(printf 'r%02d' "$repeat")"
+      if [ -d "$RESULTS/$id/$tag" ] && \
+         ! grep -q 'SETUP RESULT' "$RESULTS/$id/$tag/terminal.log" 2>/dev/null; then
+        echo "discarding the incomplete archive $id/$tag" >&2
+        rm -rf "${RESULTS:?}/$id/$tag"
+      fi
       echo "retrying: $id r$repeat" >&2
       if ! run_one "$id" "$repeat"; then
         echo "stopped: $id r$repeat did not archive twice" >&2
