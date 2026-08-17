@@ -1,0 +1,8 @@
+run_id:   P5_mag_t2_p080
+repeats:  3
+
+purpose:
+  Commanded offset +5 deg about t2, centre +80 mm along the assisting tangent.
+
+pass criterion:
+  Pairs with the 10 deg trials at the same centre positions, so whether the correction scales with the commanded offset can be read directly.

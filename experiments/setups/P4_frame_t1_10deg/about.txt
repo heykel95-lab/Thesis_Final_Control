@@ -1,0 +1,8 @@
+run_id:   P4_frame_t1_10deg
+repeats:  3
+
+purpose:
+  Surface-frame centre at 80 mm, commanded offset t1 10deg.
+
+pass criterion:
+  Should agree with the tool-frame trial at zero offset and part from it at 10 deg. The zero pair is the consistency check.

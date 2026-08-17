@@ -40,8 +40,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 from generate_setups import (COMMON, REPEATS, SETUPS, TOOL_AXIS_EE,  # noqa: E402
-                             LEVER_OFFSET_EE, offset_keys, scaled,
-                             tool_frame_lever, no_lever, write)
+                             LEVER_OFFSET_EE, SURFACE_LEVER, offset_keys,
+                             scaled, surface_frame_lever, tool_frame_lever,
+                             no_lever, write)
 
 # Commanded tilt magnitude carried by every phase [deg].
 TILT_DEG = 10.0
@@ -57,8 +58,18 @@ TILT_DEG = 10.0
 PHASE2_POSITIONS = [-0.080, 0.0, 0.080]
 
 # Centre positions along the tool axis, swept by phase 3 [m]. Zero is absent
-# because phase 2 already carries it as P2_t1_pos_p000.
-PHASE3_POSITIONS = [0.040, 0.060, 0.090]
+# because phase 2 already carries it as P2_t1_pos_p000. The sweep is symmetric
+# so the trend is read over its whole range rather than from one side, and it
+# stops at 90 mm because 120 mm loads joint 6 past its limit.
+PHASE3_POSITIONS = [-0.090, -0.060, -0.040, 0.040, 0.060, 0.090]
+
+# The lever magnitude the frame comparison and the magnitude study carry [m],
+# matching the outer position of phase 2 so the two are read against it.
+LEVER_M = 0.080
+
+# The smaller commanded tilt, for telling the response to the offset apart
+# from the response to the centre position [deg].
+SMALL_TILT_DEG = 5.0
 
 # Which trials each phase is read from. The overlap is deliberate.
 PHASES = {
@@ -71,9 +82,9 @@ PHASES = {
 }
 
 
-def tilt_keys(axis, sign):
+def tilt_keys(axis, sign, magnitude_deg=TILT_DEG):
     """Commanded offset of the given sign about the given surface tangent."""
-    magnitude = sign * TILT_DEG
+    magnitude = sign * magnitude_deg
     return offset_keys(magnitude if axis == "t1" else 0.0,
                        magnitude if axis == "t2" else 0.0)
 
@@ -127,6 +138,39 @@ def build():
             "residual, so a faster correction and a smaller one are told "
             "apart.",
         )
+
+    # The definition frame. The same physical lever is named in surface
+    # coordinates instead of tool coordinates. At zero offset the two describe
+    # one lever and must agree; at 10 deg they separate as the tool turns, and
+    # that separation is the frame and nothing else.
+    for tag, sign, magnitude in (("00deg", +1, 0.0), ("t1_10deg", +1, TILT_DEG)):
+        setups[f"P4_frame_{tag}"] = (
+            tilt_keys("t1", sign, magnitude)
+            + surface_frame_lever(*scaled(SURFACE_LEVER["t1"], LEVER_M)),
+            f"Surface-frame centre at {1000 * LEVER_M:.0f} mm, commanded "
+            f"offset {tag.replace('_', ' ')}.",
+            "Should agree with the tool-frame trial at zero offset and part "
+            "from it at 10 deg. The zero pair is the consistency check.",
+        )
+
+    # The commanded magnitude. Both tangents at half the tilt, with and
+    # without the assisting centre, so the response to the offset is told
+    # apart from the response to the centre position.
+    for axis in ("t1", "t2"):
+        for position in (0.0, LEVER_M):
+            run_id = f"P5_mag_{axis}_{position_tag(position)}"
+            setups[run_id] = (
+                tilt_keys(axis, +1, SMALL_TILT_DEG)
+                + (no_lever() if position == 0.0
+                   else tool_frame_lever(
+                       scaled(LEVER_OFFSET_EE[axis], position))),
+                f"Commanded offset +{SMALL_TILT_DEG:.0f} deg about {axis}, "
+                f"centre {1000 * position:+.0f} mm along the assisting "
+                f"tangent.",
+                "Pairs with the 10 deg trials at the same centre positions, "
+                "so whether the correction scales with the commanded offset "
+                "can be read directly.",
+            )
 
     return setups
 
