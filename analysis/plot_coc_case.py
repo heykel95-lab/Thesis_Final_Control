@@ -5,44 +5,29 @@
 
 Every case is read the same way, top to bottom:
 
-  1  alignment error   e_tilt, the angle between the tool normal and the
-                       surface normal. Its zero is the flat tool, so a curve
-                       can be read as how flat the tool ended.
-  2  normal force      the press along n_s, both as the controller commanded
-                       it and as the robot model estimated it from outside.
-  3  alignment moment  the moment about the commanded tilt axis, again
-                       commanded against estimated.
+  1  set-up rotation   the signed rotation since first contact about the
+                       commanded surface tangent.
+  2  normal force      the controller-commanded press along n_s.
+  3  alignment moment  the controller-commanded moment about the commanded
+                       surface tangent.
 
-Both moments are referred to the TCP, which is the only point at which the
-commanded and the estimated one can be compared without a contact model in
-between. The commanded moment is the rotational half of the impedance wrench,
-which the coupled law already forms at the TCP; the estimated one is the
-external moment with the base-origin lever removed.
+The set-up rotation is the same controller-response quantity used by every
+case-comparison plot. It comes from the robot orientation error referenced at
+first contact and is resolved on the calibrated surface axes. It therefore has
+no absolute flat-tool zero and is not affected by play between tool and
+gripper.
 
-Referring them to the centre of compliance instead was tried and dropped. The
-moment there is nearly constant, which is what the point shift is built to do,
-so it says little about what distinguishes the conditions. Forming it as
-r_eff x df_ext, with r_eff running from the centre to the contact point, is
-worse than uninformative: it treats the pressed face as a point force at the
-geometric extreme of the face and returns values the measured external moment
-contradicts.
-
-The sign is kept rather than reduced to a magnitude. With r_eff running from
-the centre to the contact, the moment that flattens the tool carries the same
-sign as the rotation that flattens it: a commanded tilt of +10 degrees about
-t1 is corrected by a positive rotation about t1 and shows a positive moment.
+The commanded wrench is used consistently for force and moment. The force is
+the commanded Cartesian force resolved along the surface normal. The moment is
+the commanded Cartesian moment at the TCP resolved about the selected tangent.
+No model-estimated wrench is mixed into this controller-response comparison.
 
 The normal force is negative while the tool presses. n_s points out of the
-plate, so the press runs along -n_s, and the commanded and estimated curves
-carry that sign alike.
+plate, so the commanded press runs along -n_s.
 
-Commanded and estimated are drawn in panels of their own rather than over each
-other, because they differ by an order of magnitude on the moment axis and the
-smaller of the two is unreadable when they share a scale.
-
-Each panel carries its own legend in its upper right corner. The deviation
-panel is annotated with the attitude the tool arrived with, so the figure can
-be read without the commanded offset, which the tool does not reach exactly.
+Each panel carries its own legend. The legend states the measured attitude at
+first contact, so the figure does not substitute the nominal commanded offset
+for the orientation the robot actually reached.
 """
 
 import argparse
@@ -57,7 +42,7 @@ import matplotlib.pyplot as plt
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from extract_metrics import parse_report, surface_frame, read_params  # noqa: E402
-from figure_style import (apply_style, reference_line, shared_legend,  # noqa: E402
+from figure_style import (apply_style, reference_line,  # noqa: E402
                           thin, SERIES_COLOURS)
 
 RESULTS = os.path.join(HERE, "..", "experiments", "results")
@@ -77,16 +62,6 @@ def vec(row, prefix):
     return np.array([float(row[f"{prefix}_{a}"]) for a in "xyz"])
 
 
-def configured_lever_ee(directory):
-    """Return the configured compliance-centre offset in EE coordinates [m]."""
-    params = read_params(os.path.join(directory, "params_effective"))
-    if params.get("use_virtual_compliance_center", "0").strip() in ("0", ""):
-        return np.zeros(3)
-    return np.array([
-        float(params.get(f"compliance_center_offset_ee_{a}", 0.0))
-        for a in "xyz"])
-
-
 def initial_label(directory, axis, detail):
     """Name a curve by its measured signed orientation before set-up."""
     report = parse_report(os.path.join(directory, "terminal.log"))
@@ -101,7 +76,7 @@ def initial_label(directory, axis, detail):
 
 
 def load(trial, axis):
-    """Return time, tilt error, both normal forces and both alignment moments."""
+    """Return time, set-up rotation, commanded force and commanded moment."""
     directory = os.path.join(RESULTS, trial)
     logs = glob.glob(os.path.join(directory, "logs", "*.csv"))
     if not logs:
@@ -116,23 +91,15 @@ def load(trial, axis):
         rows = [r for r in csv.DictReader(f)
                 if float(r["phase"]) == SETUP_PHASE]
 
-    time, tilt, fn_cmd, fn_ext, m_cmd, m_ext = [], [], [], [], [], []
+    time, rotation, fn_cmd, m_cmd = [], [], [], []
     for row in rows:
         time.append(float(row["time"]))
-        tilt.append(float(row["angular_deviation_deg"]))
-        df = vec(row, "external_force") - vec(row, "contact_force_bias")
+        rotation.append(float(np.degrees(vec(row, "e_R")) @ tilt_axis))
         fn_cmd.append(float(normal @ vec(row, "f")))
-        fn_ext.append(float(normal @ df))
         m_cmd.append(float(tilt_axis @ vec(row, "m")))
-        # Removing the base-origin lever, so the estimate describes the tool.
-        p_ee = vec(row, "p_EE")
-        m_tcp = (vec(row, "external_moment") - vec(row, "contact_moment_bias")
-                 - np.cross(p_ee, df))
-        m_ext.append(float(tilt_axis @ m_tcp))
 
     t = np.array(time)
-    return (t - t[0], np.array(tilt), np.array(fn_cmd), np.array(fn_ext),
-            np.array(m_cmd), np.array(m_ext))
+    return (t - t[0], np.array(rotation), np.array(fn_cmd), np.array(m_cmd))
 
 
 def main():
@@ -145,31 +112,21 @@ def main():
     os.makedirs(args.out_dir, exist_ok=True)
 
     selected = [tuple(a.split("=", 1)) for a in args.trials]
-    fig, axes = plt.subplots(5, 1, figsize=(5.8, 9.6), sharex=True)
+    fig, axes = plt.subplots(3, 1, figsize=(5.8, 6.2), sharex=True)
 
-    for index, ((trial, detail), colour) in enumerate(zip(selected,
-                                                          SERIES_COLOURS)):
+    for (trial, detail), colour in zip(selected, SERIES_COLOURS):
         directory = os.path.join(RESULTS, trial)
         label = initial_label(directory, args.axis, detail)
-        t, tilt, fn_cmd, fn_ext, m_cmd, m_ext = thin(*load(trial, args.axis))
-        for ax, series in zip(axes, (tilt, fn_cmd, fn_ext, m_cmd, m_ext)):
+        t, rotation, fn_cmd, m_cmd = thin(*load(trial, args.axis))
+        for ax, series in zip(axes, (rotation, fn_cmd, m_cmd)):
             ax.plot(t, series, color=colour, label=label)
-        # Naming the attitude the tool arrived with, at the left edge of the
-        # deviation panel. The conditions start within a tenth of a degree of
-        # each other, so the labels are stacked rather than left to overprint.
-        axes[0].annotate(f"{tilt[0]:.2f}", xy=(t[0], tilt[0]),
-                         xytext=(4, -11 * index - 4),
-                         textcoords="offset points",
-                         color=colour, fontsize=8)
-        print(f"{trial:26s} e_tilt {tilt[0]:6.2f} -> {tilt[-1]:6.2f} deg | "
-              f"Fn_ext {fn_ext[-1]:7.1f} N | M_ext {m_ext[-1]:+6.2f} N m")
+        print(f"{trial:26s} Delta_theta_set {rotation[-1]:+6.2f} deg | "
+              f"Fn_cmd {fn_cmd[-1]:7.1f} N | M_cmd {m_cmd[-1]:+6.2f} N m")
 
     sub = AXIS_SUBSCRIPT[args.axis]
-    labels = [r"$e_{\mathrm{tilt}}$ [$^\circ$]",
+    labels = [rf"$\Delta\theta_{{\mathrm{{set}},{sub}}}$ [$^\circ$]",
               r"$F_{n,\mathrm{cmd}}$ [N]",
-              r"$F_{n,\mathrm{ext}}$ [N]",
-              rf"$M_{{{sub},\mathrm{{cmd}}}}$ [N m]",
-              rf"$M_{{{sub},\mathrm{{ext}}}}$ [N m]"]
+              rf"$M_{{{sub},\mathrm{{cmd}}}}$ [N m]"]
     # The deviation panel keeps the upper right corner, which its curves leave
     # free and which the start-value annotations at the left edge do not reach.
     # The rest take whichever corner is clearest.
@@ -183,7 +140,7 @@ def main():
         # Headroom so the corner legend sits above the data rather than on it.
         # The labels name the condition in full, so they are wide and need
         # more room than a bare series name would.
-        ax.margins(y=0.85 if ax is axes[0] else 0.45)
+        ax.margins(y=1.15 if ax is axes[0] else 0.45)
         # A legend printed over the data is worse than one in a different
         # corner of the same panel.
         ax.legend(loc=corner, fontsize=7, labelspacing=0.3)

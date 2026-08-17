@@ -13,8 +13,9 @@ with a white face, a horizontal grid, and no dashed line anywhere.
   H  the same positions at half the commanded offset
 
 Case F is a two-condition comparison and is reported as a table rather than
-drawn. The sweeps carry the sign of the change, because a condition that makes
-the alignment worse is as much a result as one that improves it.
+drawn. Every case uses the signed set-up rotation about the commanded tangent.
+This controller-response metric does not depend on the reconstructed tool
+normal or its uncertain absolute zero.
 """
 
 import argparse
@@ -36,7 +37,8 @@ from figure_style import (apply_style, reference_line,  # noqa: E402
 
 apply_style()
 
-GAIN_LABEL = r"Change in angular deviation [$^\circ$]"
+ROTATION_LABEL = (r"Set-up rotation about the commanded tangent"
+                  r" [$^\circ$]")
 
 # The four groups of the sweep, in the order they are drawn. Their legend
 # labels are formed from the measured orientation at first contact below; the
@@ -102,11 +104,11 @@ def initial_label(groups, runs, axis, linebreak=False):
             f"about ${tangent}$")
 
 
-def sweep(groups, prefix, positions):
-    """Return the positions, means and deviations present for one group."""
+def sweep(groups, prefix, positions, key):
+    """Return positions and signed set-up-rotation statistics for one group."""
     x, y, err = [], [], []
     for position in positions:
-        value = stat(groups, f"{prefix}_{tag(position)}", "deviation_gain_deg")
+        value = stat(groups, f"{prefix}_{tag(position)}", key)
         if value is None:
             continue
         x.append(position)
@@ -116,7 +118,7 @@ def sweep(groups, prefix, positions):
 
 
 def draw_sweep(entries, xlabel, out_path, figsize=(5.8, 3.4),
-               ylabel=GAIN_LABEL, headroom=0.30):
+               ylabel=ROTATION_LABEL, headroom=0.30):
     fig, ax = plt.subplots(figsize=figsize)
     for (x, y, err, label), colour, marker in zip(entries, SERIES_COLOURS,
                                                   SERIES_MARKERS):
@@ -149,7 +151,7 @@ def main():
     labels, values, errors = [], [], []
     for prefix, axis in GROUPS:
         run = f"{prefix}_p000"
-        value = stat(groups, run, "deviation_gain_deg")
+        value = stat(groups, run, f"rotation_{axis}")
         if value is None:
             continue
         labels.append(initial_label(groups, [run], axis, linebreak=True))
@@ -161,7 +163,7 @@ def main():
     ax.set_xticks(range(len(labels)))
     ax.set_xticklabels(labels)
     reference_line(ax)
-    ax.set_ylabel(GAIN_LABEL)
+    ax.set_ylabel(ROTATION_LABEL)
     fig.tight_layout()
     fig.savefig(out("MAIN_D_contact.pdf"))
     fig.savefig(out("MAIN_D_contact.png"), dpi=160)
@@ -194,13 +196,12 @@ def main():
                                 initial_label(groups, runs, axis)))
         if entries:
             draw_sweep(entries, xlabel, out(name),
-                       ylabel=r"Set-up rotation about the commanded tangent"
-                              r" [$^\circ$]")
+                       ylabel=ROTATION_LABEL)
 
     # E -- the tangential sweep, all four groups on one panel.
     entries = []
     for prefix, axis in GROUPS:
-        x, y, err = sweep(groups, prefix, POSITIONS)
+        x, y, err = sweep(groups, prefix, POSITIONS, f"rotation_{axis}")
         if len(x):
             runs = [f"{prefix}_{tag(position)}" for position in x]
             entries.append((x, y, err, initial_label(groups, runs, axis)))
@@ -208,8 +209,8 @@ def main():
                out("MAIN_E_sign.pdf"), figsize=(5.8, 3.8))
 
     # G -- the tool-axis sweep. Its zero is the tool-frame trial of case E.
-    x, y, err = sweep(groups, "P3_axis", POSITIONS)
-    zero = stat(groups, "P2_t1_pos_p000", "deviation_gain_deg")
+    x, y, err = sweep(groups, "P3_axis", POSITIONS, "rotation_t1")
+    zero = stat(groups, "P2_t1_pos_p000", "rotation_t1")
     if zero is not None:
         x = np.append(x, 0)
         y = np.append(y, zero[0])
@@ -228,7 +229,7 @@ def main():
         x, y, err, runs = [], [], [], []
         for position, prefix in ((0, f"P5_mag_{axis}_p000"),
                                  (40, f"P5_mag_{axis}_p040")):
-            value = stat(groups, prefix, "deviation_gain_deg")
+            value = stat(groups, prefix, f"rotation_{axis}")
             if value is None:
                 continue
             x.append(position)
@@ -242,7 +243,7 @@ def main():
         x, y, err, runs = [], [], [], []
         for position in (0, 40):
             run = f"P2_{axis}_pos_{tag(position)}"
-            value = stat(groups, run, "deviation_gain_deg")
+            value = stat(groups, run, f"rotation_{axis}")
             if value is None:
                 continue
             x.append(position)

@@ -1,23 +1,17 @@
 #!/usr/bin/env python3
-"""Draw what one set-up press does: rotation, press force and both moments.
+"""Draw the surface-frame rotation and commanded wrench during set-up.
 
   python3 analysis/plot_setup_diagnostics.py [TRIAL=LABEL ...] [--out-dir DIR]
 
-One column per trial, four rows sharing the same time axis, so the rotation can
+One column per trial, three rows sharing the same time axis, so the rotation can
 be read against the load that produced it.
 
   rotation   the turn since first contact, resolved along the surface axes. It
              comes from joint angles alone, so no tool axis enters it.
-  force      the press, as the change in the estimated external force since
-             contact.
-  M_TCP      the estimated external moment referenced to the TCP, less its
-             value at contact. O_F_ext_hat_K reports the moment about the base
-             origin, so the lever of the TCP position is removed first;
-             leaving it in buries a 1 N m tool moment under 42 N m of reach.
-  M_contact  the same moment carried to the contact point,
-             M_contact = M_TCP + r_contact x df, with r_contact = p_TCP - p_contact.
+  force      the controller-commanded Cartesian force.
+  moment     the controller-commanded Cartesian moment at the TCP.
 
-The moments are resolved along the surface axes rather than the base axes, so a
+The wrench is resolved along the surface axes rather than the base axes, so a
 moment about a tangent sits in the same row as the rotation about it.
 """
 
@@ -46,8 +40,8 @@ AXIS_NAMES = (r"$t_1$", r"$t_2$", r"$n$")
 SETUP_PHASE = 2  # ControlPhase::kSetup
 
 DEFAULT_TRIALS = [
-    ("S1_none_t1_10deg/r01", "no lever"),
-    ("S5_normal_p090/r01", "90 mm along the tool axis"),
+    ("P2_t1_pos_m040/r01", "centre -40 mm"),
+    ("P2_t1_pos_p040/r01", "centre +40 mm"),
 ]
 
 
@@ -56,7 +50,7 @@ def vec(row, prefix):
 
 
 def load(trial):
-    """Return time, rotation, press force, and both moments in surface axes."""
+    """Return time, rotation, commanded force and moment in surface axes."""
     directory = os.path.join(RESULTS, trial)
     logs = glob.glob(os.path.join(directory, "logs", "*.csv"))
     if not logs:
@@ -65,30 +59,21 @@ def load(trial):
     frame = surface_frame(float(params["surface_tilt_x_deg"]),
                           float(params["surface_tilt_y_deg"]))
 
-    time, rotation, force, moment_tcp, moment_contact = [], [], [], [], []
+    time, rotation, force, moment = [], [], [], []
     with open(logs[0]) as f:
         for row in csv.DictReader(f):
             if float(row["phase"]) != SETUP_PHASE:
                 continue
             time.append(float(row["time"]))
             rotation.append(vec(row, "e_R"))
-            # Referencing both wrench parts to their value at first contact.
-            df = np.array(vec(row, "external_force")) - vec(row, "contact_force_bias")
-            p_ee = np.array(vec(row, "p_EE"))
-            # Removing the base-origin lever, so the moment describes the tool.
-            m_tcp = (np.array(vec(row, "external_moment"))
-                     - vec(row, "contact_moment_bias") - np.cross(p_ee, df))
-            r_contact = p_ee - np.array(vec(row, "tool_contact"))
-            force.append(df)
-            moment_tcp.append(m_tcp)
-            moment_contact.append(m_tcp + np.cross(r_contact, df))
+            force.append(vec(row, "f"))
+            moment.append(vec(row, "m"))
 
     t = np.array(time)
     return (t - t[0],
             np.degrees(np.array(rotation)) @ frame,
-            np.linalg.norm(np.array(force), axis=1),
-            np.array(moment_tcp) @ frame,
-            np.array(moment_contact) @ frame)
+            np.array(force) @ frame,
+            np.array(moment) @ frame)
 
 
 def draw_axes(ax, t, values, ylabel):
@@ -115,27 +100,23 @@ def main():
     selected = ([tuple(a.split("=", 1)) for a in args.trials]
                 if args.trials else DEFAULT_TRIALS)
 
-    fig, axes = plt.subplots(4, len(selected), figsize=(6.9, 7.4),
+    fig, axes = plt.subplots(3, len(selected), figsize=(6.9, 6.2),
                              sharex=True, squeeze=False)
 
     for column, (trial, label) in enumerate(selected):
-        t, rotation, force, m_tcp, m_contact = thin(*load(trial))
+        t, rotation, force, moment = thin(*load(trial))
         first = column == 0
         draw_axes(axes[0][column], t, rotation,
                   r"Rotation since contact [$^\circ$]" if first else "")
-        axes[1][column].plot(t, force, color=SERIES_COLOURS[0])
-        if first:
-            axes[1][column].set_ylabel("Press force [N]")
-        draw_axes(axes[2][column], t, m_tcp,
-                  r"$M_{\mathrm{TCP}}$ [N m]" if first else "")
-        draw_axes(axes[3][column], t, m_contact,
-                  r"$M_{\mathrm{contact}}$ [N m]" if first else "")
-        axes[3][column].set_xlabel(f"Time from first contact [s]\n{label}")
+        draw_axes(axes[1][column], t, force,
+                  r"$F_{\mathrm{cmd}}$ [N]" if first else "")
+        draw_axes(axes[2][column], t, moment,
+                  r"$M_{\mathrm{cmd}}$ [N m]" if first else "")
+        axes[2][column].set_xlabel(f"Time from first contact [s]\n{label}")
 
         print(f"{trial:24s} rotation t1 {rotation[-1, 0]:+6.2f} deg | "
-              f"force {force[-1]:5.1f} N | "
-              f"M_TCP t1 {m_tcp[-1, 0]:+6.2f} | "
-              f"M_contact t1 {m_contact[-1, 0]:+6.2f} N m")
+              f"F_cmd n {force[-1, 2]:+6.1f} N | "
+              f"M_cmd t1 {moment[-1, 0]:+6.2f} N m")
 
     fig.tight_layout()
     out = os.path.join(args.out_dir, "MAIN_E_diagnostics.pdf")
