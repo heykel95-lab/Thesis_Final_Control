@@ -1,0 +1,8 @@
+run_id:   A_rot_t2_15
+repeats:  3
+
+purpose:
+  Rotational stiffness 15 N m/rad about t2, commanded offset +10 deg about t2.
+
+pass criterion:
+  A stiffer rotational entry is expected to resist the alignment motion and reduce the change.
