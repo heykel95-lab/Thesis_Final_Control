@@ -6,7 +6,7 @@
 One column per trial, three rows sharing the same time axis, so the rotation can
 be read against the load that produced it.
 
-  rotation   the turn since first contact, resolved along the surface axes. It
+  rotation   the turn since the start of set-up, resolved along the surface axes. It
              comes from joint angles alone, so no tool axis enters it.
   force      the controller-commanded Cartesian force.
   moment     the controller-commanded Cartesian moment at the TCP.
@@ -107,12 +107,12 @@ def main():
         t, rotation, force, moment = thin(*load(trial))
         first = column == 0
         draw_axes(axes[0][column], t, rotation,
-                  r"Rotation since contact [$^\circ$]" if first else "")
+                  r"Set-up rotation [$^\circ$]" if first else "")
         draw_axes(axes[1][column], t, force,
                   r"$F_{\mathrm{cmd}}$ [N]" if first else "")
         draw_axes(axes[2][column], t, moment,
                   r"$M_{\mathrm{cmd}}$ [N m]" if first else "")
-        axes[2][column].set_xlabel(f"Time from first contact [s]\n{label}")
+        axes[2][column].set_xlabel(f"Time from start of set-up [s]\n{label}")
 
         print(f"{trial:24s} rotation t1 {rotation[-1, 0]:+6.2f} deg | "
               f"F_cmd n {force[-1, 2]:+6.1f} N | "

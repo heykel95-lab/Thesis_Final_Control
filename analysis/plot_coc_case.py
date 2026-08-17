@@ -5,7 +5,7 @@
 
 Every case is read the same way, top to bottom:
 
-  1  set-up rotation   the signed rotation since first contact about the
+  1  set-up rotation   the signed rotation since the start of set-up about the
                        commanded surface tangent.
   2  normal force      the controller-commanded press along n_s.
   3  alignment moment  the controller-commanded moment about the commanded
@@ -13,7 +13,7 @@ Every case is read the same way, top to bottom:
 
 The set-up rotation is the same controller-response quantity used by every
 case-comparison plot. It comes from the robot orientation error referenced at
-first contact and is resolved on the calibrated surface axes. It therefore has
+the clearance transition and is resolved on the calibrated surface axes. It therefore has
 no absolute flat-tool zero and is not affected by play between tool and
 gripper.
 
@@ -26,7 +26,7 @@ The normal force is negative while the tool presses. n_s points out of the
 plate, so the commanded press runs along -n_s.
 
 Each panel carries its own legend. The legend states the measured attitude at
-first contact, so the figure does not substitute the nominal commanded offset
+the start of set-up, so the figure does not substitute the nominal commanded offset
 for the orientation the robot actually reached.
 """
 
@@ -144,7 +144,7 @@ def main():
         # A legend printed over the data is worse than one in a different
         # corner of the same panel.
         ax.legend(loc=corner, fontsize=7, labelspacing=0.3)
-    axes[-1].set_xlabel("Time from first contact [s]")
+    axes[-1].set_xlabel("Time from start of set-up [s]")
     fig.tight_layout()
     out = os.path.join(args.out_dir, f"{args.out}.pdf")
     fig.savefig(out)

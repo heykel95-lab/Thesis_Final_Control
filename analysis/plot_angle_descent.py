@@ -53,7 +53,7 @@ DEFAULT_TRIALS = [
 
 
 def load(trial):
-    """Return set-up time from contact and the tool-to-plane angle [s, deg]."""
+    """Return time from set-up entry and the tool-to-plane angle [s, deg]."""
     matches = glob.glob(os.path.join(RESULTS, trial, "logs", "*.csv"))
     if not matches:
         raise SystemExit(f"no log csv under {trial}")
@@ -92,7 +92,7 @@ def main():
         print(f"{trial:24s} {angle[0]:5.2f} -> {angle[-1]:4.2f} deg")
 
     reference_line(ax)
-    ax.set_xlabel("Time from first contact [s]")
+    ax.set_xlabel("Time from start of set-up [s]")
     ax.set_ylabel(r"Angular deviation [$^\circ$]")
     ax.set_ylim(bottom=-0.4)
     shared_legend(fig, [ax], ncol=2)
