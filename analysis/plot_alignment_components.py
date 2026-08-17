@@ -88,7 +88,7 @@ def main():
                     label=f"{name}, {label}")
 
     reference_line(ax)
-    ax.set_xlabel("Time from first contact [s]")
+    ax.set_xlabel("Time from start of set-up [s]")
     ax.set_ylabel(r"Angular deviation [$^\circ$]")
     shared_legend(fig, [ax], ncol=2, bottom=0.17)
 

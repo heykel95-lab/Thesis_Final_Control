@@ -175,9 +175,9 @@ def surface_frame(tilt_x_deg, tilt_y_deg):
 
 
 def contact_rotation(trial, params):
-    """Return the set-up rotation since first contact in surface axes [deg].
+    """Return the set-up rotation since the start of set-up in surface axes [deg].
 
-    The set-up phase holds the orientation reached at first contact as its
+    The set-up phase holds the orientation captured at the clearance transition as its
     reference, so the logged orientation error is the rotation away from it.
     That comes from joint angles alone: no tool axis and no plane zero enter
     it, which matters because the tool axis is only known to a degree or two

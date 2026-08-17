@@ -7,15 +7,16 @@ One figure per case, matched to the thesis figure style: Latin Modern with
 Computer Modern maths, the black-red-blue-yellow series order, open markers
 with a white face, a horizontal grid, and no dashed line anywhere.
 
-  D  the contact alone on each tangent, at both commanded signs
+  C  the selected and fixed lever across four commanded directions
+  D  the zero-lever response on each tangent, at both commanded signs
   E  the centre swept along the assisting tangent, all four groups together
+  F  the tool-frame and surface-frame lever definitions
   G  the centre swept along the tool axis
   H  the same positions at half the commanded offset
 
-Case F is a two-condition comparison and is reported as a table rather than
-drawn. Every case uses the signed set-up rotation about the commanded tangent.
-This controller-response metric does not depend on the reconstructed tool
-normal or its uncertain absolute zero.
+Every case uses the signed set-up rotation about the commanded tangent. This
+controller-response metric does not depend on the reconstructed tool normal or
+its uncertain absolute zero.
 """
 
 import argparse
@@ -41,7 +42,7 @@ ROTATION_LABEL = (r"Set-up rotation about the commanded tangent"
                   r" [$^\circ$]")
 
 # The four groups of the sweep, in the order they are drawn. Their legend
-# labels are formed from the measured orientation at first contact below; the
+# labels are formed from the measured orientation at the start of set-up below; the
 # nominal commanded offset is deliberately not used as a substitute for it.
 GROUPS = [
     ("P2_t1_pos", "t1"),
@@ -146,6 +147,31 @@ def main():
     groups = load()
     out = lambda name: os.path.join(args.out_dir, name)
 
+    # C -- reported direction-rule comparison. The two principal-axis values
+    # are shared Case-E references; the diagonal values are the Case-C means.
+    directions = [r"about $t_1$", r"$-45^\circ$", r"$+45^\circ$",
+                  r"about $t_2$"]
+    selected = np.array([7.87, 4.46, 4.85, 4.43])
+    fixed = np.array([7.87, 4.39, 4.80, -1.61])
+    x = np.arange(len(directions))
+    width = 0.34
+    fig, ax = plt.subplots(figsize=(5.8, 3.3))
+    ax.bar(x - width / 2, selected, width, color=SERIES_COLOURS[0],
+           edgecolor="#1a1a1a", linewidth=0.8, label="selected lever")
+    ax.bar(x + width / 2, fixed, width, color=SERIES_COLOURS[1],
+           edgecolor="#1a1a1a", linewidth=0.8, label=r"fixed $t_1$ lever")
+    reference_line(ax)
+    ax.set_xticks(x)
+    ax.set_xticklabels(directions)
+    ax.set_xlabel("Commanded rotation direction")
+    ax.set_ylabel(ROTATION_LABEL)
+    ax.legend(loc="upper right")
+    fig.tight_layout()
+    fig.savefig(out("MAIN_C_direction.pdf"))
+    fig.savefig(out("MAIN_C_direction.png"), dpi=160)
+    plt.close(fig)
+    print(f"wrote {os.path.abspath(out('MAIN_C_direction.pdf'))}")
+
     # D -- the contact alone, one bar per group at the zero position.
     fig, ax = plt.subplots(figsize=(5.6, 3.2))
     labels, values, errors = [], [], []
@@ -207,6 +233,32 @@ def main():
             entries.append((x, y, err, initial_label(groups, runs, axis)))
     draw_sweep(entries, "Centre position along the assisting tangent [mm]",
                out("MAIN_E_sign.pdf"), figsize=(5.8, 3.8))
+
+    # F -- reported frame-definition comparison at zero and +10 degrees.
+    commands = ["none", r"$+10^\circ$ about $t_1$"]
+    tool = np.array([-0.06, 7.87])
+    tool_sd = np.array([0.01, 0.01])
+    surface = np.array([-1.05, 0.13])
+    surface_sd = np.array([0.02, 0.01])
+    x = np.arange(len(commands))
+    fig, ax = plt.subplots(figsize=(5.6, 3.2))
+    ax.bar(x - width / 2, tool, width, yerr=tool_sd, capsize=3,
+           color=SERIES_COLOURS[0], edgecolor="#1a1a1a", linewidth=0.8,
+           label="tool frame")
+    ax.bar(x + width / 2, surface, width, yerr=surface_sd, capsize=3,
+           color=SERIES_COLOURS[1], edgecolor="#1a1a1a", linewidth=0.8,
+           label="surface frame")
+    reference_line(ax)
+    ax.set_xticks(x)
+    ax.set_xticklabels(commands)
+    ax.set_xlabel("Commanded orientation offset")
+    ax.set_ylabel(r"Set-up rotation about $t_1$ [$^\circ$]")
+    ax.legend(loc="upper left")
+    fig.tight_layout()
+    fig.savefig(out("MAIN_F_frame.pdf"))
+    fig.savefig(out("MAIN_F_frame.png"), dpi=160)
+    plt.close(fig)
+    print(f"wrote {os.path.abspath(out('MAIN_F_frame.pdf'))}")
 
     # G -- the tool-axis sweep. Its zero is the tool-frame trial of case E.
     x, y, err = sweep(groups, "P3_axis", POSITIONS, "rotation_t1")

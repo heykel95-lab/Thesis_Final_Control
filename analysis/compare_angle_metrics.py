@@ -9,12 +9,12 @@ Two quantities describe the same event and are measured from different data.
              an absolute zero, so a curve can be read as "flat" or "not flat",
              but it carries the tool-axis and plane calibration with it.
 
-  angular    the deviation from the orientation held at first contact. It
+  angular    the deviation from the orientation held at the start of set-up. It
   deviation  comes from joint angles alone, so no calibration enters, but it
              only says how far the tool turned, not where it ended up.
 
 The left panel overlays them for one trial, with the deviation subtracted from
-the alignment at contact so both start at the same value. The right panel puts
+the alignment at the beginning of set-up so both start at the same value. The right panel puts
 the magnitude of the alignment gain against the deviation for every archived
 trial, split by whether the trial improved or worsened the alignment.
 
@@ -87,8 +87,8 @@ def load_trial(trial_dir):
     total = ("angular_deviation_deg" if "angular_deviation_deg" in d
              else "alignment_angle_deg")
     alignment = d[total][setup]
-    # Calculating the deviation from the orientation the set-up phase holds
-    # frozen as its reference from first contact [deg].
+    # Calculating the deviation from the orientation captured at the geometric
+    # clearance transition and held during set-up [deg].
     deviation = np.degrees(np.sqrt(d["e_R_x"][setup] ** 2 +
                              d["e_R_y"][setup] ** 2 +
                              d["e_R_z"][setup] ** 2))
@@ -123,11 +123,13 @@ def main():
 
     # Left: both descriptions of the same trial, on one absolute scale.
     t, alignment, deviation = thin(t, alignment, deviation)
-    axes[0].plot(t, alignment, color=SERIES_BLACK, label="angular deviation")
+    axes[0].plot(t, alignment, color=SERIES_BLACK,
+                 label="EE-inferred angular deviation")
     axes[0].plot(t, alignment[0] - deviation, color=SERIES_RED,
-                 label=r"deviation at contact $-$ end-effector deviation")
+                 label=(r"deviation at start of set-up $-$ "
+                        r"end-effector rotation"))
     reference_line(axes[0])
-    axes[0].set_xlabel("Time from first contact [s]")
+    axes[0].set_xlabel("Time from start of set-up [s]")
     axes[0].set_ylabel(r"Angle [$^\circ$]")
 
     # Right: the same comparison reduced to one point per archived trial. The
@@ -142,7 +144,7 @@ def main():
     axes[1].plot(deviation_final[~improved], -gain[~improved], linestyle="none",
                  marker="s", color=SERIES_RED, markerfacecolor="white",
                  markeredgewidth=1.0, label="deviation increased")
-    axes[1].set_xlabel(r"End-effector deviation [$^\circ$]")
+    axes[1].set_xlabel(r"End-effector rotation since start of set-up [$^\circ$]")
     axes[1].set_ylabel(r"Deviation change, magnitude [$^\circ$]")
 
 
