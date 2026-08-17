@@ -1,0 +1,8 @@
+run_id:   B_trans_t1_0300
+repeats:  3
+
+purpose:
+  Translational stiffness 300 N/m across t1, commanded offset +10 deg about t1.
+
+pass criterion:
+  Separates the translational response coupled to the alignment motion from the rotational one.

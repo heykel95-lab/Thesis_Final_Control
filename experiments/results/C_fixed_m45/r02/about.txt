@@ -1,0 +1,8 @@
+run_id:   C_fixed_m45
+repeats:  3
+
+purpose:
+  Commanded offset +10 deg at -45 deg from t1, with the offset held at the one selected for t1.
+
+pass criterion:
+  Paired with the selected trial at the same direction, so the cost of not turning the offset with the command is measured.

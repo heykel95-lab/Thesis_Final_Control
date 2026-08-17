@@ -98,6 +98,16 @@ VECTOR_ROWS = (
 )
 
 AXES = ("t1", "t2", "n")
+AXES_XYZ = ("x", "y", "z")
+
+# Samples averaged at the end of the phase, one half second at 1 kHz.
+SETTLED_SAMPLES = 500
+
+# A tool is counted flat when the TCP stands no more than this above the
+# height a flat face would give. The measured conditions separate cleanly:
+# those that end flat sit within 2 mm of it, those that end tilted stand 5 to
+# 10 mm higher, and nothing falls between.
+FLAT_TOLERANCE_MM = 3.0
 
 
 def read_params(directory):
@@ -205,6 +215,52 @@ def contact_rotation(trial, params):
     }
 
 
+def tool_flatness(trial, params):
+    """Return how far the TCP stands above the plane at the end of set-up [mm].
+
+    A tool lying flat on the surface puts its grinding face on the plane, so
+    the TCP stands one face offset above it. A tool resting on one edge stands
+    higher, by the half dimension it is tilted over times the sine of the tilt:
+    the face is 60 mm half-length across t1 and 20 mm half-width across t2, so
+    a ten degree tilt lifts the TCP by about 10 mm in the first case and 3.5 mm
+    in the second.
+
+    This uses the TCP position and the plane alone. Neither the tool-axis
+    calibration nor the end-effector orientation enters it, so it is not
+    affected by the play between the tool and the gripper, which is what makes
+    it the only quantity here that says whether the tool itself ended flat.
+    """
+    logs = glob.glob(os.path.join(trial, "logs", "*.csv"))
+    if not logs:
+        return {}
+    try:
+        frame = surface_frame(float(params["surface_tilt_x_deg"]),
+                              float(params["surface_tilt_y_deg"]))
+        p_s = np.array([float(params[f"surface_point_{a}"]) for a in AXES_XYZ])
+        face = float(params["tool_contact_face_center_ee_z"])
+    except (KeyError, ValueError):
+        return {}
+
+    heights = []
+    with open(logs[0]) as f:
+        for record in csv.DictReader(f):
+            if float(record["phase"]) != PHASE_SET_UP:
+                continue
+            p_ee = np.array([float(record[f"p_EE_{a}"]) for a in AXES_XYZ])
+            heights.append(float(frame[:, 2] @ (p_ee - p_s)))
+    if len(heights) < SETTLED_SAMPLES:
+        return {}
+
+    height = float(np.mean(heights[-SETTLED_SAMPLES:]))
+    # What the tool stands above the height a flat face would give.
+    excess_mm = 1000.0 * (height - face)
+    return {
+        "tcp_above_plane_mm": 1000.0 * height,
+        "tool_excess_height_mm": excess_mm,
+        "tool_flat": "yes" if excess_mm <= FLAT_TOLERANCE_MM else "no",
+    }
+
+
 def read_provenance(path):
     row = {}
     if not os.path.isfile(path):
@@ -247,6 +303,7 @@ def collect(results_dir):
             report = parse_report(os.path.join(trial, "terminal.log"))
             row.update(report)
             row.update(contact_rotation(trial, params))
+            row.update(tool_flatness(trial, params))
             if "deviation_gain_deg" not in report:
                 row["note"] = "no set-up report in transcript"
             rows.append(row)

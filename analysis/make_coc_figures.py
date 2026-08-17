@@ -57,10 +57,12 @@ def load():
     with open(METRICS) as f:
         for row in csv.DictReader(f):
             run = row["run_id"]
-            if not run.startswith(("P2_", "P3_", "P4_", "P5_")):
+            if not run.startswith(("A_", "B_", "C_", "P2_", "P3_",
+                                   "P4_", "P5_", "P6_")):
                 continue
             for key in ("deviation_gain_deg", "deviation_after_deg",
-                        "deviation_before_deg"):
+                        "deviation_before_deg",
+                        "contact_rotation_t1_deg", "contact_rotation_t2_deg"):
                 try:
                     groups[run][key].append(float(row[key]))
                 except (KeyError, ValueError):
@@ -68,9 +70,13 @@ def load():
     return groups
 
 
+ROTATION_KEY = {"rotation_t1": "contact_rotation_t1_deg",
+                "rotation_t2": "contact_rotation_t2_deg"}
+
+
 def stat(groups, run, key):
     """Mean and sample standard deviation, or None when the run is missing."""
-    values = groups.get(run, {}).get(key, [])
+    values = groups.get(run, {}).get(ROTATION_KEY.get(key, key), [])
     if not values:
         return None
     sd = statistics.stdev(values) if len(values) > 1 else 0.0
@@ -94,7 +100,8 @@ def sweep(groups, prefix, positions):
     return np.array(x), np.array(y), np.array(err)
 
 
-def draw_sweep(entries, xlabel, out_path, figsize=(5.8, 3.4)):
+def draw_sweep(entries, xlabel, out_path, figsize=(5.8, 3.4),
+               ylabel=GAIN_LABEL):
     fig, ax = plt.subplots(figsize=figsize)
     for (x, y, err, label), colour, marker in zip(entries, SERIES_COLOURS,
                                                   SERIES_MARKERS):
@@ -103,7 +110,7 @@ def draw_sweep(entries, xlabel, out_path, figsize=(5.8, 3.4)):
                     capsize=2.5, label=label)
     reference_line(ax)
     ax.set_xlabel(xlabel)
-    ax.set_ylabel(GAIN_LABEL)
+    ax.set_ylabel(ylabel)
     # Headroom so the corner legend sits above the data rather than on it.
     ax.margins(y=0.30)
     ax.legend(loc="upper right")
@@ -144,6 +151,34 @@ def main():
     fig.savefig(out("MAIN_D_contact.png"), dpi=160)
     plt.close(fig)
     print(f"wrote {os.path.abspath(out('MAIN_D_contact.pdf'))}")
+
+    # A -- the rotational entry, drawn as the rotation the robot made.
+    for case, key, xlabel, values, name in (
+            ("A", "A_rot", r"Rotational stiffness about the commanded tangent"
+             " [N m/rad]", [5, 15, 50], "MAIN_A_KR.pdf"),
+            ("B", "B_trans", r"Translational stiffness across the commanded"
+             " tangent [N/m]", [300, 800, 2000], "MAIN_B_KP.pdf")):
+        entries = []
+        for axis, label in (("t1", r"$+10^\circ$ about $t_1$"),
+                            ("t2", r"$+10^\circ$ about $t_2$")):
+            x, y, err = [], [], []
+            for v in values:
+                # The shared value of every other case is the Case-D trial.
+                run = (f"P2_{axis}_pos_p000" if v in (5, 2000)
+                       else f"{key}_{axis}_{v:02d}" if case == "A"
+                       else f"{key}_{axis}_{v:04d}")
+                stats = stat(groups, run, f"rotation_{axis}")
+                if stats is None:
+                    continue
+                x.append(v)
+                y.append(stats[0])
+                err.append(stats[1])
+            if x:
+                entries.append((np.array(x), np.array(y), np.array(err), label))
+        if entries:
+            draw_sweep(entries, xlabel, out(name),
+                       ylabel=r"Set-up rotation about the commanded tangent"
+                              r" [$^\circ$]")
 
     # E -- the tangential sweep, all four groups on one panel.
     entries = []

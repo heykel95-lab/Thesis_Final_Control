@@ -1,0 +1,8 @@
+run_id:   B_combined_t2
+repeats:  3
+
+purpose:
+  Lowest translational and highest rotational stiffness together, commanded offset +10 deg about t2.
+
+pass criterion:
+  Whether the two act independently at the tested pair.

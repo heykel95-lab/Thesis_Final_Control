@@ -1,0 +1,16 @@
+# C_fixed_p45
+# Applied on top of surface_grinding_controller/params/.
+# Only keys listed here differ from the nominal set.
+setup_translation_surface_frame = 1
+pause_hold_translation_surface_frame = 1
+pause_hold_rotation_surface_frame = 1
+pause_before_setup = 0
+pause_before_grind = 1
+use_virtual_compliance_center = 1
+tool_target_offset_tangent1_deg = 7.1
+tool_target_offset_tangent2_deg = 7.1
+compliance_center_in_tool_frame = 1
+compliance_lever_in_surface_frame = 0
+compliance_center_offset_ee_x = 0.000000
+compliance_center_offset_ee_y = -0.040000
+compliance_center_offset_ee_z = 0.000000
