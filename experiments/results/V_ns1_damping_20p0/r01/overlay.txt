@@ -1,0 +1,20 @@
+# V_ns1_damping_20p0
+# Applied on top of surface_grinding_controller/params/.
+# Only keys listed here differ from the nominal set.
+q_init_case = horizontal_table_search
+disturbance_cues_enabled = 0
+disturbance_auto_enabled = 1
+disturbance_link = 3
+disturbance_point_link_x = 0.0
+disturbance_point_link_y = 0.0
+disturbance_point_link_z = 0.150
+disturbance_force = 40.0
+disturbance_direction_sign = 1.0
+disturbance_max_tau_norm = 5.0
+disturbance_release_ramp_time = 1.0
+disturbance_push_time = 1.0
+disturbance_hold_time = 3.0
+disturbance_release_time = 11.0
+experiment_duration = 14.0
+nullspace_mode = 1
+nullspace_damping = 20.0

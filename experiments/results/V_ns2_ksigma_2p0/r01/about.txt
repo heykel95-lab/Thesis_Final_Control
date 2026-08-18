@@ -1,0 +1,8 @@
+Video trial for the disturbance case, null-space mode 2.
+
+Identical to V_ns0_baseline with the smallest-singular-value bias only, at
+nullspace_sigma_gain = 2.0 N m. Undamped, so the elbow is driven rather than
+held.
+
+What it shows: whether the commanded null-space direction is actually followed
+by joint motion. Torque without motion is joint friction, not conditioning.

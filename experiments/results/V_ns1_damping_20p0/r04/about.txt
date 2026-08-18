@@ -1,0 +1,15 @@
+Video trial for the disturbance case, null-space mode 1.
+
+Identical to V_ns0_baseline with projected null-space damping at
+nullspace_damping = 20.0 N m s/rad.
+
+The earlier setup at 2.0 N m s/rad is kept under V_ns1_damping_2p0, where its
+two archived trials record what that value did: nothing visible. Damping
+opposes null-space velocity, so under a steady push the elbow settles into a
+slow drift the damping torque barely resists, and mode 1 swung 22.6 deg against
+mode 0's 22.7. Raising the coefficient tenfold cuts the drift velocity by the
+same factor, which is what makes the mode readable on camera.
+
+Note that 20.0 is far outside the 1.0 to 4.0 the coefficient was ever swept at.
+Nothing in the controller clamps it, and the law multiplies measured joint
+velocity, so watch the commanded torque for chatter.

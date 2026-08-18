@@ -1,0 +1,9 @@
+Video trial for the disturbance case, null-space mode 0.
+
+Plain pose hold at the table posture with the automatic point force on link 3:
+20 N at 0.1 m along the link z axis, raised over 5 to 7 s, held to 8 s, released
+over a 1 s ramp, and the run continues to 18 s. The timing is the one the
+disturbance case ran with in MyController (MAIN_NS0_baseline).
+
+What it shows: the redundant axis with no null-space torque at all. This is the
+reference the two other video runs are watched against.
