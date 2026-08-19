@@ -1,6 +1,6 @@
 run_id:        P2_t1_pos_m040
 repeat:        r02
-recorded:      2026-08-17T12:56:57+02:00
-commit:        da8ef31
+recorded:      2026-08-19T13:37:45+02:00
+commit:        de853dc
 tree_state:    dirty
-exit_status:   255
+exit_status:   0
