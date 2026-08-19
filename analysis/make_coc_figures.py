@@ -180,7 +180,7 @@ def main():
     reference_line(ax)
     ax.set_xticks(x)
     ax.set_xticklabels(directions)
-    ax.set_xlabel("Commanded rotation direction")
+    ax.set_xlabel(r"Commanded rotation direction [$^\circ$]")
     ax.set_ylabel(ROTATION_LABEL)
     ax.legend(loc="upper right")
     fig.tight_layout()
