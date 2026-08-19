@@ -271,7 +271,7 @@ def main():
     reference_line(ax)
     ax.set_xticks(x)
     ax.set_xticklabels(commands)
-    ax.set_xlabel("Commanded offset")
+    ax.set_xlabel(r"Commanded offset [$^\circ$]")
     ax.set_ylabel(r"$\Delta\theta_{\mathrm{set},t_1}$ [$^\circ$]")
     ax.legend(loc="upper left")
     fig.tight_layout()
