@@ -1,0 +1,18 @@
+# ====================================================================
+# SAFETY -- Franka collision and reflex thresholds
+# ====================================================================
+# Applied through robot.setCollisionBehavior(). They are finite limits, not a
+# safety bypass -- raise them only under supervision. Cross-check them against
+# the set-up press: peak preload is roughly setup_Kp_z * setup_push_end
+# (SetUp_Phase.txt), which must stay below the force thresholds.
+
+# 1 = apply the thresholds below instead of the Franka defaults.
+use_custom_collision_behavior = 1
+
+# Joint-side torque thresholds [Nm], equal on all 7 axes.
+collision_torque_acc = 140.0
+collision_torque_nom = 140.0
+
+# Cartesian force thresholds [N | Nm], equal on all 6 axes.
+collision_force_acc = 240.0
+collision_force_nom = 240.0

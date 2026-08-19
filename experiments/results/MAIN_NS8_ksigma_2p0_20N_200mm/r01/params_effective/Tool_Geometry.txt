@@ -1,0 +1,30 @@
+# ====================================================================
+# TOOL GEOMETRY -- the rectangular grinding face, in the EE frame
+# ====================================================================
+# Defines the contact point that clearance, contact detection and the
+# controlled point are computed from. Its axis is in Tool_Orientation.txt.
+
+# 1 = control the tool contact point instead of the EE.
+use_tool_contact_point_control = 1
+
+# 1 = pick the active edge from the geometry each cycle.
+auto_select_tool_contact_edge = 1
+
+# Face center [m], 20 mm along +Z_EE from the hand.
+tool_contact_face_center_ee_x = 0.0
+tool_contact_face_center_ee_y = 0.0
+tool_contact_face_center_ee_z = 0.020
+
+# Half-width along X_EE [m]: 40 mm total.
+tool_contact_half_width_ee_x = 0.020
+tool_contact_half_width_ee_y = 0.0
+tool_contact_half_width_ee_z = 0.0
+
+# Half-length along Y_EE [m]: 120 mm total.
+tool_contact_half_length_ee_x = 0.0
+tool_contact_half_length_ee_y = 0.060
+tool_contact_half_length_ee_z = 0.0
+
+# Corners within this normal-distance difference count as one edge [m].
+# Clearance still uses the closest individual corner.
+tool_contact_feature_tie_tolerance = 0.0001

@@ -17,7 +17,11 @@ surface_grinding_controller/logs/
 experiments/results/**/*.csv
 
 # Regenerated from the archives by analysis/extract_metrics.py.
-experiments/derived/
+experiments/derived/*
+# One exception. The null-space trials keep their raw logs out of the history
+# like every other trial, so this small table is the only tracked record of the
+# values the thesis reports for them.
+!experiments/derived/MAIN_NS_automatic_summary.csv
 
 # Local agent settings
 .claude/settings.local.json

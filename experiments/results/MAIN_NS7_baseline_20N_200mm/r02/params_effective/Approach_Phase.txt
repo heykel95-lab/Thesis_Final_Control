@@ -1,0 +1,74 @@
+# ====================================================================
+# APPROACH PHASE (1) -- orient the tool, then descend to the surface
+# ====================================================================
+# Descend stops at descend_surface_clearance, which lives with the gate it
+# feeds in Clearance_Gate.txt. Impedance below is in the surface frame
+# [tangent1, tangent2, normal] and covers both steps.
+
+# 0 = skip orient and start at descend.
+use_approach_orient = 1
+
+# --------------------------------------------------------------------
+# Orient step
+# --------------------------------------------------------------------
+# Minimum time before it may switch to descend [s].
+approach_orient_min_time = 0.5
+
+# Tool-axis error at which it switches to descend [rad].
+approach_orient_error_threshold = 0.035
+
+# Gate for the spin about the tool axis [rad]. Separate because the axis error
+# has a floor near 1.5 deg on this system and the spin does not: sharing the
+# threshold above let the spin through at 2 deg while it was still converging,
+# and the clearance capture then froze that error into the contact reference.
+approach_orient_spin_error_threshold = 0.009
+
+# Hand over anyway after this long [s]. The axis error settles at a value set
+# by the commanded tilt against approach_KR: 1.3 deg at a 0 deg command, 2.1 at
+# 10 deg. The 10 deg conditions therefore never reach the gate above, and the
+# step would wait forever. The plots use the measured first-contact angle, so
+# handing over at the settled value is the honest end of the phase.
+approach_orient_timeout = 5.0
+
+# Slew rate for the commanded orientation [deg/s]. Without it the whole
+# rotation is a step at t = 0; a commanded spin about the tool axis can be
+# most of a half turn and trips the power limit against approach_KR.
+approach_orient_max_rate_deg = 20.0
+
+# --------------------------------------------------------------------
+# Impedance (orient and descend)
+# --------------------------------------------------------------------
+# Translational stiffness [N/m].
+approach_Kp_normal = 150.0
+approach_Kp_tangent1 = 150.0
+approach_Kp_tangent2 = 150.0
+
+# Rotational stiffness [Nm/rad].
+approach_KR_normal = 90.0
+approach_KR_tangent1 = 90.0
+approach_KR_tangent2 = 90.0
+
+# Translational damping fallback [Ns/m].
+approach_Dp_normal = 20.0
+approach_Dp_tangent1 = 20.0
+approach_Dp_tangent2 = 20.0
+
+# Rotational damping fallback [Nms/rad].
+approach_DR_normal = 12.0
+approach_DR_tangent1 = 12.0
+approach_DR_tangent2 = 12.0
+
+# 1 = compute damping online instead of using the fallbacks above.
+approach_auto_damping = 1
+
+# Damping ratio for that computation. 1.0 = critical.
+approach_auto_damping_factor = 1.9
+
+# --------------------------------------------------------------------
+# Descend step
+# --------------------------------------------------------------------
+# Speed into the surface along -normal [m/s].
+descend_speed = 0.1
+
+# Travel after which the run gives up [m].
+descend_max_distance = 0.640

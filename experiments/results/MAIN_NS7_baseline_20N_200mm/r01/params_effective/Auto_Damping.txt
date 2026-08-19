@@ -1,0 +1,16 @@
+# ====================================================================
+# AUTO-DAMPING policy -- shared limits
+# ====================================================================
+# Online damping is D = factor*2*sqrt(M*K) from the libfranka task-space
+# inertia. Each phase owns its own toggle and factor (Approach_Phase,
+# SetUp_Phase, hold, Clearance_Gate); only the limits below are shared.
+# The manual Dp/DR next to each K is the fallback.
+
+# Upper limit on any computed coefficient [Ns/m | Nms/rad].
+auto_damping_max = 400.0
+
+# 0 = manual damping is only a fallback. 1 = it is also a per-axis floor.
+auto_damping_min_from_manual = 0
+
+# 1 = print computed damping next to the manual values.
+print_auto_damping = 1

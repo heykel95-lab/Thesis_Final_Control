@@ -1,0 +1,47 @@
+# ====================================================================
+# CLEARANCE GATE -- stop above the surface, then wait for Enter
+# ====================================================================
+# The clearance ends the descend step; the gates freeze the tool there, and
+# before grind, until a bare Enter continues. e+Enter stops instead.
+
+# Clearance at which the contact point hands over to set up [m].
+descend_surface_clearance = 0.020
+
+# 1 = wait for Enter before the phase.
+pause_before_set_up = 1
+pause_before_grind = 1
+
+# --------------------------------------------------------------------
+# Hold while paused: position, base frame [x, y, z]
+# --------------------------------------------------------------------
+# Stiffness [N/m].
+pause_hold_Kp_x = 5000.0
+pause_hold_Kp_y = 5000.0
+pause_hold_Kp_z = 5000.0
+
+# Damping target [Ns/m].
+pause_hold_Dp_x = 200.0
+pause_hold_Dp_y = 200.0
+pause_hold_Dp_z = 200.0
+
+# --------------------------------------------------------------------
+# Hold while paused: orientation, surface frame [t1, t2, normal]
+# --------------------------------------------------------------------
+# Stiffness [Nm/rad]. 
+# KR should havee the same values as the approach phase.
+# Or else the Orientation won't be the same as in the orientation phase from the start because diffrent Rotational Gains
+
+pause_hold_KR_tangent1 = 90.0
+pause_hold_KR_tangent2 = 90.0
+pause_hold_KR_normal = 90.0
+
+# Damping target [Nms/rad].
+pause_hold_DR_tangent1 = 12.0
+pause_hold_DR_tangent2 = 12.0
+pause_hold_DR_normal = 12.0
+
+# --------------------------------------------------------------------
+# Auto damping
+# --------------------------------------------------------------------
+# 0 = use the damping above. 1 = fit it online toward those values.
+pause_hold_auto_damping = 1

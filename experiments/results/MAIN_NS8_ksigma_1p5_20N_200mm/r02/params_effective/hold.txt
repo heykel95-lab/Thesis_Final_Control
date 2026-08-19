@@ -1,0 +1,53 @@
+# ====================================================================
+# HOLD gains -- per axis of the base frame [x, y, z]
+# ====================================================================
+# Applies when the startup menu picks hold. Hold locks the pose it starts
+# from: position with hold_Kp/hold_Dp, orientation with hold_KR/hold_DR
+# (rotations about base x, y, z). From hold, g+Enter hand-guides the tool and
+# p+Enter re-captures the pose. The nullspace mode is asked for at startup and
+# configured in Nullspace.txt.
+
+# --------------------------------------------------------------------
+# Position
+# --------------------------------------------------------------------
+# Stiffness [N/m].
+hold_Kp_x = 2000.0
+hold_Kp_y = 2000.0
+hold_Kp_z = 2000.0
+
+# Damping [Ns/m]. Commanded directly while hold_auto_damping = 0.
+hold_Dp_x = 50.0
+hold_Dp_y = 50.0
+hold_Dp_z = 50.0
+
+# --------------------------------------------------------------------
+# Orientation
+# --------------------------------------------------------------------
+# Stiffness [Nm/rad].
+hold_KR_x = 50.0
+hold_KR_y = 50.0
+hold_KR_z = 50.0
+
+# Damping [Nms/rad]. Commanded directly while hold_auto_damping = 0.
+hold_DR_x = 8.0
+hold_DR_y = 8.0
+hold_DR_z = 8.0
+
+# --------------------------------------------------------------------
+# Auto damping
+# --------------------------------------------------------------------
+# 0 = use the damping above. 1 = compute D_i = factor*2*sqrt(Lambda_ii*K_ii),
+# with Lambda = (J M(q)^-1 J^T)^-1 taken once at the pose where hold starts.
+hold_auto_damping = 0
+
+# 1 = fit the factor online so the computed damping lands near hold_Dp.
+hold_auto_match_manual_damping = 1
+
+# Used when the fit above is off. 1.0 = critical.
+hold_auto_damping_factor = 1.0
+
+# --------------------------------------------------------------------
+# Debug
+# --------------------------------------------------------------------
+# 1 = print the per-cycle "hold:" line.
+print_hold_debug = 0

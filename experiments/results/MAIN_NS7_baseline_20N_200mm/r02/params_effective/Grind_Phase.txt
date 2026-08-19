@@ -1,0 +1,18 @@
+# ====================================================================
+# GRIND PHASE (3) -- sweep, or a free-slide press hold
+# ====================================================================
+# Runs after set up, keeping the set-up impedance. The sweep is a smooth
+# ping-pong along one surface tangent.
+
+# 1 = commanded sweep. 0 = free-slide press hold.
+grind_sweep_enabled = 0
+
+# 1 = tangent1, 2 = tangent2.
+grind_axis = 2
+
+# Sweep half-stroke [m] and rate [Hz].
+grind_amplitude_m = 0.03
+grind_frequency_hz = 0.2
+
+# 1 = print the per-cycle "grind:" line.
+print_grind_debug = 0

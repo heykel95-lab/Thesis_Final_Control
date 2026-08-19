@@ -1,0 +1,12 @@
+run_id:   MAIN_NS8_ksigma_2p0_20N_200mm
+repeats:  3
+
+plane profile: horizontal
+
+tool profile: grinding_tool
+
+purpose:
+  Sigma-only response under the balanced disturbance, k_sigma = 2.0 Nm.
+
+pass criterion:
+  The setting must produce observable motion along the selected conditioning direction while the Cartesian position error remains within 2 mm.

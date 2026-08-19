@@ -1,0 +1,28 @@
+# ====================================================================
+# PLANE DEFINITION -- the physical surface, n^T*(p - surface_point) = 0
+# ====================================================================
+# Exactly the keys a plane calibration writes
+# (experiments/calibration/planes/<profile>/plane_overlay.txt), so prefer
+# running a calibration over editing this by hand.
+
+# 1 = take the start pose as the plane point instead of the values below.
+use_start_as_surface_point = 0
+
+# Point on the plane [m]. Keep it near the working spot so a tilt change
+# does not move the height at the tool.
+surface_point_x = 0.515266707
+surface_point_y = -0.107172433
+surface_point_z = 0.003108421
+
+# --------------------------------------------------------------------
+# Orientation
+# --------------------------------------------------------------------
+# Normal from two tilt angles [deg]: n = R_y(b) * R_x(a) * [0,0,1].
+alignment_target_tilt_angle_deg   = -1.585191335# a, about base x
+alignment_target_tilt_angle_y_deg = 0.988473281# b, about base y
+
+# First surface tangent. The frame is [tangent1, tangent2, normal]; tangent2
+# is computed from the other two.
+alignment_target_tangent1_x = -0.905785705
+alignment_target_tangent1_y = -0.422853660
+alignment_target_tangent1_z = 0.027332007

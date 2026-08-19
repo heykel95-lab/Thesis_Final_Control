@@ -1,0 +1,12 @@
+# ====================================================================
+# GUIDANCE -- compliant hand-guidance start
+# ====================================================================
+# Move the arm by hand after q_init, then pick s or h from the guidance menu
+# and that pose becomes the start pose. e+Enter stops and prints it as a
+# paste-ready q_init case. The startup menu 'g' choice turns this on.
+
+# 1 = enter guidance after q_init.
+use_manual_guidance_start = 0
+
+# Joint-space damping while guiding [Nms/rad]. Higher feels heavier.
+manual_guidance_damping = 0.5

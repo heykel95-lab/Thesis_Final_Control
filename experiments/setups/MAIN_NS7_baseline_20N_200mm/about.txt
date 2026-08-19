@@ -1,0 +1,12 @@
+run_id:   MAIN_NS7_baseline_20N_200mm
+repeats:  3
+
+plane profile: horizontal
+
+tool profile: grinding_tool
+
+purpose:
+  Mode-0 reference for the balanced 20 N, +200 mm link-3 point-force disturbance.
+
+pass criterion:
+  Quantify the increased excursion and verify the complete force and joint-torque waveform before comparing null-space gains.

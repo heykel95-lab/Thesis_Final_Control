@@ -1,0 +1,106 @@
+# ====================================================================
+# SET-UP PHASE (2) -- press the tool onto the surface and settle
+# ====================================================================
+# Starts from the contact-point height captured at the end of descend and
+# ramps to setup_push_end. Ends on setup_moment_threshold after
+# setup_min_time, or on setup_timeout, whichever comes first.
+
+# --------------------------------------------------------------------
+# Timing
+# --------------------------------------------------------------------
+# Earliest end [s], hard limit [s], and the ending moment [Nm].
+setup_min_time = 2.0
+setup_timeout = 5.0
+setup_moment_threshold = 150.0
+
+# --------------------------------------------------------------------
+# Push ramp
+# --------------------------------------------------------------------
+# Ramp speed [m/s] and end depth [m]; ramp time follows from the two.
+# Check normal stiffness * setup_push_end against safety.txt before a new range.
+setup_push_speed = 0.050
+setup_push_end = 0.060
+
+# --------------------------------------------------------------------
+# Translational impedance
+# --------------------------------------------------------------------
+# 0 = the base-frame diagonal below. 1 = the surface-frame one.
+setup_translation_surface_frame = 1
+
+# Base frame [x, y, z]: stiffness [N/m] and damping fallback [Ns/m].
+setup_Kp_x = 2000.0
+setup_Kp_y = 2000.0
+setup_Kp_z = 350.0
+setup_Dp_x = 10.0
+setup_Dp_y = 10.0
+setup_Dp_z = 175.0
+
+# Surface frame, used by the calibrated experiments: stiffness [N/m].
+setup_Kp_surface_tangent1 = 2000.0
+setup_Kp_surface_tangent2 = 2000.0
+setup_Kp_surface_normal = 800.0
+
+# Surface-frame damping fallback [Ns/m].
+setup_Dp_surface_tangent1 = 50.0
+setup_Dp_surface_tangent2 = 50.0
+setup_Dp_surface_normal = 25.0
+
+# --------------------------------------------------------------------
+# Rotational impedance
+# --------------------------------------------------------------------
+# Surface frame: stiffness [Nm/rad] and damping fallback [Nms/rad].
+setup_KR_normal = 50.0
+setup_KR_tangent1 = 5.0
+setup_KR_tangent2 = 5.0
+setup_DR_normal = 10.0
+setup_DR_tangent1 = 10.01
+setup_DR_tangent2 = 10.01
+
+# 1 = compute damping online instead of using the fallbacks above.
+setup_auto_damping = 1
+
+# Damping ratio for that computation. 1.0 = critical.
+setup_auto_damping_factor = 1.0
+
+# --------------------------------------------------------------------
+# Coupled (pole-based) stiffness
+# --------------------------------------------------------------------
+# 1 = command the full 6x6 spring about a pole during set up.
+use_coupled_stiffness = 0
+
+# K/D source: 1 = block diagonal, 0 = the pole below.
+coupled_use_block_diagonal = 0
+
+# 1 = use a deliberately commanded pole rather than a derived one.
+coupled_pole_manual = 1
+
+# 1 = the pole is a point on the tool, measured from p_EE in EE axes [m].
+# It rides with the tool, so the same numbers are the same physical point at
+# every tilt, and in the t hold as well as in the press. Tried before the two
+# below, and pc1..pc3 command it live.
+coupled_use_pole_ee = 0
+coupled_pole_ee_x = 0.0
+coupled_pole_ee_y = 0.0
+# The grinding face is at tool_contact_face_center_ee, so +0.020 puts the pole
+# on the face and more puts it past it, into the workpiece.
+coupled_pole_ee_z = 0.0
+
+# 1 = define the pole as r_c = p_TCP - p_c in the surface frame [m].
+# This is the preferred experiment convention.
+coupled_use_direct_rc_surface = 0
+coupled_rc_tangent1 = 0.0
+coupled_rc_tangent2 = 0.0
+coupled_rc_normal = 0.0
+
+# Legacy base-frame pole position, measured from the contact edge [m], kept
+# for archived setups. The spring applies r_c = p_TCP - p_c, so the lever has
+# the opposite sign: +y here puts the pole toward +y and tips the +y side down.
+coupled_pole_from_edge_x = -0.04
+coupled_pole_from_edge_y = 0.08
+coupled_pole_from_edge_z = 0.0
+
+# 1 = freeze the pole at first contact. 0 = follow the live edge.
+coupled_pole_freeze_at_contact = 1
+
+# 1 = print the coupled-stiffness diagnostics in the set-up report.
+print_coupled_diagnostics = 1

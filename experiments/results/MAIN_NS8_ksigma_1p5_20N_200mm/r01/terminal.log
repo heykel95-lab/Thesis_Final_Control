@@ -1,0 +1,103 @@
+
+====================================================================
+  SURFACE GRINDING CONTROLLER
+====================================================================
+  robot              172.16.0.2
+--------------------------------------------------------------------
+
+Press Enter to recover and configure the robot.
+  Robot recovered or already ready.
+
+====================================================================
+  STARTUP MODE
+====================================================================
+  run     s   run the phase sequence from q_init
+          h   hold the q_init pose
+          t   hold with the set-up impedance, to test those gains
+          g   hand-guide the start pose, then choose
+--------------------------------------------------------------------
+  set up  q   go to q_init and inspect
+          o   open the hand now
+          c   grasp the tool now
+          r   recalibrate the hand width, fingers empty
+          f   fetch the tool from the holder
+          b   put the tool back
+--------------------------------------------------------------------
+  quit    e   stop and quit
+--------------------------------------------------------------------
+  in a run    e stop | m menu | g hand-guide | s sequence | t hold
+--------------------------------------------------------------------
+Choice [s/h/t/g/q/o/c/r/f/b/e]: 
+-- moving to q_init ------------------------------------------------
+  case               horizontal_table_search
+  q1..q7 [deg]     = [0.8, 12.1, -0.5, -130.9, -0.2, 142.9, 44.7] deg
+  horizontal_table_search = [0.014777, 0.210911, -0.009320, -2.284835, -0.002725, 2.493410, 0.780694] rad
+  q_init reached.
+
+-- hold nullspace mode ---------------------------------------------
+  0   no nullspace torque
+  1   nullspace damping only, no return to q_start
+  2   sigma optimization only, push toward larger sigma_min
+  3   sigma optimization + nullspace damping, damped comeback
+--------------------------------------------------------------------
+Choice [0/1/2/3, Enter = 2]: 
+-- selected: hold --------------------------------------------------
+  nullspace          sigma_optimization_only
+
+-- start pose ------------------------------------------------------
+  q_start          = [0.9, 12.1, -0.5, -130.9, -0.1, 142.9, 44.7] deg
+  p_start          = [    531.3,       2.6,     157.0] mm
+
+====================================================================
+  RUN
+====================================================================
+
+-- nullspace: sigma_optimization_only ------------------------------
+  law                tau = +k_sigma * N_tau * n_best
+  k_sigma            1.500 Nm   undamped: it pushes, nothing brakes it
+  keys               k <Nm> | a <deg>
+  probe alpha        4.584 deg = 0.080000 rad   sampling only, not a gain
+                     0/1/2/3 switch mode
+
+-- automatic link-point push ---------------------------------------
+  link               joint 3 frame
+  point [link]       [+0.0, +0.0, +200.0] mm
+  direction [base]   [-0.006, +1.000, -0.002]
+  force              20.00 N | tau norm <= 3.00 Nm
+  time [s]           ramp 5.0--7.0 | hold to 8.0 | release 1.0 s
+
+-- phase: hold -----------------------------------------------------
+  Kp [x,y,z]       = [   2000.0,    2000.0,    2000.0] N/m
+  Dp [x,y,z]       = [     50.0,      50.0,      50.0] Ns/m
+  KR [x,y,z]       = [     50.0,      50.0,      50.0] Nm/rad
+  DR [x,y,z]       = [      8.0,       8.0,       8.0] Nms/rad
+
+>>> AUTOMATIC PUSH START  (t = 5.0 s)
+
+>>> AUTOMATIC PUSH AT FULL FORCE  (t = 7.0 s)
+
+>>> AUTOMATIC RELEASE START  (t = 8.0 s)
+sigma debug csv: logs/surface_grinding_controller_sigma_debug.csv (366 rows)
+
+-- joint motion [deg] ----------------------------------------------
+  joint       start    final    delta
+  q1            0.9      0.3     -0.6
+  q2           12.1     12.1     +0.0
+  q3           -0.5      0.0     +0.6
+  q4         -130.9   -130.9     -0.0
+  q5           -0.1     -0.1     +0.0
+  q6          142.9    142.9     +0.0
+  q7           44.7     44.9     +0.1
+
+====================================================================
+  FINAL RESULT
+====================================================================
+  p_d              = [    531.3,       2.6,     157.0] mm
+  p_EE             = [    531.3,       2.9,     156.8] mm
+  e_p              = [      0.1,      -0.3,       0.2] mm
+  e_R              = [    -0.12,     -0.02,      0.15] deg
+--------------------------------------------------------------------
+  position error     0.33 mm
+  rotation error     0.19 deg
+  csv                logs/surface_grinding_controller_log.csv
+--------------------------------------------------------------------

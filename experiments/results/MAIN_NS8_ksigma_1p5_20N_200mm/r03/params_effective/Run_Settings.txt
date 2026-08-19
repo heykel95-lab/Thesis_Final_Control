@@ -1,0 +1,32 @@
+# ====================================================================
+# RUN SETTINGS -- robot connection, run duration, logging
+# ====================================================================
+# What no single topic owns. The run mode itself is not here: the startup
+# menu picks sequence or hold every run.
+#
+# Topic files: Gripper_Action, Auto_Damping, Plane_Definition,
+# Tool_Orientation, Tool_Geometry, Q_Init, Approach_Phase, Clearance_Gate,
+# SetUp_Phase, Grind_Phase, Nullspace, hold, guidance, safety.
+
+# --------------------------------------------------------------------
+# Robot
+# --------------------------------------------------------------------
+robot_ip = 172.16.0.2
+
+# --------------------------------------------------------------------
+# Logging
+# --------------------------------------------------------------------
+# 0.0 = run until e+Enter. Otherwise stop after this time [s].
+experiment_duration = 18.0
+
+# Written under logs/, which is created if missing.
+csv_file_name = logs/surface_grinding_controller_log.csv
+
+# Log one row every n control cycles.
+log_every_n_cycles = 1
+
+# Buffer capacity; rows beyond it are dropped.
+max_log_rows = 120000
+
+# Terminal debug period, shared by all phases [s]. 0 = no debug lines.
+debug_period = 0.20

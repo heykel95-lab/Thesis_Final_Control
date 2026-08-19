@@ -1,0 +1,11 @@
+run_id:        MAIN_F7_damping_2p0_20N_200mm
+repeat:        2
+timestamp:     2026-08-04T18:59:39+02:00
+git_commit:    0210e7f2cca8d60ec72bf2e56e4a00d0440b037a
+git_dirty:     no
+host:          Computer19
+plane_profile: horizontal
+tool_profile:  grinding_tool
+tool_mount_status: rigid
+tool_mount_play_bound_deg: 0.0
+controller_exit: 0

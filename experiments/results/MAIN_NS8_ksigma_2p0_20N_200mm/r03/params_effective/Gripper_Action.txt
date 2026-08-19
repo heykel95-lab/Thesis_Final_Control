@@ -1,0 +1,60 @@
+# ====================================================================
+# GRIPPER ACTION -- optional automatic action once after q_init
+# ====================================================================
+# Off by default: the hand keeps whatever state it is in, and the startup
+# menu keys o (open), c (grasp) and r (recalibrate) are the way to change it.
+# The automatic action is also skipped in guiding mode and after any of those
+# keys, so a manual choice is never undone.
+
+# 1 = perform the action below after q_init. 0 = leave the hand as it is.
+open_gripper_before_run = 0
+
+# 1 = stop the run if the action fails.
+require_gripper_open = 0
+
+# 0 = open to gripper_open_width. 1 = grasp at gripper_grasp_width.
+gripper_grasp_on_tool = 1
+
+# --------------------------------------------------------------------
+# Grasp
+# --------------------------------------------------------------------
+# Target width [m], closing speed [m/s], clamping force [N].
+gripper_grasp_width = 0.066
+gripper_grasp_speed = 0.050
+gripper_grasp_force = 60.0
+
+# Accepted shortfall / overshoot around the target width [m].
+gripper_grasp_epsilon_inner = 0.005
+gripper_grasp_epsilon_outer = 0.010
+
+# --------------------------------------------------------------------
+# Open
+# --------------------------------------------------------------------
+# Target width [m] and speed [m/s].
+gripper_open_width = 0.067
+gripper_open_speed = 0.050
+
+# --------------------------------------------------------------------
+# Tool pickup posture -- menu keys f (fetch) and b (put back)
+# --------------------------------------------------------------------
+# 1 = enable f and b. Path: q_init -> above the tool -> down onto it ->
+# grasp (f) or release (b) -> lift back above. The descent is the last leg so
+# the fingers never sweep sideways through the holder.
+use_tool_pickup = 1
+
+# Speed factor for the descent and the lift [-]. The transit uses 0.4.
+pickup_descend_speed_factor = 0.15
+
+# How far back along -Z_EE the arm waits before descending [m]. The posture is
+# solved from that distance, so no second pose has to be measured.
+pickup_standoff = 0.05
+
+# At the tool. Measured with guiding mode: hand-place the arm, press e, paste
+# the pose it prints. [rad] = [23.4, 20.8, 2.5, -146.7, -0.1, 166.7, 69.6] deg.
+q_pickup_1 = 0.407690
+q_pickup_2 = 0.362496
+q_pickup_3 = 0.043206
+q_pickup_4 = -2.559797
+q_pickup_5 = -0.001279
+q_pickup_6 = 2.908839
+q_pickup_7 = 1.214087
