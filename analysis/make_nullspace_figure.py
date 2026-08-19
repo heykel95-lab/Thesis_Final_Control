@@ -31,7 +31,14 @@ from make_figures import (  # noqa: E402
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-EXP = os.path.normpath(os.path.join(HERE, ".."))
+_PARENT = os.path.normpath(os.path.join(HERE, ".."))
+# The two repositories shelve this script at different depths. MyController
+# keeps it at experiments/analysis/, so the data sits in the parent directory;
+# Thesis_Final_Control keeps it at analysis/, with the data under experiments/.
+# Resolve whichever layout the copy is sitting in rather than assuming one.
+EXP = (os.path.join(_PARENT, "experiments")
+       if os.path.isdir(os.path.join(_PARENT, "experiments"))
+       else _PARENT)
 RESULTS = os.path.join(EXP, "results")
 SUMMARY = os.path.join(EXP, "derived", "MAIN_NS_automatic_summary.csv")
 

@@ -167,7 +167,10 @@ def main():
     fig, ax = plt.subplots(figsize=(5.8, 3.3))
     ax.bar(x - width / 2, selected, width, color=SERIES_COLOURS[0],
            edgecolor="#1a1a1a", linewidth=0.8, label="selected lever")
-    ax.bar(x + width / 2, fixed, width, color=SERIES_COLOURS[1],
+    # Bar charts pair black with the palette blue rather than the red the
+    # line plots take second: filled red bars carry far more ink than a red
+    # curve and read as a warning against the black beside them.
+    ax.bar(x + width / 2, fixed, width, color=SERIES_COLOURS[2],
            edgecolor="#1a1a1a", linewidth=0.8, label=r"fixed $t_1$ lever")
     reference_line(ax)
     ax.set_xticks(x)
@@ -258,7 +261,7 @@ def main():
            color=SERIES_COLOURS[0], edgecolor="#1a1a1a", linewidth=0.8,
            label="tool frame")
     ax.bar(x + width / 2, surface, width, yerr=surface_sd, capsize=3,
-           color=SERIES_COLOURS[1], edgecolor="#1a1a1a", linewidth=0.8,
+           color=SERIES_COLOURS[2], edgecolor="#1a1a1a", linewidth=0.8,
            label="surface frame")
     reference_line(ax)
     ax.set_xticks(x)
