@@ -130,7 +130,10 @@ def main():
                         r"end-effector rotation"))
     reference_line(axes[0])
     axes[0].set_xlabel("Time from start of set-up [s]")
-    axes[0].set_ylabel(r"Angle [$^\circ$]")
+    # Both curves are the alignment angle, obtained two ways; a bare "Angle"
+    # leaves the reader to guess which angle is plotted.
+    axes[0].set_ylabel(r"Alignment angle [$^\circ$]")
+    axes[0].set_title("(a)")
 
     # Right: the same comparison reduced to one point per archived trial. The
     # gain is a magnitude here, because the deviation carries no sign.
@@ -146,6 +149,7 @@ def main():
                  markeredgewidth=1.0, label="deviation increased")
     axes[1].set_xlabel(r"End-effector rotation since start of set-up [$^\circ$]")
     axes[1].set_ylabel(r"Deviation change, magnitude [$^\circ$]")
+    axes[1].set_title("(b)")
 
 
     residual = np.abs(gain) - deviation_final
