@@ -129,7 +129,7 @@ def main():
                  label=(r"deviation at start of set-up $-$ "
                         r"end-effector rotation"))
     reference_line(axes[0])
-    axes[0].set_xlabel("Time from start of set-up [s]")
+    axes[0].set_xlabel("Time [s]")
     # Both curves are the alignment angle, obtained two ways; a bare "Angle"
     # leaves the reader to guess which angle is plotted.
     axes[0].set_ylabel(r"Alignment angle $\theta_{\mathrm{align}}$ [$^\circ$]")

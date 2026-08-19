@@ -34,19 +34,17 @@ METRICS = os.path.join(HERE, "..", "experiments", "derived", "metrics.csv")
 
 sys.path.insert(0, HERE)
 from figure_style import (apply_style, reference_line,  # noqa: E402
-                          SERIES_COLOURS, SERIES_MARKERS)
+                          SERIES_BLUE, SERIES_COLOURS, SERIES_MARKERS)
 
 apply_style()
 
 ROTATION_LABEL = (r"$\Delta\theta_{\mathrm{set}}$ about the commanded"
                   r" tangent [$^\circ$]")
 
-# The Case-A bars are drawn in pgfplots and render as #B2B2FF on the page, which
-# is what a bar series has to match to look like one family across the chapter.
-# The source there reads blue!20!white; pgfplots composites it lighter than that
-# colour resolves on its own, so this value is taken from the compiled page
-# rather than from the specification.
-BAR_FILL_BLUE = "#B2B2FF"
+# Every bar chart in the thesis takes the palette blue, the same one the line
+# plots use for their third series. The Case-A bars in pgfplots carry it too, so
+# the three bar figures read as one family.
+BAR_FILL_BLUE = SERIES_BLUE
 
 # The four groups of the sweep, in the order they are drawn. Their legend
 # labels are formed from the measured orientation at the start of set-up below; the
@@ -273,7 +271,7 @@ def main():
     reference_line(ax)
     ax.set_xticks(x)
     ax.set_xticklabels(commands)
-    ax.set_xlabel("Commanded orientation offset")
+    ax.set_xlabel("Commanded offset")
     ax.set_ylabel(r"$\Delta\theta_{\mathrm{set},t_1}$ [$^\circ$]")
     ax.legend(loc="upper left")
     fig.tight_layout()
