@@ -144,7 +144,7 @@ def main():
         # A legend printed over the data is worse than one in a different
         # corner of the same panel.
         ax.legend(loc=corner, fontsize=7, labelspacing=0.3)
-    axes[-1].set_xlabel("Time from start of set-up [s]")
+    axes[-1].set_xlabel("Time [s]")
     fig.tight_layout()
     out = os.path.join(args.out_dir, f"{args.out}.pdf")
     fig.savefig(out)
