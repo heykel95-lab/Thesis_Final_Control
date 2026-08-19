@@ -1,27 +1,12 @@
 #!/usr/bin/env python3
-"""Summarise and plot the null-space pose-hold experiment.
-
-  python3 analysis/make_nullspace_figure.py
-
-Draws MAIN_NS_nullspace_automatic.pdf, the figure the thesis carries in its
-null-space pose-hold section, from the twelve archived MAIN_NS7 and MAIN_NS8
-trials. Four settings meet the same commanded disturbance: no null-space
-torque, projected damping, and two singular-value conditioning magnitudes.
-
-Two redundant-motion quantities are reported, because they separate the
-settings differently. The cumulative projected null-space motion integrates the
-magnitude of the projected joint velocity, so it is a path length and cannot
-tell a configuration that was displaced from one that moved and came back. The
-net displacement integrates the same velocity without the magnitude and is
-resolved onto one signed axis in net_displacements(), which keeps that
-distinction.
+"""Summarise and plot the final automatic Case-F null-space experiment.
 
 The point force is generated inside the controller, so this analysis uses the
 logged disturbance scale rather than a cue time to define the driven interval.
 It writes both the small derived table used by the thesis and a vector PDF.
 
-The trials are the clean 20 N, +200 mm records acquired after the disturbance
-and inter-trial hardware gates had been fixed.
+The final campaign uses the clean 20 N, +200 mm records acquired after the
+disturbance and inter-trial hardware gates had been fixed.
 """
 
 import csv
@@ -30,30 +15,25 @@ import os
 import sys
 
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from make_figures import (  # noqa: E402
+    SERIES_BLACK,
+    SERIES_RED,
+    SERIES_BLUE,
+    SERIES_YELLOW,
+    axis_legend,
+    save,
+)
+
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
-from figure_style import (apply_style, SERIES_BLACK, SERIES_RED,  # noqa: E402
-                          SERIES_BLUE, SERIES_YELLOW)
-
-ROOT = os.path.normpath(os.path.join(HERE, ".."))
-RESULTS = os.path.join(ROOT, "experiments", "results")
-SUMMARY = os.path.join(ROOT, "experiments", "derived",
-                      "MAIN_NS_automatic_summary.csv")
-FIGURES = os.path.join(ROOT, "figures")
-
-apply_style()
-
-# Four settings the shared style leaves at the matplotlib default. They were in
-# force when the published figure was drawn, so they are restated here rather
-# than dropped, and the regenerated panel matches it.
-plt.rcParams.update({
-    "xtick.major.width": 0.8,
-    "ytick.major.width": 0.8,
-    "legend.labelspacing": 0.3,
-    "legend.borderaxespad": 0.4,
-})
+EXP = os.path.normpath(os.path.join(HERE, ".."))
+RESULTS = os.path.join(EXP, "results")
+SUMMARY = os.path.join(EXP, "derived", "MAIN_NS_automatic_summary.csv")
 
 CONDITIONS = (
     ("MAIN_NS7_baseline_20N_200mm", "damping", 0.0),
@@ -224,7 +204,7 @@ def write_summary(groups):
                 "nullspace_speed_peak_mean_rad_s":
                     f"{np.mean(values('nullspace_speed_peak_rad_s')):.9g}",
             })
-    print(f"  wrote {os.path.relpath(SUMMARY, ROOT)}")
+    print(f"  wrote {os.path.relpath(SUMMARY, EXP)}")
 
 
 def damping_panel(ax, groups):
@@ -249,14 +229,11 @@ def damping_panel(ax, groups):
                         alpha=0.10, linewidth=0)
     ax.set_xlabel(r"Time after disturbance onset $t_d$ [s]")
     ax.set_ylabel(
-        r"Cumulative projected null-space motion "
-        r"$\int |\dot q_{\mathrm{null}}|\,\mathrm{d}t$ [$^\circ$]"
+        r"Cumulative projected null-space motion $E_N$ [$^\circ$]"
     )
     ax.text(0.01, 0.97, "(a)", transform=ax.transAxes,
             ha="left", va="top")
-    # The two series are declared in palette order already, so the shared
-    # colour-ordering helper the source repository used is not needed here.
-    ax.legend(ncol=2, loc="upper left", bbox_to_anchor=(0.0, 0.89))
+    axis_legend(ax, ncol=2, loc="upper left", bbox_to_anchor=(0.0, 0.89))
 
 
 def sigma_panel(ax, groups):
@@ -287,13 +264,13 @@ def sigma_panel(ax, groups):
         markerfacecolor="white", markeredgecolor=SERIES_BLACK,
         markeredgewidth=1.1, linewidth=1.25, elinewidth=1.0,
         capthick=1.0, capsize=3,
-        label=r"Final $\Delta\sigma_{\min}$ (mean $\pm$ SD)")
+        label=r"$\Delta\sigma_{\min,\mathrm{dist}}$ (mean $\pm$ SD)")
     ax.plot(gains[screening], sigma_means[screening], color=SERIES_BLACK,
             marker="D", markerfacecolor="white", markeredgewidth=1.1,
             linestyle="none")
-    ax.axhline(0.0, color="0.45", linestyle="--", linewidth=1.0)
+    ax.axhline(0.0, color="0.45", linewidth=1.0)
     ax.set_xlabel(r"Conditioning torque $k_\sigma$ [N m]")
-    ax.set_ylabel(r"Final singular-value change $\Delta\sigma_{\min}$ [-]")
+    ax.set_ylabel(r"$\Delta\sigma_{\min,\mathrm{dist}}$ [-]")
     ax.set_xticks(gains)
     ax.ticklabel_format(axis="y", style="sci", scilimits=(0, 0),
                         useMathText=True)
@@ -320,7 +297,7 @@ def sigma_panel(ax, groups):
                  marker="D", markerfacecolor="white", markeredgewidth=1.1,
                  linestyle="none")
     criterion_handle = task_ax.axhline(
-        2.0, color="0.45", linestyle=":", linewidth=1.0,
+        2.0, color="0.45", linewidth=1.0,
         label="2 mm peak Cartesian position error limit")
     task_ax.set_ylabel(
         r"Peak Cartesian position error $\|e_p\|_{\max}$ [mm]",
@@ -331,7 +308,7 @@ def sigma_panel(ax, groups):
 
     return (
         [sigma_handle, task_handle, criterion_handle],
-        [r"Final $\Delta\sigma_{\min}$ (mean $\pm$ SD)",
+        [r"$\Delta\sigma_{\min,\mathrm{dist}}$ (mean $\pm$ SD)",
          "Peak Cartesian position error (mean $\pm$ SD)",
          "2 mm peak Cartesian position error limit"],
     )
@@ -343,17 +320,8 @@ def make_figure(groups):
     handles, labels = sigma_panel(axes[1], groups)
     fig.legend(handles, labels, loc="lower center", ncol=3,
                bbox_to_anchor=(0.5, 0.01), fontsize=7)
-    # The shared legend sits below the panels, so the layout keeps a strip of
-    # figure free for it and the tight crop then takes it in.
-    fig.tight_layout(rect=(0.0, 0.16, 1.0, 1.0))
-
-    os.makedirs(FIGURES, exist_ok=True)
-    path = os.path.join(FIGURES, "MAIN_NS_nullspace_automatic.pdf")
-    fig.savefig(path, bbox_inches="tight")
-    fig.savefig(path.replace(".pdf", ".png"), dpi=160, bbox_inches="tight")
-    plt.close(fig)
-    print(f"  wrote {os.path.relpath(path, ROOT)}")
-    return path
+    fig._thesis_legend_bottom = 0.16
+    return save(fig, "MAIN_NS_nullspace_automatic.pdf")
 
 
 def main():
@@ -361,7 +329,7 @@ def main():
     if len(groups) != len(CONDITIONS):
         found = {group["run_id"] for group in groups}
         missing = [run_id for run_id, _, _ in CONDITIONS if run_id not in found]
-        raise SystemExit("missing null-space data: " + ", ".join(missing))
+        raise SystemExit("missing Case-F data: " + ", ".join(missing))
     axis = net_displacements(groups)
     print("  redundant axis from "
           f"{CONDITIONS[0][0]}: {np.array2string(axis, precision=3)}")

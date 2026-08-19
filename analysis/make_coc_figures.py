@@ -38,8 +38,8 @@ from figure_style import (apply_style, reference_line,  # noqa: E402
 
 apply_style()
 
-ROTATION_LABEL = (r"Set-up rotation about the commanded tangent"
-                  r" [$^\circ$]")
+ROTATION_LABEL = (r"$\Delta\theta_{\mathrm{set}}$ about the commanded"
+                  r" tangent [$^\circ$]")
 
 # The four groups of the sweep, in the order they are drawn. Their legend
 # labels are formed from the measured orientation at the start of set-up below; the
@@ -243,7 +243,7 @@ def main():
     # Four entries make this legend taller than the others, and the black
     # series runs flat under it from -10 mm on, so the room has to come from
     # above the data rather than from a symmetric margin.
-    draw_sweep(entries, "Centre position along the assisting tangent [mm]",
+    draw_sweep(entries, r"$d_c$ along the assisting tangent [mm]",
                out("MAIN_E_sign.pdf"), figsize=(5.8, 3.8), top_headroom=0.45)
 
     # F -- reported frame-definition comparison at zero and +10 degrees.
@@ -264,7 +264,7 @@ def main():
     ax.set_xticks(x)
     ax.set_xticklabels(commands)
     ax.set_xlabel("Commanded orientation offset")
-    ax.set_ylabel(r"Set-up rotation about $t_1$ [$^\circ$]")
+    ax.set_ylabel(r"$\Delta\theta_{\mathrm{set},t_1}$ [$^\circ$]")
     ax.legend(loc="upper left")
     fig.tight_layout()
     fig.savefig(out("MAIN_F_frame.pdf"))
@@ -317,7 +317,7 @@ def main():
         if x:
             entries.append((np.array(x), np.array(y), np.array(err),
                             initial_label(groups, runs, axis)))
-    draw_sweep(entries, "Centre position along the assisting tangent [mm]",
+    draw_sweep(entries, r"$d_c$ along the assisting tangent [mm]",
                out("MAIN_H_magnitude.pdf"), figsize=(5.8, 3.8), headroom=0.75)
 
 

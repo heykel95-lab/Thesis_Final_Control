@@ -132,7 +132,7 @@ def main():
     axes[0].set_xlabel("Time from start of set-up [s]")
     # Both curves are the alignment angle, obtained two ways; a bare "Angle"
     # leaves the reader to guess which angle is plotted.
-    axes[0].set_ylabel(r"Alignment angle [$^\circ$]")
+    axes[0].set_ylabel(r"Alignment angle $\theta_{\mathrm{align}}$ [$^\circ$]")
     axes[0].set_title("(a)")
 
     # Right: the same comparison reduced to one point per archived trial. The
@@ -147,8 +147,8 @@ def main():
     axes[1].plot(deviation_final[~improved], -gain[~improved], linestyle="none",
                  marker="s", color=SERIES_RED, markerfacecolor="white",
                  markeredgewidth=1.0, label="deviation increased")
-    axes[1].set_xlabel(r"End-effector rotation since start of set-up [$^\circ$]")
-    axes[1].set_ylabel(r"Deviation change, magnitude [$^\circ$]")
+    axes[1].set_xlabel(r"Set-up rotation angle $\phi_{\mathrm{set}}$ [$^\circ$]")
+    axes[1].set_ylabel(r"$|\Delta\theta_{\mathrm{align}}|$ [$^\circ$]")
     axes[1].set_title("(b)")
 
 
