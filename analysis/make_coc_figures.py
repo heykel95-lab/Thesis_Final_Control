@@ -41,6 +41,13 @@ apply_style()
 ROTATION_LABEL = (r"$\Delta\theta_{\mathrm{set}}$ about the commanded"
                   r" tangent [$^\circ$]")
 
+# The Case-A bars are drawn in pgfplots and render as #B2B2FF on the page, which
+# is what a bar series has to match to look like one family across the chapter.
+# The source there reads blue!20!white; pgfplots composites it lighter than that
+# colour resolves on its own, so this value is taken from the compiled page
+# rather than from the specification.
+BAR_FILL_BLUE = "#B2B2FF"
+
 # The four groups of the sweep, in the order they are drawn. Their legend
 # labels are formed from the measured orientation at the start of set-up below; the
 # nominal commanded offset is deliberately not used as a substitute for it.
@@ -167,10 +174,10 @@ def main():
     fig, ax = plt.subplots(figsize=(5.8, 3.3))
     ax.bar(x - width / 2, selected, width, color=SERIES_COLOURS[0],
            edgecolor="#1a1a1a", linewidth=0.8, label="selected lever")
-    # Bar charts pair black with the palette blue rather than the red the
-    # line plots take second: filled red bars carry far more ink than a red
-    # curve and read as a warning against the black beside them.
-    ax.bar(x + width / 2, fixed, width, color=SERIES_COLOURS[2],
+    # Bar charts skip the red the line plots take second: a filled red bar
+    # carries far more ink than a red curve and reads as a warning against
+    # the black beside it.
+    ax.bar(x + width / 2, fixed, width, color=BAR_FILL_BLUE,
            edgecolor="#1a1a1a", linewidth=0.8, label=r"fixed $t_1$ lever")
     reference_line(ax)
     ax.set_xticks(x)
@@ -261,7 +268,7 @@ def main():
            color=SERIES_COLOURS[0], edgecolor="#1a1a1a", linewidth=0.8,
            label="tool frame")
     ax.bar(x + width / 2, surface, width, yerr=surface_sd, capsize=3,
-           color=SERIES_COLOURS[2], edgecolor="#1a1a1a", linewidth=0.8,
+           color=BAR_FILL_BLUE, edgecolor="#1a1a1a", linewidth=0.8,
            label="surface frame")
     reference_line(ax)
     ax.set_xticks(x)
