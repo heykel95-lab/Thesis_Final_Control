@@ -10,17 +10,34 @@ __pycache__/
 # of archiving a trial, so what is left here is an unarchived run.
 surface_grinding_controller/logs/
 
-# Raw 1 kHz trial logs, about 7.7 MB each. The campaign would put half a
-# gigabyte of them in the history. They stay on disk and are archived
-# separately; what is tracked is the set-up report in terminal.log, the
-# effective parameters, the figures, and the extracted metrics.
+# Raw 1 kHz trial logs, about 7.7 MB each. All 341 of them are 3.4 GB, which
+# does not belong in the history, so the default is to keep them out. What is
+# tracked for every trial is the set-up report in terminal.log, the effective
+# parameters, the figures, and the extracted metrics.
 experiments/results/**/*.csv
 
-# Regenerated from the archives by analysis/extract_metrics.py.
+# The exception is the trials a figure in the thesis is drawn from. Those are
+# tracked in full, so the figures can be redrawn from a clone alone without the
+# lab machine. See analysis/README.md for which figure reads which trial. Keep
+# the two lists in step: a figure that starts reading a new trial needs its
+# logs added here, or it will only redraw where the archive happens to be.
+!experiments/results/P2_t1_pos_m040/r01/logs/*.csv
+!experiments/results/P2_t1_pos_p000/r01/logs/*.csv
+!experiments/results/P2_t1_pos_p040/r01/logs/*.csv
+!experiments/results/V_best_check/r02/logs/*.csv
+!experiments/results/S1_none_t1_10deg/r01/logs/*.csv
+!experiments/results/S5_normal_p090/r01/logs/*.csv
+!experiments/results/MAIN_NS7_baseline_20N_200mm/r0*/*.csv
+!experiments/results/MAIN_NS7_damping_2p0_20N_200mm/r0*/*.csv
+!experiments/results/MAIN_NS8_ksigma_1p5_20N_200mm/r0*/*.csv
+!experiments/results/MAIN_NS8_ksigma_2p0_20N_200mm/r0*/*.csv
+
+# Regenerated from the archives by analysis/extract_metrics.py, which needs
+# every raw log and so cannot run from a clone. The two tables it and the
+# null-space script write are therefore tracked as data: they carry the numbers
+# the thesis quotes, and four of the figures are drawn from metrics.csv alone.
 experiments/derived/*
-# One exception. The null-space trials keep their raw logs out of the history
-# like every other trial, so this small table is the only tracked record of the
-# values the thesis reports for them.
+!experiments/derived/metrics.csv
 !experiments/derived/MAIN_NS_automatic_summary.csv
 
 # Local agent settings

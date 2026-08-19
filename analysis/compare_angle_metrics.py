@@ -124,7 +124,7 @@ def main():
     # Left: both descriptions of the same trial, on one absolute scale.
     t, alignment, deviation = thin(t, alignment, deviation)
     axes[0].plot(t, alignment, color=SERIES_BLACK,
-                 label="EE-inferred angular deviation")
+                 label="Alignment angle from end-effector pose")
     axes[0].plot(t, alignment[0] - deviation, color=SERIES_RED,
                  label=(r"deviation at start of set-up $-$ "
                         r"end-effector rotation"))
