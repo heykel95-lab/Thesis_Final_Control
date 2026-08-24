@@ -86,12 +86,12 @@ double setupPush(const ControllerConfig& params,
 /// Combines translational and rotational 3x3 matrices into a 6x6 matrix.
 Mat6x6 blockDiagonal(const Mat3& translational, const Mat3& rotational);
 
-/// Builds the 6D shift matrix for r_c = p_TCP - p_C [m].
+/// Builds the 6D shift matrix for r_c = p_C - p_TCP [m].
 Mat6x6 complianceShiftMatrix(const Vec3& r_c);
 
 /// Shifts stiffness or damping from the compliance center to the TCP.
 /// @param gain_at_center Cartesian gain defined at the virtual center.
-/// @param r_c Vector from the compliance center to the TCP [m].
+/// @param r_c Vector from the TCP to the compliance center [m].
 Mat6x6 shiftGainToTcp(const Mat6x6& gain_at_center, const Vec3& r_c);
 
 // ---------------------------------------------------------------------------
@@ -153,13 +153,13 @@ Vec3 toolSurfaceAlignmentErrorBase(
     const Mat3& R_EE,
     const Mat3& R_base_surface);
 
-/// Returns the compliance lever r_c = p_TCP - p_CoC in the base frame [m].
+/// Returns the compliance lever r_c = p_CoC - p_TCP in the base frame [m].
 ///
 /// The lever is configured either in the tool frame or in the surface frame,
 /// and the impedance resolves it inline. This returns the same vector for the
 /// logger, which needs the centre as a position rather than as a gain shift.
 /// A zero lever puts the centre on the TCP, so the returned vector is zero and
-/// no case has to be separated: p_CoC = p_TCP - r_c holds either way.
+/// no case has to be separated: p_CoC = p_TCP + r_c holds either way.
 Vec3 complianceLeverBase(
     const ControllerConfig& params,
     const Mat3& R_EE,

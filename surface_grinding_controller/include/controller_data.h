@@ -31,7 +31,7 @@ struct LogData {
   Vec3 first_contact_point;     // Tool-feature position at first contact [m].
   Vec3 edge_target;             // Desired tool-feature position [m].
   Vec3 tool_contact_offset_ee;  // Feature offset in EE frame [m].
-  Vec3 p_CoC;   // Centre of compliance, p_TCP - r_c [m]. Equals p_EE when the
+  Vec3 p_CoC;   // Centre of compliance, p_TCP + r_c [m]. Equals p_EE when the
                 // lever is zero, so the centre is the TCP in that case.
   Vec3 r_eff;   // Lever the contact force acts through, p_contact - p_CoC [m].
 

@@ -214,10 +214,10 @@ void printSetupImpedanceLaw(const ControllerConfig& params,
   if (params.use_virtual_compliance_center) {
     Vec3 r_c_base = Vec3::Zero();
     if (params.compliance_center_in_tool_frame) {
-      r_c_base = -(R_EE * params.compliance_center_offset_ee);
+      r_c_base = R_EE * params.compliance_center_offset_ee;
     } else if (params.compliance_lever_in_surface_frame) {
       r_c_base =
-          R_base_surface * params.r_tcp_from_compliance_center_surface;
+          -(R_base_surface * params.r_tcp_from_compliance_center_surface);
     }
     const bool tool_frame_center = params.compliance_center_in_tool_frame;
     if (!tunable) {
@@ -227,8 +227,8 @@ void printSetupImpedanceLaw(const ControllerConfig& params,
     }
     printRow("r_c [t1,t2,n]",
              Vec3(1000.0 * (R_base_surface.transpose() * r_c_base)), "mm",
-             tool_frame_center ? "p_TCP - p_c, in the plane"
-                            : "commanded: p_TCP - p_c, in the plane");
+             tool_frame_center ? "p_c - p_TCP, in the plane"
+                            : "commanded: p_c - p_TCP, in the plane");
   }
   if (tunable) {
     // Displaying orientation offsets applied by the next sequence [deg].

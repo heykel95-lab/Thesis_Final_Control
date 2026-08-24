@@ -202,7 +202,7 @@ struct ControllerConfig {
   bool compliance_center_in_tool_frame = false;
   Vec3 compliance_center_offset_ee = Vec3::Zero(); // Center offset in EE frame [m].
 
-  // Surface-frame definition: r_c = p_TCP - p_C [m].
+  // Surface-frame definition: stores p_TCP - p_C, which is -r_c [m].
   bool compliance_lever_in_surface_frame = false;
   Vec3 r_tcp_from_compliance_center_surface = Vec3::Zero(); // [t1, t2, n], [m].
 

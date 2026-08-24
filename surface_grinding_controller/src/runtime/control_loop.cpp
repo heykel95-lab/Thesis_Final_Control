@@ -662,7 +662,7 @@ RunResult runControlLoop(ControllerConfig& params,
         // same two lines cover both the referenced and the shifted case.
         const Vec3 r_c_log =
             complianceLeverBase(params, R_EE, R_base_surface);
-        p_CoC_log = p_EE - r_c_log;
+        p_CoC_log = p_EE + r_c_log;
         r_eff_log = tool_contact_point - p_CoC_log;
 
         // Observing the alignment criterion. It only reads the deviation and
@@ -1055,33 +1055,33 @@ RunResult runControlLoop(ControllerConfig& params,
           printf("Compliance-center tuning requires the virtual center of "
                  "compliance.\n");
         } else {
-          // Resolving r_c = p_TCP - p_C in the robot base frame [m].
+          // Resolving r_c = p_C - p_TCP in the robot base frame [m].
           Vec3 r_c_base = Vec3::Zero();
           if (params.compliance_center_in_tool_frame) {
-            r_c_base = -(R_EE * params.compliance_center_offset_ee);
+            r_c_base = R_EE * params.compliance_center_offset_ee;
           } else if (params.compliance_lever_in_surface_frame) {
             r_c_base =
-                R_base_surface * params.r_tcp_from_compliance_center_surface;
+                -(R_base_surface * params.r_tcp_from_compliance_center_surface);
           }
 
           // Assigning one updated component in the selected command frame [m].
           if (std::isfinite(center_mm)) {
-            Vec3 center_ee = -(R_EE.transpose() * r_c_base);
+            Vec3 center_ee = R_EE.transpose() * r_c_base;
             center_ee(i) = 0.001 * center_mm;
-            r_c_base = -(R_EE * center_ee);
+            r_c_base = R_EE * center_ee;
           }
           if (std::isfinite(rc_mm)) {
-            Vec3 rc_surface = R_base_surface.transpose() * r_c_base;
+            Vec3 rc_surface = -(R_base_surface.transpose() * r_c_base);
             rc_surface(i) = 0.001 * rc_mm;
-            r_c_base = R_base_surface * rc_surface;
+            r_c_base = -(R_base_surface * rc_surface);
           }
 
           // Storing the updated center in the configured representation [m].
           if (params.compliance_center_in_tool_frame) {
-            params.compliance_center_offset_ee = -(R_EE.transpose() * r_c_base);
+            params.compliance_center_offset_ee = R_EE.transpose() * r_c_base;
           } else if (params.compliance_lever_in_surface_frame) {
             params.r_tcp_from_compliance_center_surface =
-                R_base_surface.transpose() * r_c_base;
+                -(R_base_surface.transpose() * r_c_base);
           }
           setup_impedance_changed = true;
         }
