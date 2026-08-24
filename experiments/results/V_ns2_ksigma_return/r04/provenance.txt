@@ -1,0 +1,6 @@
+run_id:        V_ns2_ksigma_return
+repeat:        r04
+recorded:      2026-08-24T12:59:46+02:00
+commit:        7950d2e
+tree_state:    dirty
+exit_status:   0
