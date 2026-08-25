@@ -148,6 +148,7 @@ struct KeyboardSignals {
 
   // Defining live compliance-center requests.
   std::array<std::atomic<double>, 3> setup_compliance_center_mm_request; // EE [mm].
+  // r_c = p_C - p_TCP, in surface axes.
   std::array<std::atomic<double>, 3> setup_rc_mm_request; // [t1,t2,n] [mm].
 
   // Defining tool-axis tilt for the next sequence [tangent1,tangent2] [deg].

@@ -163,7 +163,7 @@ void reportSetupResult(const ControllerConfig& params,
     // Transforming the tool-fixed lever at the final setup orientation [m].
     r_c = r.R_EE * params.compliance_center_offset_ee;
   } else if (params.compliance_lever_in_surface_frame) {
-    r_c = -(R_base_surface * params.r_tcp_from_compliance_center_surface);
+    r_c = R_base_surface * params.compliance_lever_surface;
   }
   const Mat6x6 K_tcp = shiftGainToTcp(K_center, r_c);
   const Mat6x6 D_tcp = shiftGainToTcp(D_center, r_c);

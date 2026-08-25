@@ -265,7 +265,7 @@ Vec3 complianceLeverBase(
     return R_EE * params.compliance_center_offset_ee;
   }
   // Transforming the surface-frame lever into the robot base frame [m].
-  return -(R_base_surface * params.r_tcp_from_compliance_center_surface);
+  return R_base_surface * params.compliance_lever_surface;
 }
 
 double toolSurfaceMisalignmentAngle(
@@ -382,7 +382,7 @@ Vec6 computeCartesianImpedanceWrench(const ControllerConfig& params,
     r_c = R_EE * params.compliance_center_offset_ee;
   } else {
     // Transforming the surface-frame lever into the robot base frame [m].
-    r_c = -(R_base_surface * params.r_tcp_from_compliance_center_surface);
+    r_c = R_base_surface * params.compliance_lever_surface;
   }
 
   // Shifting the center-defined stiffness and damping to the TCP.

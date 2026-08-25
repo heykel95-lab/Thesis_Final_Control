@@ -478,7 +478,7 @@ ControllerConfig readControllerConfig(const std::vector<std::string>& filenames)
   p.compliance_center_offset_ee = getVec3Xyz("compliance_center_offset_ee", p.compliance_center_offset_ee);
   p.compliance_lever_in_surface_frame =
       getBool("compliance_lever_in_surface_frame", p.compliance_lever_in_surface_frame);
-  p.r_tcp_from_compliance_center_surface = getVec3Task("r_tcp_from_compliance_center_surface", p.r_tcp_from_compliance_center_surface);
+  p.compliance_lever_surface = getVec3Task("compliance_lever_surface", p.compliance_lever_surface);
 
   // Assigning nullspace mode, damping [N m s/rad], and sigma torque [N m].
   if (values.count("nullspace_mode")) {

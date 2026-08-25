@@ -1060,8 +1060,7 @@ RunResult runControlLoop(ControllerConfig& params,
           if (params.compliance_center_in_tool_frame) {
             r_c_base = R_EE * params.compliance_center_offset_ee;
           } else if (params.compliance_lever_in_surface_frame) {
-            r_c_base =
-                -(R_base_surface * params.r_tcp_from_compliance_center_surface);
+            r_c_base = R_base_surface * params.compliance_lever_surface;
           }
 
           // Assigning one updated component in the selected command frame [m].
@@ -1071,17 +1070,17 @@ RunResult runControlLoop(ControllerConfig& params,
             r_c_base = R_EE * center_ee;
           }
           if (std::isfinite(rc_mm)) {
-            Vec3 rc_surface = -(R_base_surface.transpose() * r_c_base);
+            Vec3 rc_surface = R_base_surface.transpose() * r_c_base;
             rc_surface(i) = 0.001 * rc_mm;
-            r_c_base = -(R_base_surface * rc_surface);
+            r_c_base = R_base_surface * rc_surface;
           }
 
           // Storing the updated center in the configured representation [m].
           if (params.compliance_center_in_tool_frame) {
             params.compliance_center_offset_ee = R_EE.transpose() * r_c_base;
           } else if (params.compliance_lever_in_surface_frame) {
-            params.r_tcp_from_compliance_center_surface =
-                -(R_base_surface.transpose() * r_c_base);
+            params.compliance_lever_surface =
+                R_base_surface.transpose() * r_c_base;
           }
           setup_impedance_changed = true;
         }

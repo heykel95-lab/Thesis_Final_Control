@@ -65,6 +65,14 @@ void printRuleOf(char c, int width) {
   printf("%s\n", rule);
 }
 
+// Snapping a value that rounds to zero at the printed precision onto positive
+// zero. Rotating a lever into a frame and back leaves a round-off residue, and
+// negating an exact zero keeps its sign bit, so a component that is zero by
+// definition would otherwise print as -0.0.
+double unsignedZero(double value) {
+  return (value > -0.05 && value < 0.05) ? 0.0 : value;
+}
+
 }  // namespace
 
 void printRule() {
@@ -90,17 +98,20 @@ void printRow(const char* label, const Vec3& v, const char* unit,
               const char* note) {
   if (note == nullptr || note[0] == '\0') {
     printf("  %-16s = [%9.1f, %9.1f, %9.1f] %s\n",
-           label, v(0), v(1), v(2), unit);
+           label, unsignedZero(v(0)), unsignedZero(v(1)),
+           unsignedZero(v(2)), unit);
     return;
   }
   printf("  %-16s = [%9.1f, %9.1f, %9.1f] %-8s %s\n",
-         label, v(0), v(1), v(2), unit, note);
+         label, unsignedZero(v(0)), unsignedZero(v(1)),
+         unsignedZero(v(2)), unit, note);
 }
 
 void printVec3Mm(const char* label, const Vec3& v) {
   // Converting Cartesian values from metres to millimetres [mm].
   printf("  %-16s = [%9.1f, %9.1f, %9.1f] mm\n",
-         label, 1000.0 * v(0), 1000.0 * v(1), 1000.0 * v(2));
+         label, unsignedZero(1000.0 * v(0)), unsignedZero(1000.0 * v(1)),
+         unsignedZero(1000.0 * v(2)));
 }
 
 void printVec3Deg(const char* label, const Vec3& v) {
@@ -216,14 +227,13 @@ void printSetupImpedanceLaw(const ControllerConfig& params,
     if (params.compliance_center_in_tool_frame) {
       r_c_base = R_EE * params.compliance_center_offset_ee;
     } else if (params.compliance_lever_in_surface_frame) {
-      r_c_base =
-          -(R_base_surface * params.r_tcp_from_compliance_center_surface);
+      r_c_base = R_base_surface * params.compliance_lever_surface;
     }
     const bool tool_frame_center = params.compliance_center_in_tool_frame;
     if (!tunable) {
-      printRow("p_c [EE]", Vec3(-1000.0 * (R_EE.transpose() * r_c_base)),
+      printRow("p_c [EE]", Vec3(1000.0 * (R_EE.transpose() * r_c_base)),
                "mm", tool_frame_center ? "commanded in the tool frame"
-                                         : "resolved in the tool frame");
+                                       : "resolved in the tool frame");
     }
     printRow("r_c [t1,t2,n]",
              Vec3(1000.0 * (R_base_surface.transpose() * r_c_base)), "mm",
