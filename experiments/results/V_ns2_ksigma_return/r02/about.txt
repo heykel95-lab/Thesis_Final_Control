@@ -1,0 +1,18 @@
+Video trial for the disturbance case: the conditioning switched on after the
+push, so the return is the thing on camera.
+
+Mode 2 throughout, but the run starts at k_sigma = 0.0, which commands no
+null-space torque at all. The push therefore wins and swings the elbow roughly
+22 deg, as it does in mode 0. Two seconds after the release ramp ends the gain
+is raised to 2.0 N m live, through the controller's own 'k <Nm>' key, and the
+run holds to 22 s so there are nine seconds of recovery to film.
+
+At a fixed k_sigma = 2.0 the law never let the elbow leave in the first place,
+so nothing came back. Splitting the run in two is what separates the holding
+from the returning.
+
+What it tests: whether 2.0 N m of conditioning torque can drive the arm back
+through joint friction, which earlier work in this repo puts around 2 N m. A
+partial return is the expected outcome, not a full one.
+
+Driven by lib/drive_ksigma_return.py, not the plain auto_drive.py.

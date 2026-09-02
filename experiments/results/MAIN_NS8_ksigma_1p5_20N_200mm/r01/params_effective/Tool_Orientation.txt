@@ -1,0 +1,46 @@
+# ====================================================================
+# TOOL ORIENTATION -- the tool axis and how it is commanded
+# ====================================================================
+# The face dimensions are in Tool_Geometry.txt; the plane this axis is
+# commanded against is in Plane_Definition.txt.
+
+# --------------------------------------------------------------------
+# Tool axis in the EE frame
+# --------------------------------------------------------------------
+# Grinding-face normal, written by the tool-axis calibration
+# (experiments/calibration/tools/<profile>/tool_axis_overlay.txt).
+tool_axis_ee_x = -0.006011239214
+tool_axis_ee_y = 0.000245887494
+tool_axis_ee_z = 0.999981902107
+
+# Sign along the surface normal. -1 points the +Z_EE face at the surface.
+tool_axis_target_sign = -1.0
+
+# --------------------------------------------------------------------
+# Commanded offset from the surface frame -- the whole orientation command
+# --------------------------------------------------------------------
+# The deliberate mismatch under study [deg]. It offsets only the command, not
+# the plane used for clearance, gains or alignment scoring. The orient phase
+# reaches all three before descend starts.
+
+# Tilt of the tool axis away from the surface normal.
+tool_target_offset_tangent1_deg = 0.00
+tool_target_offset_tangent2_deg = 0.00
+
+# Spin about the tool axis, measured from tangent1 to the face long axis. The
+# two tilts set the axis direction only, so without this the spin is whatever
+# q_init happened to have. It picks which edge of the rectangular face leads:
+# 0 deg puts the 120 mm long axis along tangent1, 90 deg along tangent2.
+tool_target_offset_normal_deg = 115.05
+
+# 0 = leave the spin at the start pose's value, ignoring the angle above.
+# 1 = command it. Runs archived before this parameter existed used 0.
+command_tool_twist = 1
+
+# --------------------------------------------------------------------
+# Rotational constraint
+# --------------------------------------------------------------------
+# Rotational spring mask in the surface frame. 0 removes that axis.
+constrain_rotation_about_alignment_normal = 1
+constrain_rotation_about_alignment_tangent1 = 1
+constrain_rotation_about_alignment_tangent2 = 1

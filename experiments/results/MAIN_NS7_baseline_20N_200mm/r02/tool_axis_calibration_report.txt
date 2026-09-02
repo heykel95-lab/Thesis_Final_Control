@@ -1,0 +1,17 @@
+Physical tool-axis calibration
+tool profile: grinding_tool
+reference plane profile: horizontal
+fit samples: T1, T2, T3
+held-out sample: T4
+tool axis EE [-]: [-0.006011239214, +0.000245887494, +0.999981902107]
+invariant base axis [-]: [+0.003898839156, -0.016958569210, -0.999848591530]
+offset from nominal +Z_EE [deg]: 0.344709
+fit angular residuals [deg]: 0.251122, 0.409052, 0.193672
+held-out angular residual [deg]: 0.495988
+acceptance limit [deg]: 0.500
+mean-rotation singular values [-]: 0.999986399, 0.789626546, 0.789612945
+axis observability gap [-]: 0.210359853
+minimum observability gap [-]: 0.005
+axis-to-plane disagreement [deg]: 1.358054
+axis-to-plane limit [deg]: 2.000
+status: PASS

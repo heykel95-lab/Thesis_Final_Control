@@ -1,0 +1,12 @@
+Three-point physical-plane calibration
+profile: horizontal
+fit points: P1, P2, P3
+surface point [m]: [+0.515266707, -0.107172433, +0.003108421]
+surface normal [-]: [+0.017244655, +0.027663279, +0.999468541]
+surface tangent t1 (P1->P2) [-]: [-0.905785705, -0.422853660, +0.027332007]
+surface tangent t2 = n x t1 [-]: [+0.423385024, -0.905775648, +0.017765037]
+tilt a about base x [deg]: -1.585191
+tilt b about base y [deg]: +0.988473
+fit triangle edge lengths [mm]: 94.9, 70.7, 142.0
+held-out signed distances [mm]:
+  P4: -0.817

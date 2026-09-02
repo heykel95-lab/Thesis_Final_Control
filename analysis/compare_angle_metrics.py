@@ -125,13 +125,16 @@ def main():
     # Left: both descriptions of the same trial, on one absolute scale.
     t, alignment, deviation = thin(t, alignment, deviation)
     axes[0].plot(t, alignment, color=SERIES_BLACK,
-                 label="EE-inferred angular deviation")
+                 label="Alignment angle from end-effector pose")
     axes[0].plot(t, alignment[0] - deviation, color=SERIES_RED,
                  label=(r"deviation at contact-establishment start $-$ "
                         r"end-effector rotation"))
     reference_line(axes[0])
     axes[0].set_xlabel("Time from contact-establishment start [s]")
-    axes[0].set_ylabel(r"Angle [$^\circ$]")
+    # Both curves are the alignment angle, obtained two ways; a bare "Angle"
+    # leaves the reader to guess which angle is plotted.
+    axes[0].set_ylabel(r"Alignment angle $\theta_{\mathrm{align}}$ [$^\circ$]")
+    axes[0].set_title("(a)")
 
     # Right: the same comparison reduced to one point per archived trial. The
     # gain is a magnitude here, because the deviation carries no sign.
@@ -146,8 +149,9 @@ def main():
                  marker="s", color=SERIES_RED, markerfacecolor="white",
                  markeredgewidth=1.0, label="deviation increased")
     axes[1].set_xlabel(
-        r"End-effector rotation since contact-establishment start [$^\circ$]")
-    axes[1].set_ylabel(r"Deviation change, magnitude [$^\circ$]")
+        r"Contact-establishment rotation $\phi_{\mathrm{set}}$ [$^\circ$]")
+    axes[1].set_ylabel(r"$|\Delta\theta_{\mathrm{align}}|$ [$^\circ$]")
+    axes[1].set_title("(b)")
 
 
     residual = np.abs(gain) - deviation_final

@@ -19,10 +19,10 @@ Mat6x6 blockDiagonal(const Mat3& translational, const Mat3& rotational) {
 }
 
 Mat6x6 complianceShiftMatrix(const Vec3& r_c) {
-  // Defining the spatial shift for r_c = p_TCP - p_C [m].
+  // Defining the spatial shift for r_c = p_C - p_TCP [m].
   Mat6x6 adjoint = Mat6x6::Zero();
   adjoint.block<3, 3>(0, 0) = Mat3::Identity();
-  adjoint.block<3, 3>(0, 3) = skewMatrix(r_c);
+  adjoint.block<3, 3>(0, 3) = -skewMatrix(r_c);
   adjoint.block<3, 3>(3, 3) = Mat3::Identity();
   return adjoint;
 }
@@ -262,10 +262,10 @@ Vec3 complianceLeverBase(
   }
   if (params.compliance_center_in_tool_frame) {
     // Transforming the tool-frame center offset into the base-frame lever [m].
-    return -(R_EE * params.compliance_center_offset_ee);
+    return R_EE * params.compliance_center_offset_ee;
   }
   // Transforming the surface-frame lever into the robot base frame [m].
-  return R_base_surface * params.r_tcp_from_compliance_center_surface;
+  return R_base_surface * params.compliance_lever_surface;
 }
 
 double toolSurfaceMisalignmentAngle(
@@ -376,14 +376,14 @@ Vec6 computeCartesianImpedanceWrench(const ControllerConfig& params,
     return wrench;
   }
 
-  // Resolving r_c = p_TCP - p_C in the robot base frame [m].
+  // Resolving r_c = p_C - p_TCP in the robot base frame [m].
   Vec3 r_c = Vec3::Zero();
   if (params.compliance_center_in_tool_frame) {
     // Transforming the tool-frame center offset into the base-frame lever [m].
-    r_c = -(R_EE * params.compliance_center_offset_ee);
+    r_c = R_EE * params.compliance_center_offset_ee;
   } else {
     // Transforming the surface-frame lever into the robot base frame [m].
-    r_c = R_base_surface * params.r_tcp_from_compliance_center_surface;
+    r_c = R_base_surface * params.compliance_lever_surface;
   }
 
   // Shifting the center-defined stiffness and damping to the TCP.

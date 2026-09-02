@@ -1,0 +1,5 @@
+run_id,study,gain,n,provenance_status,excursion_mean_rad,excursion_sd_rad,net_displacement_mean_rad,net_displacement_sd_rad,sigma_gain_mean,sigma_gain_sd,task_error_peak_mean_mm,task_error_peak_sd_mm,task_error_peak_max_mm,force_peak_mean_N,disturbance_tau_peak_mean_Nm,torque_scale_min,nullspace_speed_peak_mean_rad_s
+MAIN_NS7_baseline_20N_200mm,damping,0,3,clean-committed,0.132568606,0.0159868646,0.131193985,0.015942544,-0.002134206,0.000466173657,1.23291575,0.0658274109,1.30403485,20,2.41225528,1,0.119463313
+MAIN_NS7_damping_2p0_20N_200mm,damping,2,3,clean-committed,0.0992554209,0.00397558961,0.0979041104,0.00384741563,-0.00125759567,9.58122116e-05,1.22863209,0.0518905808,1.26996496,20,2.31021496,1,0.080386674
+MAIN_NS8_ksigma_1p5_20N_200mm,sigma,1.5,3,clean-committed,0.00494085993,0.000114077286,0.000264741625,0.000308121556,1.9474e-05,7.22709485e-07,0.888619525,0.0244665526,0.912500112,20,2.16716229,1,0.0914455107
+MAIN_NS8_ksigma_2p0_20N_200mm,sigma,2,3,clean-committed,0.0282574323,0.0022619329,-9.64221284e-05,0.000223537691,1.92743333e-05,3.49841869e-07,0.983106923,0.0526526114,1.0222393,20,2.16734951,1,0.184221134

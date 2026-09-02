@@ -67,6 +67,11 @@ void writeLogToCsv(
            << "m_x,m_y,m_z,"
            << "external_force_x,external_force_y,external_force_z,"
            << "external_moment_x,external_moment_y,external_moment_z,"
+           << "external_force_K_base_x,external_force_K_base_y,external_force_K_base_z,"
+           << "external_moment_K_base_x,external_moment_K_base_y,external_moment_K_base_z,"
+           << "r_K_TCP_base_x,r_K_TCP_base_y,r_K_TCP_base_z,"
+           << "setup_Dp_used_t1,setup_Dp_used_t2,setup_Dp_used_n,"
+           << "setup_DR_used_t1,setup_DR_used_t2,setup_DR_used_n,"
            << "contact_force_bias_x,contact_force_bias_y,contact_force_bias_z,"
            << "contact_moment_bias_x,contact_moment_bias_y,contact_moment_bias_z,"
            << "force_after_contact_x,force_after_contact_y,force_after_contact_z,"
@@ -108,6 +113,11 @@ void writeLogToCsv(
     writeVec3(log_file, row.m);
     writeVec3(log_file, row.external_force);
     writeVec3(log_file, row.external_moment);
+    writeVec3(log_file, row.external_force_K_base);
+    writeVec3(log_file, row.external_moment_K_base);
+    writeVec3(log_file, row.r_K_TCP_base);
+    writeVec3(log_file, row.setup_Dp_used);
+    writeVec3(log_file, row.setup_DR_used);
     writeVec3(log_file, row.contact_force_bias);
     writeVec3(log_file, row.contact_moment_bias);
     writeVec3(log_file, Vec3(row.external_force - row.contact_force_bias));

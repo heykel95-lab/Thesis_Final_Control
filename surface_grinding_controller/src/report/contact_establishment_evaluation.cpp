@@ -160,10 +160,11 @@ void reportContactEstablishmentResult(const ControllerConfig& params,
   const Vec3 tcp_ref = r.p_EE;
   Vec3 r_c = Vec3::Zero();
   if (params.compliance_center_in_tool_frame) {
-    // Transforming the tool-fixed lever at the final contact establishment orientation [m].
-    r_c = -(r.R_EE * params.compliance_center_offset_ee);
+    // Transforming the tool-fixed lever at the final contact establishment
+    // orientation [m]. The key stores p_C - p_TCP, which is r_c itself.
+    r_c = r.R_EE * params.compliance_center_offset_ee;
   } else if (params.compliance_lever_in_surface_frame) {
-    r_c = R_base_surface * params.r_tcp_from_compliance_center_surface;
+    r_c = R_base_surface * params.compliance_lever_surface;
   }
   const Mat6x6 K_tcp = shiftGainToTcp(K_center, r_c);
   const Mat6x6 D_tcp = shiftGainToTcp(D_center, r_c);
@@ -171,9 +172,9 @@ void reportContactEstablishmentResult(const ControllerConfig& params,
   // Transforming the commanded center to surface and end-effector coordinates [m].
   const Mat3& R_center_ref = r.R_EE;
   const Vec3 r_c_surface = R_base_surface.transpose() * r_c;
-  const Vec3 p_c_ee = -(R_center_ref.transpose() * r_c);
+  const Vec3 p_c_ee = R_center_ref.transpose() * r_c;
   printSection("center of compliance");
-  printf("  %-16s   r_c = p_TCP - p_c\n", "definition");
+  printf("  %-16s   r_c = p_c - p_TCP\n", "definition");
   printVec3Mm("p_TCP [x,y,z]", tcp_ref);
   printVec3Mm("p_c [EE]", p_c_ee);
   printVec3Mm("r_c [t1,t2,n]", r_c_surface);

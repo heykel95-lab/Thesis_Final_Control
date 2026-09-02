@@ -1,0 +1,12 @@
+run_id:   MAIN_NS7_damping_2p0_20N_200mm
+repeats:  3
+
+plane profile: horizontal
+
+tool profile: grinding_tool
+
+purpose:
+  Projected damping only under the balanced disturbance, nullspace_damping = 2.0 Nms/rad.
+
+pass criterion:
+  Compare with the balanced mode-0 reference; damping should reduce the excursion without imposing a preferred posture.

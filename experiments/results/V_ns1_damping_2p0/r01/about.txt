@@ -1,0 +1,8 @@
+Video trial for the disturbance case, null-space mode 1.
+
+Identical to V_ns0_baseline with projected null-space damping at
+nullspace_damping = 2.0 N m s/rad.
+
+What it shows: the elbow swing is damped while the disturbance acts, but
+damping alone has no preferred posture, so the arm keeps whatever elbow angle
+the push left it in.

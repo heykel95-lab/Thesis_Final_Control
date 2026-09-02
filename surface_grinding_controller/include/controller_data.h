@@ -31,7 +31,7 @@ struct LogData {
   Vec3 first_contact_point;     // Tool-feature position at first contact [m].
   Vec3 edge_target;             // Desired tool-feature position [m].
   Vec3 tool_contact_offset_ee;  // Feature offset in EE frame [m].
-  Vec3 p_CoC;   // Centre of compliance, p_TCP - r_c [m]. Equals p_EE when the
+  Vec3 p_CoC;   // Centre of compliance, p_TCP + r_c [m]. Equals p_EE when the
                 // lever is zero, so the centre is the TCP in that case.
   Vec3 r_eff;   // Lever the contact force acts through, p_contact - p_CoC [m].
 
@@ -49,8 +49,13 @@ struct LogData {
 
   Vec3 f;                    // Commanded Cartesian force [N].
   Vec3 m;                    // Commanded Cartesian moment [N m].
-  Vec3 external_force;       // Estimated external force [N].
-  Vec3 external_moment;      // Estimated external moment [N m].
+  Vec3 external_force;       // O_F_ext_hat_K force component [N].
+  Vec3 external_moment;      // O_F_ext_hat_K moment component [N m].
+  Vec3 external_force_K_base;  // K_F_ext_hat_K force rotated into base axes [N].
+  Vec3 external_moment_K_base; // K_F_ext_hat_K moment rotated into base axes [N m].
+  Vec3 r_K_TCP_base;         // Offset p_K - p_TCP in base axes [m].
+  Vec3 setup_Dp_used;        // Active setup damping in [t1,t2,n] [N s/m].
+  Vec3 setup_DR_used;        // Active setup damping in [t1,t2,n] [N m s/rad].
   Vec3 contact_force_bias;   // External-force bias captured at contact [N].
   Vec3 contact_moment_bias;  // External-moment bias captured at contact [N m].
   double push;               // Virtual surface penetration [m].
@@ -148,6 +153,7 @@ struct KeyboardSignals {
 
   // Defining live compliance-center requests.
   std::array<std::atomic<double>, 3> contact_establishment_compliance_center_mm_request; // EE [mm].
+  // r_c = p_C - p_TCP, in surface axes.
   std::array<std::atomic<double>, 3> contact_establishment_rc_mm_request; // [t1,t2,n] [mm].
 
   // Defining tool-axis tilt for the next sequence [tangent1,tangent2] [deg].

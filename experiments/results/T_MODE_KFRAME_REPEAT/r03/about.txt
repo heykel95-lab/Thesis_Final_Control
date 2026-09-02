@@ -1,0 +1,19 @@
+# T-mode quasi-static repeat with explicit K-frame wrench logging
+
+Select t at the startup menu. Do not press g or p during the run.
+Keep the tool clear of the surface for the first baseline, then perform the
+following motions while watching the controller time:
+
+- 0.5--3.0 s: leave the tool untouched and clear of the surface;
+- 3.5--7.5 s: push slowly by approximately 20 mm along the surface normal;
+- 8.0--12.0 s: hold the normal displacement stationary;
+- 12.0--17.0 s: maintain the same normal displacement without rotating;
+- 17.0--21.0 s: maintain the normal displacement and rotate approximately
+  5 deg about positive tangent 1;
+- 22.0--28.0 s: hold both displacement and rotation stationary;
+- 28.0--34.0 s: release the tool and leave it untouched.
+
+The run preserves the original stiffnesses, enables unit-ratio automatic
+damping, disables the compliance-centre shift, and disables null-space torque.
+The log contains the calculated damping, both O_F_ext_hat_K and
+K_F_ext_hat_K, and the measured K-to-TCP offset.

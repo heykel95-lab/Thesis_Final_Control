@@ -39,9 +39,9 @@ PARAM_KEYS = (
     "compliance_center_offset_ee_x",
     "compliance_center_offset_ee_y",
     "compliance_center_offset_ee_z",
-    "r_tcp_from_compliance_center_surface_tangent1",
-    "r_tcp_from_compliance_center_surface_tangent2",
-    "r_tcp_from_compliance_center_surface_normal",
+    "compliance_lever_surface_tangent1",
+    "compliance_lever_surface_tangent2",
+    "compliance_lever_surface_normal",
     "contact_establishment_push_speed",
     "contact_establishment_push_end",
     "contact_establishment_timeout",
@@ -55,6 +55,28 @@ LEGACY_PARAM_KEYS = {
     "contact_establishment_translation_surface_frame":
         "setup_translation_surface_frame",
 }
+
+# The surface-frame lever key was renamed when r_c was defined as p_C - p_TCP.
+# Archives written before that carry the old name holding p_TCP - p_C, so the
+# legacy value is negated to put every row in one convention.
+LEGACY_LEVER_KEY = "r_tcp_from_compliance_center_surface_{axis}"
+
+
+def surface_lever(params):
+    """Return the r_c columns, reading either spelling of the key."""
+    out = {}
+    for axis in ("tangent1", "tangent2", "normal"):
+        key = f"compliance_lever_surface_{axis}"
+        if params.get(key, "") != "":
+            out[key] = params[key]
+            continue
+        legacy = params.get(LEGACY_LEVER_KEY.format(axis=axis), "")
+        try:
+            out[key] = f"{-float(legacy):.6f}"
+        except ValueError:
+            out[key] = ""
+    return out
+
 
 FIELDS = (
     ("stop_reason", re.compile(r"^\s*stop:\s*(\w+)", re.M)),
@@ -314,6 +336,7 @@ def collect(results_dir):
             params = read_params(os.path.join(trial, "params_effective"))
             for key in PARAM_KEYS:
                 row[key] = params.get(key, "")
+            row.update(surface_lever(params))
 
             report = parse_report(os.path.join(trial, "terminal.log"))
             row.update(report)

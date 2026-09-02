@@ -1,0 +1,54 @@
+# ====================================================================
+# Q_INIT -- initial joint configuration [rad]
+# ====================================================================
+# q_init_case selects one of the postures below. The startup menu moves the
+# arm there before anything else runs. Type the name of which q_init_case you want to start from there
+q_init_case = horizontal_table_search
+
+# horizontal_tool
+q_init_horizontal_1 = 0.0
+q_init_horizontal_2 = -pi/4
+q_init_horizontal_3 = 0.0
+q_init_horizontal_4 = -3*pi/4
+q_init_horizontal_5 = 0.0
+q_init_horizontal_6 = pi/2
+q_init_horizontal_7 = pi/4
+
+# tilted_tool : Working with this for my Experiments for now
+q_init_tilted_1 = -0.047771
+q_init_tilted_2 = 0.315777
+q_init_tilted_3 = -0.089546
+q_init_tilted_4 = -2.143518
+q_init_tilted_5 = 0.306679
+q_init_tilted_6 = 2.434032
+q_init_tilted_7 = 0.467459
+
+# tilted_close
+q_init_tilted_close_1 = -0.050615
+q_init_tilted_close_2 = 0.148353
+q_init_tilted_close_3 = -0.068068
+q_init_tilted_close_4 = -2.295108
+q_init_tilted_close_5 = 0.335103
+q_init_tilted_close_6 = 2.446952
+q_init_tilted_close_7 = 0.457276
+
+# horizontal_table_search -- the start pose every MAIN overlay pins. Re-measured
+# 2026-07-31 for the restarted campaign; the superseded runs in
+# experiments/Old_Results used the previous values, archived with each of them.
+q_init_table_1 = 0.014777
+q_init_table_2 = 0.210911
+q_init_table_3 = -0.009320
+q_init_table_4 = -2.284835
+q_init_table_5 = -0.002725
+q_init_table_6 = 2.493410
+q_init_table_7 = 0.780694
+
+# saved_qinit -- written by w+Enter in guiding mode. Saving also sets
+# q_init_case above to saved_qinit, so the next run starts from it.
+q_init_saved_1 = 0.014777
+q_init_saved_2 = 0.210911
+q_init_saved_3 = -0.009320
+q_init_saved_4 = -2.284835
+q_init_saved_5 = -0.002725
+q_init_saved_6 = 2.493410
+q_init_saved_7 = 0.780694

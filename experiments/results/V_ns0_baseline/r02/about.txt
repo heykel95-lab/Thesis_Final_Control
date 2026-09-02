@@ -1,0 +1,14 @@
+Video trial for the disturbance case, null-space mode 0.
+
+Plain pose hold at the table posture with the automatic point force on link 3,
+at the largest push the controller's own validation allows: 40 N is the ceiling
+in validateAutomaticDisturbance, applied 0.15 m along the link z axis so the
+resulting joint torque reaches the 5 N m cap that is the other ceiling.
+
+Raised over 3 to 5 s, held to 13 s, released over a 1 s ramp, and the run
+continues to 24 s. The window is longer than the 20 N runs in r01: at 20 N over
+3 s the redundant axis moved 0.6 deg, which is not visible on camera, so the
+force now acts for 10 s and the elbow travel accumulates.
+
+What it shows: the redundant axis with no null-space torque at all. This is the
+reference the two other video runs are watched against.

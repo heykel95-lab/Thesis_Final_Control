@@ -1,0 +1,105 @@
+
+==============================================================================
+  SURFACE GRINDING CONTROLLER
+==============================================================================
+  robot              172.16.0.2
+  parameters         /home/hm-panda/Desktop/Thesis_Final_Control/surface_grinding_controller/params
+------------------------------------------------------------------------------
+
+==============================================================================
+  SURFACE GRINDING CONTROLLER - STARTUP MENU
+==============================================================================
+
+-- RUN MODES -----------------------------------------------------------------
+  s      Run orientation, approach, setup, and grinding
+  h      Cartesian pose hold at the initial posture
+  t      Cartesian pose hold with the setup impedance
+  g      Start manual guidance from the current robot pose
+
+-- ROBOT PREPARATION ---------------------------------------------------------
+  i      Move to the configured initial joint posture
+
+-- GRIPPER AND TOOL ----------------------------------------------------------
+  o      Open the gripper
+  c      Grasp the tool
+  r      Recalibrate the gripper with empty fingers
+  f      Pick up the tool from the holder
+  b      Return the tool to the holder
+
+-- PROGRAM -------------------------------------------------------------------
+  e      Exit
+------------------------------------------------------------------------------
+  During control: e = stop | m = startup menu | g = guidance
+------------------------------------------------------------------------------
+Selection [s/h/t/g/i/o/c/r/f/b/e]: 
+-- moving to q_init ----------------------------------------------------------
+  case               horizontal_table_search
+  q1..q7 [deg]     = [0.8, 12.1, -0.5, -130.9, -0.2, 142.9, 44.7] deg
+  horizontal_table_search = [0.014777, 0.210911, -0.009320, -2.284835, -0.002725, 2.493410, 0.780694] rad
+  q_init reached.
+
+-- NULLSPACE CONTROL ---------------------------------------------------------
+  0      Disabled
+  1      Nullspace damping
+  2      Singular-value conditioning
+  3      Combined damping and conditioning
+------------------------------------------------------------------------------
+Selection [0/1/2/3, Enter = 1]: 
+-- SELECTED MODE: CARTESIAN POSE HOLD ----------------------------------------
+  nullspace          nullspace_damping_only
+
+-- start pose ----------------------------------------------------------------
+  q_start          = [0.9, 12.1, -0.5, -130.9, -0.1, 142.9, 44.7] deg
+  p_start          = [    531.3,       2.6,     156.8] mm
+
+==============================================================================
+  RUN
+==============================================================================
+
+-- nullspace: nullspace_damping_only -----------------------------------------
+  law                tau = -d_null * N_tau * dq
+  d_null             20.000 Nms/rad
+  keys               d <Nms/rad>
+                     0/1/2/3 switch mode
+
+-- automatic link-point push -------------------------------------------------
+  link               joint 3 frame
+  point [link]       [+0.0, +0.0, +150.0] mm
+  direction [base]   [-0.006, +1.000, -0.002]
+  force              40.00 N | tau norm <= 5.00 Nm
+  time [s]           ramp 1.0--3.0 | hold to 11.0 | release 1.0 s
+
+-- phase: hold ---------------------------------------------------------------
+  Kp [x,y,z]       = [   2000.0,    2000.0,    2000.0] N/m
+  Dp [x,y,z]       = [     50.0,      50.0,      50.0] Ns/m
+  KR [x,y,z]       = [     50.0,      50.0,      50.0] Nm/rad
+  DR [x,y,z]       = [      8.0,       8.0,       8.0] Nms/rad
+
+>>> AUTOMATIC PUSH START  (t = 1.0 s)
+
+>>> AUTOMATIC PUSH AT FULL FORCE  (t = 3.0 s)
+
+>>> AUTOMATIC RELEASE START  (t = 11.0 s)
+
+-- joint motion [deg] --------------------------------------------------------
+  joint       start    final    delta
+  q1            0.9     18.6    +17.7
+  q2           12.1     13.0     +0.9
+  q3           -0.5    -17.5    -16.9
+  q4         -130.9   -130.7     +0.2
+  q5           -0.1      1.1     +1.2
+  q6          142.9    142.9     +0.1
+  q7           44.7     45.1     +0.4
+
+==============================================================================
+  FINAL RESULT
+==============================================================================
+  p_d              = [    531.3,       2.6,     156.8] mm
+  p_EE             = [    532.5,       3.2,     155.7] mm
+  e_p              = [     -1.2,      -0.7,       1.1] mm
+  e_R              = [     3.04,      0.06,      0.20] deg
+------------------------------------------------------------------------------
+  position error     1.78 mm
+  rotation error     3.04 deg
+  csv                logs/surface_grinding_controller_log.csv
+------------------------------------------------------------------------------

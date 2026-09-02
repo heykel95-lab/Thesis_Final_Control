@@ -1,0 +1,32 @@
+# T_MODE_MANUAL_D_REPEAT
+# Reproduction of the original t-mode gains with explicit K-frame logging.
+
+experiment_duration = 34.0
+print_hold_debug = 1
+
+setup_translation_surface_frame = 1
+setup_auto_damping = 0
+setup_auto_damping_factor = 1.0
+auto_damping_min_from_manual = 0
+
+# Original t-mode translational impedance in [t1,t2,n].
+setup_Kp_surface_tangent1 = 2000.0
+setup_Kp_surface_tangent2 = 2000.0
+setup_Kp_surface_normal = 1000.0
+setup_Dp_surface_tangent1 = 10.0
+setup_Dp_surface_tangent2 = 10.0
+setup_Dp_surface_normal = 175.0
+
+# Original t-mode rotational impedance in [t1,t2,n].
+setup_KR_tangent1 = 15.0
+setup_KR_tangent2 = 5.0
+setup_KR_normal = 50.0
+setup_DR_tangent1 = 10.01
+setup_DR_tangent2 = 10.01
+setup_DR_normal = 10.0
+
+# Decouple force and moment at the controller TCP.
+use_virtual_compliance_center = 0
+
+# Remove secondary joint-space torque during the check.
+nullspace_mode = 0

@@ -1,0 +1,17 @@
+# T-mode repeat with the original manual damping
+
+Select t at the startup menu. Do not press g or p during the run.
+
+- 0.5--3.0 s: leave the tool untouched;
+- 3.5--7.5 s: push approximately 20 mm along the surface normal;
+- 8.0--13.0 s: hold the normal displacement stationary;
+- 13.0--17.0 s: maintain the same push without rotating;
+- 17.0--22.0 s: rotate approximately 5 deg about positive tangent 1;
+- 22.0--31.0 s: maintain the displacement and angle, applying only the
+  counter-torque needed to prevent return;
+- 31.0--34.0 s: release the tool.
+
+This setup restores the original manual impedance gains, including
+DR_t1=10.01 N m s/rad. Automatic damping, the compliance-centre shift and
+null-space torque are disabled. The controller logs both O_F_ext_hat_K and
+K_F_ext_hat_K, together with the K-to-TCP offset.

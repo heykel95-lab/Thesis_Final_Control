@@ -232,10 +232,22 @@ RunResult runControlLoop(ControllerConfig& params,
     const Vec3 p_EE = T_EE.block<3, 1>(0, 3);
     const Mat3 R_EE = T_EE.block<3, 3>(0, 0);
 
-    // Mapping estimated external force [N] and moment [N m].
+    // Mapping both libfranka wrench representations. O_F_ext_hat_K is kept
+    // unchanged for compatibility with the campaign logs. K_F_ext_hat_K is
+    // rotated into the base axes so its moment remains explicitly referenced
+    // to K. The relative K-to-TCP offset then suffices for wrench transport.
     Map<const Vec6> external_wrench(robot_state.O_F_ext_hat_K.data());
     const Vec3 external_force = external_wrench.head<3>();
     const Vec3 external_moment = external_wrench.tail<3>();
+    Map<const Vec6> external_wrench_K(robot_state.K_F_ext_hat_K.data());
+    Map<const Mat4x4> T_EE_K(robot_state.EE_T_K.data());
+    const Mat3 R_base_K = R_EE * T_EE_K.block<3, 3>(0, 0);
+    const Vec3 r_K_TCP_base =
+        R_EE * T_EE_K.block<3, 1>(0, 3);
+    const Vec3 external_force_K_base =
+        R_base_K * external_wrench_K.head<3>();
+    const Vec3 external_moment_K_base =
+        R_base_K * external_wrench_K.tail<3>();
 
     // Reinitializing controller references from the measured pose after a mode change.
     const auto restartFromPoseReached = [&](bool reanchor_surface_point) {
@@ -667,7 +679,7 @@ RunResult runControlLoop(ControllerConfig& params,
         // same two lines cover both the referenced and the shifted case.
         const Vec3 r_c_log =
             complianceLeverBase(params, R_EE, R_base_surface);
-        p_CoC_log = p_EE - r_c_log;
+        p_CoC_log = p_EE + r_c_log;
         r_eff_log = tool_contact_point - p_CoC_log;
 
         // Observing the alignment criterion. It only reads the deviation and
@@ -1081,20 +1093,19 @@ RunResult runControlLoop(ControllerConfig& params,
           printf("Compliance-center tuning requires the virtual center of "
                  "compliance.\n");
         } else {
-          // Resolving r_c = p_TCP - p_C in the robot base frame [m].
+          // Resolving r_c = p_C - p_TCP in the robot base frame [m].
           Vec3 r_c_base = Vec3::Zero();
           if (params.compliance_center_in_tool_frame) {
-            r_c_base = -(R_EE * params.compliance_center_offset_ee);
+            r_c_base = R_EE * params.compliance_center_offset_ee;
           } else if (params.compliance_lever_in_surface_frame) {
-            r_c_base =
-                R_base_surface * params.r_tcp_from_compliance_center_surface;
+            r_c_base = R_base_surface * params.compliance_lever_surface;
           }
 
           // Assigning one updated component in the selected command frame [m].
           if (std::isfinite(center_mm)) {
-            Vec3 center_ee = -(R_EE.transpose() * r_c_base);
+            Vec3 center_ee = R_EE.transpose() * r_c_base;
             center_ee(i) = 0.001 * center_mm;
-            r_c_base = -(R_EE * center_ee);
+            r_c_base = R_EE * center_ee;
           }
           if (std::isfinite(rc_mm)) {
             Vec3 rc_surface = R_base_surface.transpose() * r_c_base;
@@ -1104,9 +1115,9 @@ RunResult runControlLoop(ControllerConfig& params,
 
           // Storing the updated center in the configured representation [m].
           if (params.compliance_center_in_tool_frame) {
-            params.compliance_center_offset_ee = -(R_EE.transpose() * r_c_base);
+            params.compliance_center_offset_ee = R_EE.transpose() * r_c_base;
           } else if (params.compliance_lever_in_surface_frame) {
-            params.r_tcp_from_compliance_center_surface =
+            params.compliance_lever_surface =
                 R_base_surface.transpose() * r_c_base;
           }
           contact_establishment_impedance_changed = true;
@@ -1192,6 +1203,15 @@ RunResult runControlLoop(ControllerConfig& params,
       row.m = m;
       row.external_force = external_force;
       row.external_moment = external_moment;
+      row.external_force_K_base = external_force_K_base;
+      row.external_moment_K_base = external_moment_K_base;
+      row.r_K_TCP_base = r_K_TCP_base;
+      row.setup_Dp_used = damping.setup_damping_valid
+                              ? damping.setup_Dp_used
+                              : gains.setup_Dp_active_diag;
+      row.setup_DR_used = damping.setup_damping_valid
+                              ? damping.setup_DR_used
+                              : params.setup_DR_diag;
       row.contact_force_bias = contact_force_bias;
       row.contact_moment_bias = contact_moment_bias;
       row.push = push_log;

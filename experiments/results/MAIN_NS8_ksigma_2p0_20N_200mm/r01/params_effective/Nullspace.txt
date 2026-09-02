@@ -1,0 +1,81 @@
+# ====================================================================
+# NULLSPACE -- sigma-min optimization on the redundant axis
+# ====================================================================
+# Torque in the 7-DOF nullspace, so it never disturbs the task. Each term has
+# its own gain and a mode commands only its terms: mode 1 damping, mode 2
+# sigma push, mode 3 both. The direct startup h asks for the mode; the value
+# here is what Enter accepts.
+
+# 1 = enable nullspace torque at all.
+use_nullspace_optimization = 1
+
+# 0 = off, 1 = damping only, 2 = sigma only, 3 = both.
+nullspace_mode = 2
+
+# --------------------------------------------------------------------
+# Gains
+# --------------------------------------------------------------------
+# Damping of the nullspace velocity [Nms/rad]. Modes 1 and 3.
+nullspace_damping = 2.0
+
+# Sigma push torque [Nm]. Modes 2 and 3. The automatic hold study found that
+# 1 Nm mostly loaded joint friction; 2 Nm produced observable redundant motion.
+# Mode 2 is undamped, so do not raise this further without a screening run.
+nullspace_k_sigma = 2.0
+
+# --------------------------------------------------------------------
+# Sigma sampling (modes 2 and 3)
+# --------------------------------------------------------------------
+# Probe distance for comparing q+alpha*n with q-alpha*n [rad]. It sets where
+# sigma is sampled, not the commanded torque.
+nullspace_alpha = 0.08
+
+# Ignore sigma differences below this numerical deadband.
+nullspace_sigma_deadband = 0.000001
+
+# Relative singular-value cutoff for the pseudo-inverse.
+nullspace_svd_relative_tolerance = 0.0001
+
+# --------------------------------------------------------------------
+# Diagnostics
+# --------------------------------------------------------------------
+# 1 = print the rate-limited sigma line in hold mode 2 or 3.
+print_sigma_debug = 0
+
+# Separate 20 Hz file for guide/recapture events, raw q/dq, contamination and
+# sigma response. Buffered during control and written after the stop.
+sigma_debug_csv_file_name = logs/surface_grinding_controller_sigma_debug.csv
+
+# Sample period [s] and buffer capacity.
+sigma_debug_log_period = 0.05
+max_sigma_debug_rows = 20000
+
+# --------------------------------------------------------------------
+# Hold disturbance -- hold experiments only
+# --------------------------------------------------------------------
+# Cues preserve the hand-push protocol. Auto mode commands a repeatable
+# point-force equivalent inside the same torque loop.
+# 1 = print the cues during hold.
+disturbance_cues_enabled = 0
+
+# Hold-clock edges: cosine ramp, full-force hold, then cosine release [s].
+disturbance_push_time = 5.0
+disturbance_hold_time = 7.0
+disturbance_release_time = 8.0
+
+# 0 = no commanded disturbance. 1 = link-point push in plain h mode.
+disturbance_auto_enabled = 1
+
+# Point fixed in this joint frame: link number and local offset [m].
+disturbance_link = 3
+disturbance_point_link_x = 0.0
+disturbance_point_link_y = 0.0
+disturbance_point_link_z = 0.200
+
+# Magnitude [N]. Direction is chosen once to excite the redundant axis.
+disturbance_force = 20.0
+disturbance_direction_sign = 1.0
+
+# Release duration [s] and hard commanded joint-torque norm [Nm].
+disturbance_release_ramp_time = 1.0
+disturbance_max_tau_norm = 3.0

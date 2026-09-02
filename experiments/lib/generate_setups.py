@@ -42,7 +42,7 @@ FACE_LONG_EE = (0.0, 1.0, 0.0)
 
 # The press is normal to the surface, so the moment it makes about the TCP is
 #
-#     m = f x r_c = F (r_c_t2, -r_c_t1, 0).
+#     m_c = r_c x f = F (r_c_t2, -r_c_t1, 0),   r_c = p_c - p_TCP.
 #
 # A lever along the normal drops out of that cross product entirely: only the
 # tangential part turns the tool, and it turns it perpendicular to itself. A
@@ -51,34 +51,36 @@ FACE_LONG_EE = (0.0, 1.0, 0.0)
 #
 # With the commanded spin at 90 deg the end-effector axes line up with the
 # surface frame: EE x with t1, EE y with t2, EE z with the normal. The
-# configuration stores p_c - p_TCP, and r_c = p_TCP - p_c, so the stored offset
-# is the negation of the lever.
+# tool-frame key stores p_c - p_TCP, which is r_c itself; the surface-frame key
+# keeps the opposite sign and the controller negates it on read.
 #
 # Both signs were measured rather than assumed, and they are set per axis
 # because the assisting direction is not the same on the two tangents.
 #
-# About t1: with the lever along -t2 the alignment component moved 0.08 deg
-# over contact establishment that moved 2.05 deg with no lever, so that direction
-# cancels the correction. The assisting direction is +t2.
+# About t1: with r_c along +t2 the alignment component moved 0.08 deg over
+# contact establishment that moved 2.05 deg with no lever at all, so that
+# direction cancels the correction. The assisting direction is -t2.
 #
-# About t2: with the lever along -t1 the component went from -5.15 to
-# -21.14 deg against -6.88 deg with no lever, so that direction drives the
-# tool away an order of magnitude harder than the contact alone. The assisting
-# direction is +t1.
+# About t2: with r_c along +t1 the component went from -5.15 to -21.14 deg
+# against -6.88 deg with no lever, so that direction drives the tool away an
+# order of magnitude harder than the contact alone. The assisting direction
+# is -t1.
 #
 # The t2 axis is the unstable one: the face is 20 mm half-width across it
 # against 60 mm half-length across t1, so the tool rocks over the short
 # dimension. A lever pointed the wrong way there is what produced the 16 deg
 # excursions, and it is why the two axes are kept as separate entries.
 LEVER_OFFSET_EE = {
-    "t1": (0.0, -1.0, 0.0),  # lever along +t2
-    "t2": (-1.0, 0.0, 0.0),  # lever along +t1
+    "t1": (0.0, -1.0, 0.0),  # r_c along -t2
+    "t2": (-1.0, 0.0, 0.0),  # r_c along -t1
 }
 
-# The same two levers named directly in surface axes, for the S3 arm.
+# The same two levers named directly in surface axes, for the S3 arm. The key
+# holds r_c, so these match the tool-frame directions above component for
+# component once the commanded spin lines the two frames up.
 SURFACE_LEVER = {
-    "t1": (0.0, 1.0, 0.0),
-    "t2": (1.0, 0.0, 0.0),
+    "t1": (0.0, -1.0, 0.0),
+    "t2": (-1.0, 0.0, 0.0),
 }
 
 
@@ -158,9 +160,9 @@ def scaled(direction, distance):
 def tool_frame_lever(offset_ee):
     """Select the tool-frame definition and place p_c at the given offset.
 
-    The configuration stores p_c - p_TCP in end-effector coordinates, so the
-    lever r_c = p_TCP - p_c is its negation. Writing the offset here keeps the
-    spec in the same terms as the parameter file.
+    The configuration stores p_c - p_TCP in end-effector coordinates, which is
+    r_c expressed in those coordinates. Writing the offset here keeps the spec
+    in the same terms as the parameter file.
     """
     return [
         ("compliance_center_in_tool_frame", "1"),
@@ -176,9 +178,9 @@ def surface_frame_lever(t1_m, t2_m, n_m):
     return [
         ("compliance_center_in_tool_frame", "0"),
         ("compliance_lever_in_surface_frame", "1"),
-        ("r_tcp_from_compliance_center_surface_tangent1", f"{t1_m:.6f}"),
-        ("r_tcp_from_compliance_center_surface_tangent2", f"{t2_m:.6f}"),
-        ("r_tcp_from_compliance_center_surface_normal", f"{n_m:.6f}"),
+        ("compliance_lever_surface_tangent1", f"{t1_m:.6f}"),
+        ("compliance_lever_surface_tangent2", f"{t2_m:.6f}"),
+        ("compliance_lever_surface_normal", f"{n_m:.6f}"),
     ]
 
 
@@ -187,9 +189,9 @@ def no_lever():
     return [
         ("compliance_center_in_tool_frame", "0"),
         ("compliance_lever_in_surface_frame", "1"),
-        ("r_tcp_from_compliance_center_surface_tangent1", "0.0"),
-        ("r_tcp_from_compliance_center_surface_tangent2", "0.0"),
-        ("r_tcp_from_compliance_center_surface_normal", "0.0"),
+        ("compliance_lever_surface_tangent1", "0.0"),
+        ("compliance_lever_surface_tangent2", "0.0"),
+        ("compliance_lever_surface_normal", "0.0"),
     ]
 
 

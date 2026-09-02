@@ -34,12 +34,17 @@ METRICS = os.path.join(HERE, "..", "experiments", "derived", "metrics.csv")
 
 sys.path.insert(0, HERE)
 from figure_style import (apply_style, reference_line,  # noqa: E402
-                          SERIES_COLOURS, SERIES_MARKERS)
+                          SERIES_BLUE, SERIES_COLOURS, SERIES_MARKERS)
 
 apply_style()
 
-ROTATION_LABEL = (r"Contact-establishment rotation about the commanded tangent"
-                  r" [$^\circ$]")
+ROTATION_LABEL = (r"$\Delta\theta_{\mathrm{set}}$ about the commanded"
+                  r" tangent [$^\circ$]")
+
+# Every bar chart in the thesis takes the palette blue, the same one the line
+# plots use for their third series. The Case-A bars in pgfplots carry it too, so
+# the three bar figures read as one family.
+BAR_FILL_BLUE = SERIES_BLUE
 
 # The four groups of the sweep, in the order they are drawn. Their legend
 # labels use the measured orientation at the start of contact establishment; the
@@ -119,7 +124,7 @@ def sweep(groups, prefix, positions, key):
 
 
 def draw_sweep(entries, xlabel, out_path, figsize=(5.8, 3.4),
-               ylabel=ROTATION_LABEL, headroom=0.30):
+               ylabel=ROTATION_LABEL, headroom=0.30, top_headroom=None):
     fig, ax = plt.subplots(figsize=figsize)
     for (x, y, err, label), colour, marker in zip(entries, SERIES_COLOURS,
                                                   SERIES_MARKERS):
@@ -129,8 +134,17 @@ def draw_sweep(entries, xlabel, out_path, figsize=(5.8, 3.4),
     reference_line(ax)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    # Headroom so the corner legend sits above the data rather than on it.
-    ax.margins(y=headroom)
+    if top_headroom is None:
+        # Headroom so the corner legend sits above the data rather than on it.
+        ax.margins(y=headroom)
+    else:
+        # Headroom above the data only. A tall legend needs more room than a
+        # symmetric margin can give without opening dead space under the
+        # lowest series, which squashes the curves into the middle band.
+        ax.margins(y=0.05)
+        ax.autoscale_view()
+        bottom, top = ax.get_ylim()
+        ax.set_ylim(bottom, bottom + (top - bottom) * (1.0 + top_headroom))
     ax.legend(loc="upper right")
     fig.tight_layout()
     fig.savefig(out_path)
@@ -158,12 +172,15 @@ def main():
     fig, ax = plt.subplots(figsize=(5.8, 3.3))
     ax.bar(x - width / 2, selected, width, color=SERIES_COLOURS[0],
            edgecolor="#1a1a1a", linewidth=0.8, label="selected lever")
-    ax.bar(x + width / 2, fixed, width, color=SERIES_COLOURS[1],
+    # Bar charts skip the red the line plots take second: a filled red bar
+    # carries far more ink than a red curve and reads as a warning against
+    # the black beside it.
+    ax.bar(x + width / 2, fixed, width, color=BAR_FILL_BLUE,
            edgecolor="#1a1a1a", linewidth=0.8, label=r"fixed $t_1$ lever")
     reference_line(ax)
     ax.set_xticks(x)
     ax.set_xticklabels(directions)
-    ax.set_xlabel("Commanded rotation direction")
+    ax.set_xlabel(r"Commanded rotation direction [$^\circ$]")
     ax.set_ylabel(ROTATION_LABEL)
     ax.legend(loc="upper right")
     fig.tight_layout()
@@ -231,8 +248,11 @@ def main():
         if len(x):
             runs = [f"{prefix}_{tag(position)}" for position in x]
             entries.append((x, y, err, initial_label(groups, runs, axis)))
-    draw_sweep(entries, "Centre position along the assisting tangent [mm]",
-               out("MAIN_E_sign.pdf"), figsize=(5.8, 3.8))
+    # Four entries make this legend taller than the others, and the black
+    # series runs flat under it from -10 mm on, so the room has to come from
+    # above the data rather than from a symmetric margin.
+    draw_sweep(entries, r"$d_c$ along the assisting tangent [mm]",
+               out("MAIN_E_sign.pdf"), figsize=(5.8, 3.8), top_headroom=0.45)
 
     # F -- reported frame-definition comparison at zero and +10 degrees.
     commands = ["none", r"$+10^\circ$ about $t_1$"]
@@ -246,13 +266,13 @@ def main():
            color=SERIES_COLOURS[0], edgecolor="#1a1a1a", linewidth=0.8,
            label="tool frame")
     ax.bar(x + width / 2, surface, width, yerr=surface_sd, capsize=3,
-           color=SERIES_COLOURS[1], edgecolor="#1a1a1a", linewidth=0.8,
+           color=BAR_FILL_BLUE, edgecolor="#1a1a1a", linewidth=0.8,
            label="surface frame")
     reference_line(ax)
     ax.set_xticks(x)
     ax.set_xticklabels(commands)
-    ax.set_xlabel("Commanded orientation offset")
-    ax.set_ylabel(r"Contact-establishment rotation about $t_1$ [$^\circ$]")
+    ax.set_xlabel(r"Commanded offset [$^\circ$]")
+    ax.set_ylabel(r"$\Delta\theta_{\mathrm{set},t_1}$ [$^\circ$]")
     ax.legend(loc="upper left")
     fig.tight_layout()
     fig.savefig(out("MAIN_F_frame.pdf"))
@@ -305,7 +325,7 @@ def main():
         if x:
             entries.append((np.array(x), np.array(y), np.array(err),
                             initial_label(groups, runs, axis)))
-    draw_sweep(entries, "Centre position along the assisting tangent [mm]",
+    draw_sweep(entries, r"$d_c$ along the assisting tangent [mm]",
                out("MAIN_H_magnitude.pdf"), figsize=(5.8, 3.8), headroom=0.75)
 
 
