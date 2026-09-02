@@ -50,9 +50,9 @@ FACE_LONG_EE = (0.0, 1.0, 0.0)
 # needs a lever along t1.
 #
 # With the commanded spin at 90 deg the end-effector axes line up with the
-# surface frame: EE x with t1, EE y with t2, EE z with the normal. The
-# tool-frame key stores p_c - p_TCP, which is r_c itself; the surface-frame key
-# keeps the opposite sign and the controller negates it on read.
+# surface frame: EE x with t1, EE y with t2, EE z with the normal. Both keys
+# store p_c - p_TCP, which is r_c itself, so the controller reads either one
+# without a sign change.
 #
 # Both signs were measured rather than assumed, and they are set per axis
 # because the assisting direction is not the same on the two tangents.
