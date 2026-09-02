@@ -723,17 +723,12 @@ RunResult runControlLoop(ControllerConfig& params,
                           (180.0 / M_PI) * orientationError(R_EE, R_contact_start).norm(),
                           df_ext_norm,
                           m_tcp_norm,
-                          params.contact_establishment_moment_threshold,
                           1000.0 * (tool_contact_point - first_contact_point).norm());
           next_debug_time = time + params.debug_period;
         }
 
-        // Ending contact establishment at the moment threshold [N m] or timeout [s].
-        const bool stopped_on_moment =
-            state_time >= params.contact_establishment_min_time &&
-            m_tcp_norm >= params.contact_establishment_moment_threshold;
-        if (!stopped_on_moment &&
-            state_time < params.contact_establishment_timeout) {
+        // Ending contact establishment at its timeout [s].
+        if (state_time < params.contact_establishment_timeout) {
           break;
         }
 
@@ -741,7 +736,6 @@ RunResult runControlLoop(ControllerConfig& params,
         if (!contact_establishment_reported) {
           contact_establishment_reported = true;
           ContactEstablishmentReport report;
-          report.stopped_on_moment = stopped_on_moment;
           report.state_time = state_time;
           report.df_ext_norm = df_ext_norm;
           report.m_tcp_norm = m_tcp_norm;

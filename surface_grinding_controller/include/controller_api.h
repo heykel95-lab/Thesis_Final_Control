@@ -440,7 +440,6 @@ void printContactEstablishmentDebug(double state_time,
                      double ee_deviation_deg,
                      double force_n,
                      double moment_nm,
-                     double moment_limit_nm,
                      double contact_mm);
 
 /// Prints grinding sweep, tracking error, and normal force [mm, N].

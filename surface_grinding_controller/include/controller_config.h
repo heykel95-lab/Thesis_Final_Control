@@ -131,7 +131,6 @@ struct ControllerConfig {
   // --------------------------------------------------------------------------
   double contact_establishment_min_time = 0.3;           // Minimum contact establishment duration [s].
   double contact_establishment_timeout = 15.0;           // State timeout [s].
-  double contact_establishment_moment_threshold = 60.0;  // Moment-change threshold [N m].
   double contact_establishment_push_speed = 0.0;         // Virtual penetration rate [m/s].
   double contact_establishment_push_end = 0.0;           // Final virtual penetration [m].
   // Offline alignment criterion. It is observed and logged only: reaching it

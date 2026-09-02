@@ -475,10 +475,9 @@ void printContactEstablishmentDebug(double state_time,
                      double ee_deviation_deg,
                      double force_n,
                      double moment_nm,
-                     double moment_limit_nm,
                      double contact_mm) {
-  printf("contact establishment:     t=%5.1f s | ee=%5.1f deg | F=%5.1f N | M=%5.1f Nm (limit %.1f) | contact=%5.1f mm\n",
-         state_time, ee_deviation_deg, force_n, moment_nm, moment_limit_nm, contact_mm);
+  printf("contact establishment:     t=%5.1f s | ee=%5.1f deg | F=%5.1f N | M=%5.1f Nm | contact=%5.1f mm\n",
+         state_time, ee_deviation_deg, force_n, moment_nm, contact_mm);
 }
 
 void printGrindDebug(double state_time,

@@ -89,8 +89,8 @@ void reportContactEstablishmentResult(const ControllerConfig& params,
   const Vec3 tcp_from_contact_mm = 1000.0 * (r.p_EE - r.first_contact_point);
 
   printBanner("CONTACT-ESTABLISHMENT RESULT");
-  printf("  stop: %s | t=%.1f s | ee=%.1f deg | F=%.1f N | M_TCP=%.1f Nm\n",
-         r.stopped_on_moment ? "moment" : "time",
+  // The state ends only on its timeout, so the reason is always the time.
+  printf("  stop: time | t=%.1f s | ee=%.1f deg | F=%.1f N | M_TCP=%.1f Nm\n",
          r.state_time, end_effector_deviation_deg, r.df_ext_norm, r.m_tcp_norm);
   printf("  contact_from_start = [%+.1f, %+.1f, %+.1f] mm | norm=%.1f mm\n",
          contact_from_start_mm(0), contact_from_start_mm(1),

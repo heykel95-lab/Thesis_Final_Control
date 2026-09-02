@@ -87,7 +87,6 @@ struct CartesianInertiaEstimate {
 /// Stores the state, wrench, and active gains captured when contact establishment ends.
 struct ContactEstablishmentReport {
   // Defining the state termination and measured wrench changes.
-  bool stopped_on_moment = false;   // true when the moment threshold ends contact establishment.
   double state_time = 0.0;          // Contact-establishment duration [s].
   double df_ext_norm = 0.0;         // Norm of the force change since contact [N].
   double m_tcp_norm = 0.0;          // Norm of that change about the TCP [N m].

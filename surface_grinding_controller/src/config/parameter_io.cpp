@@ -419,7 +419,6 @@ ControllerConfig readControllerConfig(const std::vector<std::string>& filenames)
   // Assigning contact establishment timing [s], preload motion [m], and Cartesian impedance.
   p.contact_establishment_min_time = getDouble("contact_establishment_min_time", p.contact_establishment_min_time);
   p.contact_establishment_timeout = getDouble("contact_establishment_timeout", p.contact_establishment_timeout);
-  p.contact_establishment_moment_threshold = getDouble("contact_establishment_moment_threshold", p.contact_establishment_moment_threshold);
   p.contact_establishment_push_speed = getDouble("contact_establishment_push_speed", p.contact_establishment_push_speed);
   p.contact_establishment_push_end = getDouble("contact_establishment_push_end", p.contact_establishment_push_end);
   p.contact_establishment_align_tolerance_deg =
