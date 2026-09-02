@@ -160,8 +160,8 @@ void reportContactEstablishmentResult(const ControllerConfig& params,
   const Vec3 tcp_ref = r.p_EE;
   Vec3 r_c = Vec3::Zero();
   if (params.compliance_center_in_tool_frame) {
-    // Transforming the tool-fixed lever at the final contact establishment
-    // orientation [m]. The key stores p_C - p_TCP, which is r_c itself.
+    // Transforming the tool-fixed lever r_c = p_C - p_TCP at the final
+    // contact establishment orientation [m].
     r_c = r.R_EE * params.compliance_center_offset_ee;
   } else if (params.compliance_lever_in_surface_frame) {
     r_c = R_base_surface * params.compliance_lever_surface;
