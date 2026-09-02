@@ -1,0 +1,20 @@
+# T-mode quasi-static wrench-consistency check
+
+The run starts directly in setup-impedance hold (`t`).  It records a no-touch
+baseline, a held displacement of approximately 10 mm along the configured
+surface normal, and a held rotation of approximately 10 deg about tangent 1.
+The compliance-centre shift and null-space torque are disabled for this check.
+
+Timing from the controller clock:
+
+- 0.0--3.0 s: no touch;
+- 3.0--6.0 s: move slowly to 10 mm along the surface normal;
+- 6.0--10.0 s: hold the normal displacement still;
+- 10.0--13.0 s: release and leave the robot untouched;
+- 13.0--16.0 s: rotate slowly to 10 deg about tangent 1;
+- 16.0--20.0 s: hold the rotation still;
+- 20.0--26.0 s: release and leave the robot untouched.
+
+The sign of either displacement may be positive or negative.  The analysis
+retains that sign and compares like-signed commanded and model-estimated
+components in the configured surface frame.

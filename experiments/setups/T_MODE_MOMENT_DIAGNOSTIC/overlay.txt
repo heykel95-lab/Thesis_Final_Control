@@ -1,0 +1,35 @@
+# T_MODE_MOMENT_DIAGNOSTIC
+# A decoupled Contact-Impedance Hold check for normal force and tangent-1
+# moment.  Apply through Thesis_Final_Control/experiments/run.sh.
+
+experiment_duration = 36.0
+print_hold_debug = 1
+
+# Resolve translation and rotation in the configured surface basis.
+setup_translation_surface_frame = 1
+
+# Keep the complete impedance unchanged from the first t-mode consistency
+# trial, in surface-axis order [t1, t2, n].
+setup_auto_damping = 0
+setup_Kp_surface_tangent1 = 2000.0
+setup_Kp_surface_tangent2 = 2000.0
+setup_Kp_surface_normal = 1000.0
+setup_Dp_surface_tangent1 = 10.0
+setup_Dp_surface_tangent2 = 10.0
+setup_Dp_surface_normal = 175.0
+setup_KR_tangent1 = 15.0
+setup_KR_tangent2 = 5.0
+setup_KR_normal = 50.0
+setup_DR_tangent1 = 10.01
+setup_DR_tangent2 = 10.01
+setup_DR_normal = 10.0
+
+# Remove virtual force-to-moment coupling and secondary joint torque.
+use_virtual_compliance_center = 0
+compliance_center_offset_ee_x = 0.0
+compliance_center_offset_ee_y = 0.0
+compliance_center_offset_ee_z = 0.0
+compliance_lever_surface_tangent1 = 0.0
+compliance_lever_surface_tangent2 = 0.0
+compliance_lever_surface_normal = 0.0
+nullspace_mode = 0

@@ -236,10 +236,22 @@ RunResult runControlLoop(ControllerConfig& params,
     const Vec3 p_EE = T_EE.block<3, 1>(0, 3);
     const Mat3 R_EE = T_EE.block<3, 3>(0, 0);
 
-    // Mapping estimated external force [N] and moment [N m].
+    // Mapping both libfranka wrench representations. O_F_ext_hat_K is kept
+    // unchanged for compatibility with the campaign logs. K_F_ext_hat_K is
+    // rotated into the base axes so its moment remains explicitly referenced
+    // to K. The relative K-to-TCP offset then suffices for wrench transport.
     Map<const Vec6> external_wrench(state.O_F_ext_hat_K.data());
     const Vec3 external_force = external_wrench.head<3>();
     const Vec3 external_moment = external_wrench.tail<3>();
+    Map<const Vec6> external_wrench_K(state.K_F_ext_hat_K.data());
+    Map<const Mat4x4> T_EE_K(state.EE_T_K.data());
+    const Mat3 R_base_K = R_EE * T_EE_K.block<3, 3>(0, 0);
+    const Vec3 r_K_TCP_base =
+        R_EE * T_EE_K.block<3, 1>(0, 3);
+    const Vec3 external_force_K_base =
+        R_base_K * external_wrench_K.head<3>();
+    const Vec3 external_moment_K_base =
+        R_base_K * external_wrench_K.tail<3>();
 
     // Reinitializing controller references from the measured pose after a mode change.
     const auto restartFromPoseReached = [&](bool reanchor_surface_point) {
@@ -1173,6 +1185,15 @@ RunResult runControlLoop(ControllerConfig& params,
       row.m = m;
       row.external_force = external_force;
       row.external_moment = external_moment;
+      row.external_force_K_base = external_force_K_base;
+      row.external_moment_K_base = external_moment_K_base;
+      row.r_K_TCP_base = r_K_TCP_base;
+      row.setup_Dp_used = damping.setup_damping_valid
+                              ? damping.setup_Dp_used
+                              : gains.setup_Dp_active_diag;
+      row.setup_DR_used = damping.setup_damping_valid
+                              ? damping.setup_DR_used
+                              : params.setup_DR_diag;
       row.contact_force_bias = contact_force_bias;
       row.contact_moment_bias = contact_moment_bias;
       row.push = push_log;

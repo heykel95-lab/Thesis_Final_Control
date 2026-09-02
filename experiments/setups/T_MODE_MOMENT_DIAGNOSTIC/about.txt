@@ -1,0 +1,31 @@
+# Contact-Impedance Hold moment diagnostic
+
+This is a separate diagnostic pilot.  It is not a repetition of the reported
+contact campaign.  The centre of compliance is at the TCP and null-space
+torque is disabled.  The impedance is unchanged from the first consistency
+trial: (K_{p,n}=1000\,\mathrm{N/m}),
+(D_{p,n}=175\,\mathrm{N\,s/m}),
+(K_{R,t_1}=15\,\mathrm{N\,m/rad}), and
+(D_{R,t_1}=10.01\,\mathrm{N\,m\,s/rad}).
+
+Operator timing from the hold clock:
+
+- 0--4 s: leave the robot untouched;
+- 4--9 s: push slowly along the configured surface normal to about 20 mm;
+- 10--15 s: keep the normal displacement stationary;
+- 15--20 s: keep the same normal load and do not rotate;
+- 20--26 s: rotate slowly to about 5 deg about tangent 1 while retaining the
+  normal load;
+- 27--34 s: keep both the displacement and rotation stationary;
+- 34--36 s: release smoothly.
+
+Do not chase the nominal values.  Stop below them if the motion feels unsafe,
+the tool slips, or the robot reports a contact/reflex condition.  The analysis
+uses the achieved displacement and rotation.
+
+The comparison uses matched references.  Normal-force increments are measured
+from the untouched 0.5--3.0 s baseline.  Moment increments are measured from
+the loaded 17.0--20.0 s baseline, on both the command and estimator sides.  It
+also retains the absolute TCP-referenced estimator moment.  The physical
+contact point and any contact couple remain unobserved, so the test cannot
+separate a force lever from a local contact moment.

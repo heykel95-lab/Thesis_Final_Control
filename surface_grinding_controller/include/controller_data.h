@@ -49,8 +49,13 @@ struct LogData {
 
   Vec3 f;                    // Commanded Cartesian force [N].
   Vec3 m;                    // Commanded Cartesian moment [N m].
-  Vec3 external_force;       // Estimated external force [N].
-  Vec3 external_moment;      // Estimated external moment [N m].
+  Vec3 external_force;       // O_F_ext_hat_K force component [N].
+  Vec3 external_moment;      // O_F_ext_hat_K moment component [N m].
+  Vec3 external_force_K_base;  // K_F_ext_hat_K force rotated into base axes [N].
+  Vec3 external_moment_K_base; // K_F_ext_hat_K moment rotated into base axes [N m].
+  Vec3 r_K_TCP_base;         // Offset p_K - p_TCP in base axes [m].
+  Vec3 setup_Dp_used;        // Active setup damping in [t1,t2,n] [N s/m].
+  Vec3 setup_DR_used;        // Active setup damping in [t1,t2,n] [N m s/rad].
   Vec3 contact_force_bias;   // External-force bias captured at contact [N].
   Vec3 contact_moment_bias;  // External-moment bias captured at contact [N m].
   double push;               // Virtual surface penetration [m].

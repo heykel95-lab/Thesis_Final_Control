@@ -1,0 +1,21 @@
+# T_MODE_CONSISTENCY
+# Apply through Thesis_Final_Control/experiments/run.sh.  The run remains an
+# ordinary t-mode hold; these overrides make the two quasi-static checks
+# decoupled, reproducible, and large enough for the model-based estimator.
+
+experiment_duration = 26.0
+print_hold_debug = 1
+
+# Use the configured surface axes and known manual damping.
+setup_translation_surface_frame = 1
+setup_auto_damping = 0
+
+# Test gains.  At the requested targets they give 10.0 N and 2.618 N m.
+setup_Kp_surface_normal = 1000.0
+setup_KR_tangent1 = 15.0
+
+# Remove compliance-centre coupling so the two scalar equations are direct.
+use_virtual_compliance_center = 0
+
+# Isolate the Cartesian impedance response from secondary joint torques.
+nullspace_mode = 0
