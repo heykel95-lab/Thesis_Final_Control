@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the centre-of-compliance campaign in three phases.
+"""Generate the centre-of-compliance campaign in three stages.
 
 Run:  python3 experiments/lib/generate_coc_setups.py
 
@@ -8,28 +8,28 @@ campaign keeps its own spec and stays reproducible from it. The setups land in
 the same directory and are appended to INDEX.txt, which is what
 run_campaign.sh walks, so the new trials queue behind the archived ones.
 
-Every trial runs the full set-up duration. Nothing ends it early: the moment
+Every trial runs the full contact establishment duration. Nothing ends it early: the moment
 threshold is left where it sits, far above anything the contact reaches, and
 the alignment criterion is observed rather than enforced. What a run cost in
 time is therefore the same for all of them, and the alignment time comes out
 of the log afterwards.
 
-  Phase 1  the two tilt axes at one commanded magnitude, centre on the TCP.
+  Stage 1  the two tilt axes at one commanded magnitude, centre on the TCP.
            Nothing is varied but the axis, so the asymmetry between them is
            the whole content.
 
-  Phase 2  both tilt signs on both axes, each at three centre positions along
+  Stage 2  both tilt signs on both axes, each at three centre positions along
            the assisting tangent. This is what settles whether the assisting
            direction follows the sign of the commanded tilt.
 
-  Phase 3  one reproducible case, the centre stepped along the tool axis.
+  Stage 3  one reproducible case, the centre stepped along the tool axis.
            120 mm is left out: it loads joint 6 past its limit and the motion
            aborts, so the sweep stops where the robot allows.
 
-A phase is a way of reading the trials, not a separate set of them. Three of
-the configurations belong to two phases at once: the zero-position entries of
-phase 2 are what phase 1 compares, and the t1 one is also where phase 3 starts.
-Each configuration is generated once and PHASES below records which phase
+A stage is a way of reading the trials, not a separate set of them. Three of
+the configurations belong to two stages at once: the zero-position entries of
+stage 2 are what stage 1 compares, and the t1 one is also where stage 3 starts.
+Each configuration is generated once and STAGES below records which stage
 reads which, so no trial is driven twice for the sake of the grouping.
 """
 
@@ -44,10 +44,10 @@ from generate_setups import (COMMON, REPEATS, SETUPS, TOOL_AXIS_EE,  # noqa: E40
                              scaled, surface_frame_lever, tool_frame_lever,
                              no_lever, write)
 
-# Commanded tilt magnitude carried by every phase [deg].
+# Commanded tilt magnitude carried by every stage [deg].
 TILT_DEG = 10.0
 
-# Centre positions along the assisting tangent, swept by phase 2 [m].
+# Centre positions along the assisting tangent, swept by stage 2 [m].
 #
 # The sign is measured along the assisting lever direction of the given axis,
 # so p080 places the centre where the press makes a correcting moment and m080
@@ -64,29 +64,29 @@ TILT_DEG = 10.0
 # a 20.7 degree excursion while 80 mm aborted the motion on a wrist-torque
 # reflex. 40 mm is the largest magnitude the shorter dimension is asked to
 # carry.
-PHASE2_POSITIONS = [-0.040, -0.020, -0.010, 0.0, 0.010, 0.020, 0.040]
+STAGE2_POSITIONS = [-0.040, -0.020, -0.010, 0.0, 0.010, 0.020, 0.040]
 
 # The lever the frame comparison and the magnitude study carry [m], the outer
 # position of the same set.
 LEVER_M = 0.040
 
-# Centre positions along the tool axis, swept by phase 3 [m]. Zero is absent
-# because phase 2 already carries it as P2_t1_pos_p000. The sweep is symmetric
+# Centre positions along the tool axis, swept by stage 3 [m]. Zero is absent
+# because stage 2 already carries it as P2_t1_pos_p000. The sweep is symmetric
 # so the trend is read over its whole range rather than from one side, and it
 # stops at 90 mm because 120 mm loads joint 6 past its limit.
-PHASE3_POSITIONS = [-0.040, -0.020, -0.010, 0.010, 0.020, 0.040]
+STAGE3_POSITIONS = [-0.040, -0.020, -0.010, 0.010, 0.020, 0.040]
 
 # The smaller commanded tilt, for telling the response to the offset apart
 # from the response to the centre position [deg].
 SMALL_TILT_DEG = 5.0
 
-# Which trials each phase is read from. The overlap is deliberate.
-PHASES = {
-    "phase 1, the two tilt axes with the centre on the TCP":
+# Which trials each stage is read from. The overlap is deliberate.
+STAGES = {
+    "stage 1, the two tilt axes with the centre on the TCP":
         ["P2_t1_pos_p000", "P2_t2_pos_p000"],
-    "phase 2, direction and sign of the centre offset":
+    "stage 2, direction and sign of the centre offset":
         None,  # every P2 trial
-    "phase 3, distance along the tool axis":
+    "stage 3, distance along the tool axis":
         ["P2_t1_pos_p000", "P3_axis_p040", "P3_axis_p060", "P3_axis_p090"],
 }
 
@@ -110,11 +110,11 @@ def build():
     """Return {run_id: (overlay pairs, purpose, pass criterion)}."""
     setups = {}
 
-    # Phase 2 -- direction and sign. The centre moves along the tangent that
+    # Stage 2 -- direction and sign. The centre moves along the tangent that
     # assists the given axis, in both directions and at zero.
     for axis in ("t1", "t2"):
         for sign in (+1, -1):
-            for position in PHASE2_POSITIONS:
+            for position in STAGE2_POSITIONS:
                 run_id = (f"P2_{axis}_{sign_tag(sign)}_"
                           f"{position_tag(position)}")
                 offset_ee = scaled(LEVER_OFFSET_EE[axis], position)
@@ -131,9 +131,9 @@ def build():
                     "one sign should hinder at the other.",
                 )
 
-    # Phase 3 -- the distance along the tool axis, at the case phase 2 leaves
+    # Stage 3 -- the distance along the tool axis, at the case stage 2 leaves
     # best established.
-    for position in PHASE3_POSITIONS:
+    for position in STAGE3_POSITIONS:
         run_id = f"P3_axis_{position_tag(position)}"
         pairs = (tilt_keys("t1", +1)
                  + (no_lever() if position == 0.0
@@ -182,7 +182,7 @@ def build():
             )
 
     # The commanded zero. Nothing is asked of the tool, so what remains after
-    # set-up is the floor the arrangement leaves: the calibration, the mount
+    # contact establishment is the floor the arrangement leaves: the calibration, the mount
     # clearance and whatever the contact itself imposes. Every residual
     # reported elsewhere is read against it. The second entry carries the
     # assisting offset at that same zero, where the tool-frame and
@@ -250,7 +250,7 @@ def main():
     print(f"appended {len(added)} run ids to INDEX.txt")
     print(f"{len(setups)} settings x {REPEATS} repeats = "
           f"{len(setups) * REPEATS} trials")
-    for title, members in PHASES.items():
+    for title, members in STAGES.items():
         listed = sorted(setups) if members is None else members
         print(f"\n{title}:")
         for run_id in listed:

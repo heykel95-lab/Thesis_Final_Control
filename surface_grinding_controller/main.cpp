@@ -67,7 +67,7 @@ int main() {
       signals.proceed_requested.store(false);
       signals.guide_requested.store(false);
       signals.guidance_menu_key.store(0);
-      signals.gate_continue.store(false);
+      signals.operator_hold_continue.store(false);
 
       // Selecting the requested run mode and preparing its initial state.
       if (!askStartupRunMode(config, robot, model)) {
@@ -94,8 +94,8 @@ int main() {
         return 0;
       }
 
-      // Building phase-dependent impedance matrices from the active parameters.
-      const PhaseImpedanceGains gains = buildPhaseImpedanceGains(config);
+      // Building state-dependent impedance matrices from the active parameters.
+      const StateImpedanceGains gains = buildStateImpedanceGains(config);
 
       // Executing the 1 kHz torque controller and storing the completed run data.
       const RunResult result =

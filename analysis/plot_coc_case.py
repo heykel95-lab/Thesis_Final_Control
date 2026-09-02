@@ -5,13 +5,13 @@
 
 Every case is read the same way, top to bottom:
 
-  1  set-up rotation   the signed rotation since the start of set-up about the
+  1  contact rotation  the signed rotation since contact establishment began about the
                        commanded surface tangent.
   2  normal force      the controller-commanded press along n_s.
   3  alignment moment  the controller-commanded moment about the commanded
                        surface tangent.
 
-The set-up rotation is the same controller-response quantity used by every
+The contact-establishment rotation is the same controller-response quantity used by every
 case-comparison plot. It comes from the robot orientation error referenced at
 the clearance transition and is resolved on the calibrated surface axes. It therefore has
 no absolute flat-tool zero and is not affected by play between tool and
@@ -26,7 +26,7 @@ The normal force is negative while the tool presses. n_s points out of the
 plate, so the commanded press runs along -n_s.
 
 Each panel carries its own legend. The legend states the measured attitude at
-the start of set-up, so the figure does not substitute the nominal commanded offset
+the start of contact establishment, so the figure does not substitute the nominal commanded offset
 for the orientation the robot actually reached.
 """
 
@@ -49,7 +49,7 @@ RESULTS = os.path.join(HERE, "..", "experiments", "results")
 
 apply_style()
 
-SETUP_PHASE = 2  # ControlPhase::kSetup
+CONTACT_ESTABLISHMENT_STATE = 2  # ControlState::kContactEstablishment
 
 AXIS_COLUMN = {"t1": 0, "t2": 1, "n": 2}
 AXIS_LABEL = {"t1": r"$t_1$", "t2": r"$t_2$", "n": r"$n$"}
@@ -63,20 +63,21 @@ def vec(row, prefix):
 
 
 def initial_label(directory, axis, detail):
-    """Name a curve by its measured signed orientation before set-up."""
+    """Name a curve by its measured signed orientation before contact establishment."""
     report = parse_report(os.path.join(directory, "terminal.log"))
     key = f"deviation_before_{axis}"
     try:
         angle = float(report[key])
     except (KeyError, ValueError):
-        raise SystemExit(f"no {key} in the set-up report under {directory}")
+        raise SystemExit(
+            f"no {key} in the contact-establishment report under {directory}")
     tangent = "t_1" if axis == "t1" else "t_2"
     suffix = f", {detail}" if detail else ""
     return rf"initial ${angle:+.2f}^\circ$ about ${tangent}${suffix}"
 
 
 def load(trial, axis):
-    """Return time, set-up rotation, commanded force and commanded moment."""
+    """Return time, contact rotation, commanded force and commanded moment."""
     directory = os.path.join(RESULTS, trial)
     logs = glob.glob(os.path.join(directory, "logs", "*.csv"))
     if not logs:
@@ -88,8 +89,10 @@ def load(trial, axis):
     tilt_axis = frame[:, AXIS_COLUMN[axis]]
 
     with open(logs[0]) as f:
-        rows = [r for r in csv.DictReader(f)
-                if float(r["phase"]) == SETUP_PHASE]
+        reader = csv.DictReader(f)
+        state_field = "state" if "state" in reader.fieldnames else "phase"
+        rows = [r for r in reader
+                if float(r[state_field]) == CONTACT_ESTABLISHMENT_STATE]
 
     time, rotation, fn_cmd, m_cmd = [], [], [], []
     for row in rows:
@@ -144,7 +147,7 @@ def main():
         # A legend printed over the data is worse than one in a different
         # corner of the same panel.
         ax.legend(loc=corner, fontsize=7, labelspacing=0.3)
-    axes[-1].set_xlabel("Time from start of set-up [s]")
+    axes[-1].set_xlabel("Time from contact-establishment start [s]")
     fig.tight_layout()
     out = os.path.join(args.out_dir, f"{args.out}.pdf")
     fig.savefig(out)

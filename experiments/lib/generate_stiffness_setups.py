@@ -54,7 +54,7 @@ DIRECTIONS = [0.0, 45.0, 90.0, -45.0]
 
 def rotational_keys(axis, value):
     """Set the rotational entry about one tangent, leaving the other alone."""
-    key = "setup_KR_tangent1" if axis == "t1" else "setup_KR_tangent2"
+    key = "contact_establishment_KR_tangent1" if axis == "t1" else "contact_establishment_KR_tangent2"
     return [(key, f"{value:.1f}")]
 
 
@@ -64,8 +64,8 @@ def translational_keys(axis, value):
     A commanded rotation about t1 turns the tool over t2, so the entry that
     resists the accompanying translation is the one along t2.
     """
-    key = ("setup_Kp_surface_tangent2" if axis == "t1"
-           else "setup_Kp_surface_tangent1")
+    key = ("contact_establishment_Kp_surface_tangent2" if axis == "t1"
+           else "contact_establishment_Kp_surface_tangent1")
     return [(key, f"{value:.1f}")]
 
 

@@ -5,4 +5,4 @@ purpose:
   Tool-frame lever of 20 mm about t2, probing the magnitude.
 
 pass criterion:
-  The t2 component after set-up should land nearest zero for the magnitude that suits this axis. 60 mm overshot by 20 deg.
+  The t2 component after contact establishment should land nearest zero for the magnitude that suits this axis. 60 mm overshot by 20 deg.

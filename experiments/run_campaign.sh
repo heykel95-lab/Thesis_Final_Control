@@ -86,7 +86,7 @@ cmd_next() {
 # Trials run back to back. Nothing physical changes between them: each trial
 # only rewrites parameters, and the controller returns to the configured
 # initial joint pose before it moves. Stopping for an operator between trials
-# would only add the reaction time the gates were disabled to remove.
+# would only add the reaction time the operator holds were disabled to remove.
 cmd_series() {
   local prefix="${1:-}" any=0 id repeat
   while read -r id repeat; do
@@ -103,11 +103,12 @@ cmd_series() {
     # because powering on through a real one would only repeat it.
     if ! run_one "$id" "$repeat"; then
       # A trial that aborts has already created its directory, and run.sh
-      # refuses to write into one that exists. An archive without a set-up
+      # refuses to write into one that exists. An archive without a contact
       # report carries nothing, so it is removed before the retry.
       tag="$(printf 'r%02d' "$repeat")"
       if [ -d "$RESULTS/$id/$tag" ] && \
-         ! grep -q 'SETUP RESULT' "$RESULTS/$id/$tag/terminal.log" 2>/dev/null; then
+         ! grep -Eq 'CONTACT-ESTABLISHMENT RESULT|SETUP RESULT' \
+             "$RESULTS/$id/$tag/terminal.log" 2>/dev/null; then
         echo "discarding the incomplete archive $id/$tag" >&2
         rm -rf "${RESULTS:?}/$id/$tag"
       fi
@@ -129,7 +130,7 @@ cmd_series() {
 
 # Draw every archived trial that has no figure yet.
 cmd_plots() {
-  local plotter="$HERE/../analysis/plot_setup_trial.py" csv drawn=0
+  local plotter="$HERE/../analysis/plot_contact_establishment_trial.py" csv drawn=0
   if [ ! -f "$plotter" ]; then
     echo "no plotter at $plotter; skipping figures" >&2
     return 0
@@ -137,7 +138,7 @@ cmd_plots() {
   while IFS= read -r csv; do
     local dir
     dir="$(dirname "$csv")"
-    if compgen -G "$dir/*_setup_trial.pdf" > /dev/null; then
+    if compgen -G "$dir/*_contact_establishment_trial.pdf" > /dev/null; then
       continue
     fi
     python3 "$plotter" "$csv" --out-dir "$dir" > /dev/null 2>&1 && drawn=$((drawn + 1))

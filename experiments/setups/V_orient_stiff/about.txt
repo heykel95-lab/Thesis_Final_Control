@@ -3,7 +3,7 @@ Verification trial for the commanded tool orientation.
 Identical to V_axis_check, with the approach rotational stiffness about both
 surface tangents raised from 90 to 300 N m/rad.
 
-What it checks: the reported alignment at the start of setup. The orientation
-phase left a residual of 1.32 deg at 90 N m/rad, so a commanded 10 deg was
+What it checks: the reported alignment at the start of contact establishment.
+The Tool Orientation state left a residual of 1.32 deg at 90 N m/rad, so a commanded 10 deg was
 reached as 8.68 deg. The residual is joint friction against the rotational
 stiffness, so raising the stiffness should shrink it in proportion.

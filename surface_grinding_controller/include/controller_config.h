@@ -41,9 +41,9 @@ struct ControllerConfig {
   // --------------------------------------------------------------------------
   // Run selection and manual guidance
   // --------------------------------------------------------------------------
-  bool run_phase_sequence = true;          // Selects the complete phase sequence.
-  bool use_setup_impedance_hold = false;   // Selects setup impedance at the captured pose.
-  bool enable_orientation_phase = true;    // Selects the initial tool-orientation phase.
+  bool run_state_sequence = true;          // Selects the complete state sequence.
+  bool use_contact_impedance_hold = false;   // Selects contact impedance at the captured pose.
+  bool enable_orientation_state = true;    // Selects the initial tool-orientation state.
   bool start_with_manual_guidance = false; // Selects manual guidance at session start.
   double manual_guidance_damping = 0.5;    // Joint damping [N m s/rad].
 
@@ -106,7 +106,7 @@ struct ControllerConfig {
   double disturbance_max_tau_norm = 0.0;      // Joint-torque norm limit [N m].
 
   // --------------------------------------------------------------------------
-  // Phase 1: tool orientation and surface approach
+  // Tool orientation and surface approach states
   // --------------------------------------------------------------------------
   double approach_orient_min_time = 0.5;                // Minimum orientation time [s].
   double approach_orient_error_threshold = 0.03;        // Tool-axis threshold [rad].
@@ -127,41 +127,41 @@ struct ControllerConfig {
   double descend_surface_clearance = 0.020;      // Tool-feature clearance threshold [m].
 
   // --------------------------------------------------------------------------
-  // Phase 2: setup and contact alignment
+  // Contact-establishment state
   // --------------------------------------------------------------------------
-  double setup_min_time = 0.3;           // Minimum setup duration [s].
-  double setup_timeout = 15.0;           // Setup timeout [s].
-  double setup_moment_threshold = 60.0;  // Moment-change threshold [N m].
-  double setup_push_speed = 0.0;         // Virtual penetration rate [m/s].
-  double setup_push_end = 0.0;           // Final virtual penetration [m].
+  double contact_establishment_min_time = 0.3;           // Minimum contact establishment duration [s].
+  double contact_establishment_timeout = 15.0;           // State timeout [s].
+  double contact_establishment_moment_threshold = 60.0;  // Moment-change threshold [N m].
+  double contact_establishment_push_speed = 0.0;         // Virtual penetration rate [m/s].
+  double contact_establishment_push_end = 0.0;           // Final virtual penetration [m].
   // Offline alignment criterion. It is observed and logged only: reaching it
-  // does not end the phase, so the run still lasts its configured duration.
-  double setup_align_tolerance_deg = 2.0; // Deviation counted as aligned [deg].
-  double setup_align_hold_time = 0.3;     // Time it must stay inside it [s].
+  // does not end the state, so the run still lasts its configured duration.
+  double contact_establishment_align_tolerance_deg = 2.0; // Deviation counted as aligned [deg].
+  double contact_establishment_align_hold_time = 0.3;     // Time it must stay inside it [s].
   // A second, relative criterion. An absolute tolerance is only reached by the
   // conditions that align well, so it says nothing about the ones that do not.
   // This one is measured against the deviation the trial started from, which
   // is known as soon as contact is made, and is therefore comparable across
   // conditions that end far apart.
-  double setup_align_fraction = 0.5;      // Fraction of the initial deviation.
+  double contact_establishment_align_fraction = 0.5;      // Fraction of the initial deviation.
 
   // Base-frame translational gains [x, y, z].
-  Vec3 setup_Kp_diag = Vec3(40.0, 40.0, 5500.0); // [N/m].
-  Vec3 setup_Dp_diag = Vec3(10.0, 10.0, 175.0);  // [N s/m].
-  bool setup_translation_surface_frame = false;   // false = base gains; true = surface gains.
+  Vec3 contact_establishment_Kp_diag = Vec3(40.0, 40.0, 5500.0); // [N/m].
+  Vec3 contact_establishment_Dp_diag = Vec3(10.0, 10.0, 175.0);  // [N s/m].
+  bool contact_establishment_translation_surface_frame = false;   // false = base gains; true = surface gains.
 
   // Surface-frame translational gains [tangent1, tangent2, normal].
-  Vec3 setup_Kp_surface_diag = Vec3(2000.0, 2000.0, 360.0); // [N/m].
-  Vec3 setup_Dp_surface_diag = Vec3(50.0, 50.0, 25.0);      // [N s/m].
+  Vec3 contact_establishment_Kp_surface_diag = Vec3(2000.0, 2000.0, 360.0); // [N/m].
+  Vec3 contact_establishment_Dp_surface_diag = Vec3(50.0, 50.0, 25.0);      // [N s/m].
 
   // Surface-frame rotational gains [tangent1, tangent2, normal].
-  Vec3 setup_KR_diag = Vec3(0.0, 0.0, 8.0);   // [N m/rad].
-  Vec3 setup_DR_diag = Vec3(0.01, 0.01, 4.0); // [N m s/rad].
-  bool setup_auto_damping = false;            // Selector for inertia-based damping.
-  double setup_auto_damping_factor = 1.0;      // Damping ratio [-].
+  Vec3 contact_establishment_KR_diag = Vec3(0.0, 0.0, 8.0);   // [N m/rad].
+  Vec3 contact_establishment_DR_diag = Vec3(0.01, 0.01, 4.0); // [N m s/rad].
+  bool contact_establishment_auto_damping = false;            // Selector for inertia-based damping.
+  double contact_establishment_auto_damping_factor = 1.0;      // Damping ratio [-].
 
   // --------------------------------------------------------------------------
-  // Phase 3: grinding motion
+  // Grinding state
   // --------------------------------------------------------------------------
   bool grind_sweep_enabled = false; // false = stationary contact; true = tangential sweep.
   int grind_tangent_axis = 1;       // Selector: 1 = tangent1; 2 = tangent2.
@@ -169,29 +169,29 @@ struct ControllerConfig {
   double grind_frequency_hz = 0.2;  // Sweep frequency [Hz].
 
   // --------------------------------------------------------------------------
-  // Phase-transition holds
+  // Operator-controlled hold states
   // --------------------------------------------------------------------------
-  bool pause_before_setup = false; // Selector for the pre-setup gate hold.
-  bool pause_before_grind = false; // Selector for the pre-grinding gate hold.
+  bool enable_pre_contact_hold = false;  // Enables the hold before contact establishment.
+  bool enable_pre_grinding_hold = false; // Enables the hold before grinding.
 
   // Base-frame translational gains [x, y, z].
-  Vec3 pause_hold_Kp_diag = Vec3::Constant(5000.0); // [N/m].
-  Vec3 pause_hold_Dp_diag = Vec3::Constant(200.0);  // [N s/m].
-  bool pause_hold_translation_surface_frame = false; // false = base gains; true = surface gains.
+  Vec3 operator_hold_Kp_diag = Vec3::Constant(5000.0); // [N/m].
+  Vec3 operator_hold_Dp_diag = Vec3::Constant(200.0);  // [N s/m].
+  bool operator_hold_translation_surface_frame = false; // false = base gains; true = surface gains.
 
   // Surface-frame translational gains [tangent1, tangent2, normal].
-  Vec3 pause_hold_Kp_surface_diag = Vec3::Constant(5000.0); // [N/m].
-  Vec3 pause_hold_Dp_surface_diag = Vec3::Constant(200.0);  // [N s/m].
+  Vec3 operator_hold_Kp_surface_diag = Vec3::Constant(5000.0); // [N/m].
+  Vec3 operator_hold_Dp_surface_diag = Vec3::Constant(200.0);  // [N s/m].
 
   // Base-frame rotational gains [x, y, z].
-  Vec3 pause_hold_KR_diag = Vec3::Constant(90.0); // [N m/rad].
-  Vec3 pause_hold_DR_diag = Vec3::Constant(12.0); // [N m s/rad].
-  bool pause_hold_rotation_surface_frame = true;  // false = base gains; true = surface gains.
+  Vec3 operator_hold_KR_diag = Vec3::Constant(90.0); // [N m/rad].
+  Vec3 operator_hold_DR_diag = Vec3::Constant(12.0); // [N m s/rad].
+  bool operator_hold_rotation_surface_frame = true;  // false = base gains; true = surface gains.
 
   // Surface-frame rotational gains [tangent1, tangent2, normal].
-  Vec3 pause_hold_KR_surface_diag = Vec3::Constant(90.0); // [N m/rad].
-  Vec3 pause_hold_DR_surface_diag = Vec3::Constant(12.0); // [N m s/rad].
-  bool pause_hold_auto_damping = true; // Selector for inertia-based damping.
+  Vec3 operator_hold_KR_surface_diag = Vec3::Constant(90.0); // [N m/rad].
+  Vec3 operator_hold_DR_surface_diag = Vec3::Constant(12.0); // [N m s/rad].
+  bool operator_hold_auto_damping = true; // Selector for inertia-based damping.
 
   // --------------------------------------------------------------------------
   // Virtual center of compliance
@@ -245,7 +245,7 @@ struct ControllerConfig {
   // Collision thresholds
   // --------------------------------------------------------------------------
   bool use_custom_collision_behavior = false; // Selector for configured thresholds.
-  double collision_torque_acc = 80.0;  // Acceleration-phase joint threshold [N m].
+  double collision_torque_acc = 80.0;  // Acceleration-state joint threshold [N m].
   double collision_torque_nom = 80.0;  // Nominal joint threshold [N m].
   double collision_force_acc = 80.0;   // Acceleration Cartesian threshold [N or N m].
   double collision_force_nom = 80.0;   // Nominal Cartesian threshold [N or N m].

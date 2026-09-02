@@ -71,14 +71,16 @@ using franka::MotionFinished;
 // Controller modes
 // ----------------------------------------------------------------------------
 
-/// Selects the active phase or standalone controller mode.
-enum class ControlPhase {
-  kToolOrientation,  // Rotates the tool toward the configured target attitude.
-  kSurfaceApproach,  // Moves the selected tool feature toward the surface [m].
-  kSetup,            // Applies the setup penetration and alignment impedance.
-  kGrinding,         // Maintains contact and executes the grinding trajectory.
-  kPoseHold,         // Holds the captured Cartesian pose with hold gains.
-  kManualGuidance    // Applies joint damping for hand-guided positioning.
+/// Selects the active state or standalone controller mode.
+enum class ControlState {
+  kToolOrientation = 0,  // Rotates the tool toward the configured target attitude.
+  kSurfaceApproach = 1,  // Moves the selected tool feature toward the surface [m].
+  kPreContactHold = 6,   // Holds at clearance until the operator continues.
+  kContactEstablishment = 2, // Applies contact penetration and alignment impedance.
+  kPreGrindingHold = 7,  // Holds established contact until the operator continues.
+  kGrinding = 3,         // Maintains contact and executes the grinding trajectory.
+  kPoseHold = 4,         // Holds the captured Cartesian pose with hold gains.
+  kManualGuidance = 5    // Applies joint damping for hand-guided positioning.
 };
 
 /// Selects the nullspace torque contributions.

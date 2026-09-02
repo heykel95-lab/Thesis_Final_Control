@@ -1,7 +1,7 @@
 // ============================================================================
 // Terminal output
 // ============================================================================
-// Formatting controller settings, phase information, and run summaries for
+// Formatting controller settings, state information, and run summaries for
 // the startup, runtime, and reporting modules.
 #include "controller_api.h"
 
@@ -11,21 +11,25 @@
 // Terminal printing
 // ====================================================================
 
-const char* phaseName(ControlPhase phase) {
-  // Selecting the terminal label associated with the active control phase.
-  switch (phase) {
-    case ControlPhase::kToolOrientation:
-      return "approach_orient";
-    case ControlPhase::kSurfaceApproach:
-      return "approach_descend";
-    case ControlPhase::kSetup:
-      return "setup";
-    case ControlPhase::kGrinding:
-      return "grind";
-    case ControlPhase::kPoseHold:
-      return "hold";
-    case ControlPhase::kManualGuidance:
-      return "manual_guide";
+const char* stateName(ControlState state) {
+  // Selecting the terminal label associated with the active control state.
+  switch (state) {
+    case ControlState::kToolOrientation:
+      return "tool_orientation";
+    case ControlState::kSurfaceApproach:
+      return "surface_approach";
+    case ControlState::kPreContactHold:
+      return "pre_contact_hold";
+    case ControlState::kContactEstablishment:
+      return "contact_establishment";
+    case ControlState::kPreGrindingHold:
+      return "pre_grinding_hold";
+    case ControlState::kGrinding:
+      return "grinding";
+    case ControlState::kPoseHold:
+      return "cartesian_pose_hold";
+    case ControlState::kManualGuidance:
+      return "manual_guidance";
   }
   return "unknown";
 }
@@ -164,15 +168,15 @@ void printJointStartEndTableDeg(const Vec7& q_start, const Vec7& q_final) {
   }
 }
 
-void printSetupImpedanceLaw(const ControllerConfig& params,
-                            const PhaseDampingCache& damping,
+void printContactEstablishmentImpedanceLaw(const ControllerConfig& params,
+                            const StateDampingCache& damping,
                             bool tunable,
                             const Mat3& R_base_surface,
                             const Mat3& R_EE) {
-  const bool surface = params.setup_translation_surface_frame;
-  // Selecting the translational parameter frame used by setup impedance.
-  const Vec3& kp = surface ? params.setup_Kp_surface_diag : params.setup_Kp_diag;
-  const Vec3& dp = surface ? params.setup_Dp_surface_diag : params.setup_Dp_diag;
+  const bool surface = params.contact_establishment_translation_surface_frame;
+  // Selecting the translational parameter frame used by contact establishment impedance.
+  const Vec3& kp = surface ? params.contact_establishment_Kp_surface_diag : params.contact_establishment_Kp_diag;
+  const Vec3& dp = surface ? params.contact_establishment_Dp_surface_diag : params.contact_establishment_Dp_diag;
   const char* frame = surface ? "[t1,t2,n]" : "[x,y,z]";
 
   // Defining a consistent row format for the impedance summary.
@@ -184,7 +188,7 @@ void printSetupImpedanceLaw(const ControllerConfig& params,
     return std::string(name) + " " + frame;
   };
 
-  printSection("setup impedance");
+  printSection("contact establishment impedance");
   if (params.use_virtual_compliance_center) {
     // Printing the coupled spatial impedance law and shifted gains.
     printf("  %-16s   wrench = K_TCP*dx + D_TCP*dv\n", "law");
@@ -194,19 +198,19 @@ void printSetupImpedanceLaw(const ControllerConfig& params,
            "(decoupled)\n", "law");
   }
   row(labelled("Kp"), kp, "N/m", "");
-  if (!params.setup_auto_damping) {
+  if (!params.contact_establishment_auto_damping) {
     row(labelled("Dp"), dp, "Ns/m", "");
-  } else if (damping.setup_damping_valid) {
-    row(labelled("Dp"), damping.setup_Dp_used, "Ns/m", "auto");
+  } else if (damping.contact_establishment_damping_valid) {
+    row(labelled("Dp"), damping.contact_establishment_Dp_used, "Ns/m", "auto");
   } else {
     printf("  %-16s = auto, refit at the first cycle\n",
            labelled("Dp").c_str());
   }
-  row("KR [t1,t2,n]", params.setup_KR_diag, "Nm/rad", "");
-  if (!params.setup_auto_damping) {
-    row("DR [t1,t2,n]", params.setup_DR_diag, "Nms/rad", "");
-  } else if (damping.setup_damping_valid) {
-    row("DR [t1,t2,n]", damping.setup_DR_used, "Nms/rad", "auto");
+  row("KR [t1,t2,n]", params.contact_establishment_KR_diag, "Nm/rad", "");
+  if (!params.contact_establishment_auto_damping) {
+    row("DR [t1,t2,n]", params.contact_establishment_DR_diag, "Nms/rad", "");
+  } else if (damping.contact_establishment_damping_valid) {
+    row("DR [t1,t2,n]", damping.contact_establishment_DR_used, "Nms/rad", "auto");
   } else {
     printf("  %-16s = auto, refit at the first cycle\n", "DR [t1,t2,n]");
   }
@@ -309,21 +313,21 @@ void printAutomaticDisturbance(const ControllerConfig& params,
          params.disturbance_release_ramp_time);
 }
 
-void printPhaseHeader(ControlPhase phase) {
+void printStateHeader(ControlState state) {
   char title[48];
-  snprintf(title, sizeof(title), "phase: %s", phaseName(phase));
+  snprintf(title, sizeof(title), "state: %s", stateName(state));
   printSection(title);
 }
 
-void printPhaseIntro(const ControllerConfig& params,
-                     const PhaseDampingCache& damping,
-                     ControlPhase phase) {
-  // Selecting a common row layout for all phase impedance summaries.
+void printStateIntro(const ControllerConfig& params,
+                     const StateDampingCache& damping,
+                     ControlState state) {
+  // Selecting a common row layout for all state impedance summaries.
   const auto row = printRow;
 
-  switch (phase) {
-    case ControlPhase::kToolOrientation:
-    case ControlPhase::kSurfaceApproach: {
+  switch (state) {
+    case ControlState::kToolOrientation:
+    case ControlState::kSurfaceApproach: {
       char auto_note[48] = "";
       if (params.approach_auto_damping) {
         snprintf(auto_note, sizeof(auto_note), "auto (factor %.2f)",
@@ -347,13 +351,13 @@ void printPhaseIntro(const ControllerConfig& params,
         printf("  %-16s = %s, fitted at the first cycle\n", "DR [t1,t2,n]",
                auto_note);
       }
-      if (phase == ControlPhase::kSurfaceApproach) {
+      if (state == ControlState::kSurfaceApproach) {
         printf("  %-16s   %.0f mm clearance at %.3f m/s\n", "descend to",
                1000.0 * params.descend_surface_clearance, params.descend_speed);
       }
       break;
     }
-    case ControlPhase::kGrinding:
+    case ControlState::kGrinding:
       if (params.grind_sweep_enabled) {
         printf("  %-16s   sweep along tangent%d, %.0f mm at %.2f Hz\n", "motion",
                params.grind_tangent_axis, 1000.0 * params.grind_amplitude_m,
@@ -361,11 +365,20 @@ void printPhaseIntro(const ControllerConfig& params,
       } else {
         printf("  %-16s   free-slide press hold\n", "motion");
       }
-      printf("  %-16s   as set up\n", "impedance");
+      printf("  %-16s   inherited from contact establishment\n", "impedance");
       break;
-    case ControlPhase::kPoseHold:
-      if (params.use_setup_impedance_hold) {
-        break;  // the setup impedance block covers it
+    case ControlState::kPreContactHold:
+      printOperatorHoldState(params, damping);
+      printf("  %-16s   Enter continue | e stop\n", "keys");
+      break;
+    case ControlState::kPreGrindingHold:
+      printf("  %-16s   established contact command\n", "motion");
+      printf("  %-16s   inherited from contact establishment\n", "impedance");
+      printf("  %-16s   Enter continue | e stop\n", "keys");
+      break;
+    case ControlState::kPoseHold:
+      if (params.use_contact_impedance_hold) {
+        break;  // the contact establishment impedance block covers it
       }
       row("Kp [x,y,z]", params.hold_Kp_diag, "N/m", "");
       if (params.hold_auto_damping && damping.hold_damping_valid) {
@@ -380,41 +393,41 @@ void printPhaseIntro(const ControllerConfig& params,
         row("DR [x,y,z]", params.hold_DR_diag, "Nms/rad", "");
       }
       break;
-    case ControlPhase::kSetup:
-    case ControlPhase::kManualGuidance:
+    case ControlState::kContactEstablishment:
+    case ControlState::kManualGuidance:
       break;  // these print their own block
   }
 }
 
-void printGateHold(const ControllerConfig& params, const PhaseDampingCache& damping) {
-  const bool translation_surface = params.pause_hold_translation_surface_frame;
-  const bool rotation_surface = params.pause_hold_rotation_surface_frame;
-  // Selecting the parameter frames used by the gate hold.
-  const Vec3& kp = translation_surface ? params.pause_hold_Kp_surface_diag
-                                       : params.pause_hold_Kp_diag;
-  const Vec3& dp = translation_surface ? params.pause_hold_Dp_surface_diag
-                                       : params.pause_hold_Dp_diag;
-  const Vec3& kr = rotation_surface ? params.pause_hold_KR_surface_diag
-                                    : params.pause_hold_KR_diag;
-  const Vec3& dr = rotation_surface ? params.pause_hold_DR_surface_diag
-                                    : params.pause_hold_DR_diag;
+void printOperatorHoldState(const ControllerConfig& params, const StateDampingCache& damping) {
+  const bool translation_surface = params.operator_hold_translation_surface_frame;
+  const bool rotation_surface = params.operator_hold_rotation_surface_frame;
+  // Selecting the parameter frames used by the operator-controlled hold.
+  const Vec3& kp = translation_surface ? params.operator_hold_Kp_surface_diag
+                                       : params.operator_hold_Kp_diag;
+  const Vec3& dp = translation_surface ? params.operator_hold_Dp_surface_diag
+                                       : params.operator_hold_Dp_diag;
+  const Vec3& kr = rotation_surface ? params.operator_hold_KR_surface_diag
+                                    : params.operator_hold_KR_diag;
+  const Vec3& dr = rotation_surface ? params.operator_hold_DR_surface_diag
+                                    : params.operator_hold_DR_diag;
   const auto labelled = [](const char* name, bool surface) {
     return std::string(name) + " " + (surface ? "[t1,t2,n]" : "[x,y,z]");
   };
 
-  printSection("gate hold");
+  printSection("pre-contact hold impedance");
   printRow(labelled("Kp", translation_surface).c_str(), kp, "N/m", "");
-  if (params.pause_hold_auto_damping && damping.pause_damping_valid) {
-    printRow(labelled("Dp", translation_surface).c_str(), damping.pause_Dp_used,
+  if (params.operator_hold_auto_damping && damping.operator_hold_damping_valid) {
+    printRow(labelled("Dp", translation_surface).c_str(), damping.operator_hold_Dp_used,
              "Ns/m", "auto");
-  } else if (!params.pause_hold_auto_damping) {
+  } else if (!params.operator_hold_auto_damping) {
     printRow(labelled("Dp", translation_surface).c_str(), dp, "Ns/m", "");
   }
   printRow(labelled("KR", rotation_surface).c_str(), kr, "Nm/rad", "");
-  if (params.pause_hold_auto_damping && damping.pause_damping_valid) {
-    printRow(labelled("DR", rotation_surface).c_str(), damping.pause_DR_used,
+  if (params.operator_hold_auto_damping && damping.operator_hold_damping_valid) {
+    printRow(labelled("DR", rotation_surface).c_str(), damping.operator_hold_DR_used,
              "Nms/rad", "auto");
-  } else if (!params.pause_hold_auto_damping) {
+  } else if (!params.operator_hold_auto_damping) {
     printRow(labelled("DR", rotation_surface).c_str(), dr, "Nms/rad", "");
   }
 }
@@ -429,49 +442,49 @@ void printContactEdgeDebug(const Vec3& offset_ee,
 }
 
 // ====================================================================
-// Per-phase debug lines
+// Per-state debug lines
 // ====================================================================
 
-void printApproachOrientDebug(double phase_time,
+void printApproachOrientDebug(double state_time,
                               double axis_error_deg,
                               double spin_error_deg) {
   printf("orient:     t=%5.1f s | axis_err=%5.1f deg | spin_err=%5.1f deg\n",
-         phase_time, axis_error_deg, spin_error_deg);
+         state_time, axis_error_deg, spin_error_deg);
 }
 
-void printApproachDescendDebug(double phase_time,
+void printApproachDescendDebug(double state_time,
                                double distance_mm,
                                double height_mm,
                                double target_height_mm,
                                double force_n) {
   printf("descend:    t=%5.1f s | distance=%6.1f mm | height=%+6.1f mm (target %.1f) | force=%5.1f N\n",
-         phase_time, distance_mm, height_mm, target_height_mm, force_n);
+         state_time, distance_mm, height_mm, target_height_mm, force_n);
 }
 
-void printSetupDebug(double phase_time,
+void printContactEstablishmentDebug(double state_time,
                      double ee_deviation_deg,
                      double force_n,
                      double moment_nm,
                      double moment_limit_nm,
                      double contact_mm) {
-  printf("setup:     t=%5.1f s | ee=%5.1f deg | F=%5.1f N | M=%5.1f Nm (limit %.1f) | contact=%5.1f mm\n",
-         phase_time, ee_deviation_deg, force_n, moment_nm, moment_limit_nm, contact_mm);
+  printf("contact establishment:     t=%5.1f s | ee=%5.1f deg | F=%5.1f N | M=%5.1f Nm (limit %.1f) | contact=%5.1f mm\n",
+         state_time, ee_deviation_deg, force_n, moment_nm, moment_limit_nm, contact_mm);
 }
 
-void printGrindDebug(double phase_time,
+void printGrindDebug(double state_time,
                      double sweep_mm,
                      double track_error_mm,
                      double press_n) {
   printf("grind:      t=%5.1f s | sweep=%+6.1f mm | track_err=%+5.1f mm | press=%5.1f N\n",
-         phase_time, sweep_mm, track_error_mm, press_n);
+         state_time, sweep_mm, track_error_mm, press_n);
 }
 
-void printHoldDebug(double phase_time,
+void printHoldDebug(double state_time,
                     double force_n,
                     double pos_error_mm,
                     double rot_error_deg) {
   printf("hold:       t=%5.1f s | force=%5.1f N | pos_err=%5.1f mm | rot_err=%5.1f deg\n",
-         phase_time, force_n, pos_error_mm, rot_error_deg);
+         state_time, force_n, pos_error_mm, rot_error_deg);
 }
 
 void printFinalSummary(const Vec3& final_p_d,

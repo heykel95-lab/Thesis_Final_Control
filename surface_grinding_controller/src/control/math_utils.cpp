@@ -111,30 +111,30 @@ double grindStrokeDuration(const ControllerConfig& params) {
   return (params.grind_frequency_hz > 1e-9) ? (0.5 / params.grind_frequency_hz) : 0.0;
 }
 
-double setupPush(const ControllerConfig& params,
-                 double phase_time,
+double contactEstablishmentPush(const ControllerConfig& params,
+                 double state_time,
                  double start_push,
                  double& push_speed) {
   // Defining the remaining virtual penetration distance [m].
-  const double delta = params.setup_push_end - start_push;
+  const double delta = params.contact_establishment_push_end - start_push;
 
   // Selecting the configured penetration speed magnitude [m/s].
-  const double speed_magnitude = std::abs(params.setup_push_speed);
+  const double speed_magnitude = std::abs(params.contact_establishment_push_speed);
   if (std::abs(delta) <= 1e-12 || speed_magnitude <= 1e-12) {
     push_speed = 0.0;
-    return (std::abs(delta) <= 1e-12) ? params.setup_push_end : start_push;
+    return (std::abs(delta) <= 1e-12) ? params.contact_establishment_push_end : start_push;
   }
 
   // Assigning penetration direction and signed speed [m/s].
   const double direction = (delta >= 0.0) ? 1.0 : -1.0;
   const double signed_speed = direction * speed_magnitude;
   // Integrating the unclamped virtual penetration [m].
-  const double unclamped = start_push + signed_speed * std::max(0.0, phase_time);
+  const double unclamped = start_push + signed_speed * std::max(0.0, state_time);
   const bool end_reached = (direction > 0.0)
-                               ? (unclamped >= params.setup_push_end)
-                               : (unclamped <= params.setup_push_end);
+                               ? (unclamped >= params.contact_establishment_push_end)
+                               : (unclamped <= params.contact_establishment_push_end);
   // Clamping the motion at the configured final penetration [m].
   push_speed = end_reached ? 0.0 : signed_speed;
-  return end_reached ? params.setup_push_end : unclamped;
+  return end_reached ? params.contact_establishment_push_end : unclamped;
 }
 

@@ -58,7 +58,7 @@ double smoothStep(double r);
 double smoothStepDerivative(double r, double T);
 
 /// Calculates the periodic grinding displacement and velocity.
-/// @param t Phase time [s].
+/// @param t State time [s].
 /// @param amplitude Sweep half-amplitude [m].
 /// @param stroke_duration Duration of one smooth stroke [s].
 /// @param s Returned tangential displacement [m].
@@ -69,13 +69,13 @@ void grindSweep(double t, double amplitude, double stroke_duration,
 /// Returns the configured duration of one grinding stroke [s].
 double grindStrokeDuration(const ControllerConfig& params);
 
-/// Calculates the setup penetration profile and its velocity.
-/// @param phase_time Time from setup entry [s].
-/// @param start_push Penetration at setup entry [m].
+/// Calculates the contact establishment penetration profile and its velocity.
+/// @param state_time Time from contact establishment entry [s].
+/// @param start_push Penetration at contact establishment entry [m].
 /// @param push_speed Returned penetration velocity [m/s].
 /// @return Current virtual penetration [m].
-double setupPush(const ControllerConfig& params,
-                 double phase_time,
+double contactEstablishmentPush(const ControllerConfig& params,
+                 double state_time,
                  double start_push,
                  double& push_speed);
 
@@ -230,7 +230,7 @@ void configureCollisionBehavior(Robot& robot, const ControllerConfig& params);
 /// @param dv Velocity error [linear in m/s; angular in rad/s].
 /// @return Force [N] and moment [N m], expressed in the base frame.
 Vec6 computeCartesianImpedanceWrench(const ControllerConfig& params,
-                                    ControlPhase phase,
+                                    ControlState state,
                                     const Mat3& Kp,
                                     const Mat3& Dp,
                                     const Mat3& KR,
@@ -255,7 +255,7 @@ Vec7 computeNullspaceTorque(
 bool validateAutomaticDisturbance(const ControllerConfig& params,
                                   std::string& error);
 
-/// Returns the smooth disturbance scale at the hold-phase time [-].
+/// Returns the smooth disturbance scale at the hold-state time [-].
 double automaticDisturbanceScale(const ControllerConfig& params,
                                  double hold_time);
 
@@ -309,31 +309,31 @@ bool askStartupRunMode(ControllerConfig& params, Robot& robot,
 bool performStartupGripperAction(const ControllerConfig& params);
 
 // ---------------------------------------------------------------------------
-// Phase gains and real-time execution
+// State gains and real-time execution
 // ---------------------------------------------------------------------------
 
-/// Builds the base-frame impedance matrices for every controller phase.
-PhaseImpedanceGains buildPhaseImpedanceGains(const ControllerConfig& params);
+/// Builds the base-frame impedance matrices for every controller state.
+StateImpedanceGains buildStateImpedanceGains(const ControllerConfig& params);
 
-/// Initializes the phase-damping cache from the configured damping matrices.
-PhaseDampingCache manualPhaseDampingCache(const PhaseImpedanceGains& gains);
+/// Initializes the state-damping cache from the configured damping matrices.
+StateDampingCache manualStateDampingCache(const StateImpedanceGains& gains);
 
-/// Updates inertia-based damping when a phase or contact state becomes active.
+/// Updates inertia-based damping when a state or contact state becomes active.
 void updateAutoDamping(const ControllerConfig& params,
-                       const PhaseImpedanceGains& gains,
+                       const StateImpedanceGains& gains,
                        const Model& model,
-                       const RobotState& state,
+                       const RobotState& robot_state,
                        const Mat6x7& J,
-                       ControlPhase phase,
+                       ControlState state,
                        bool after_contact,
-                       bool pause_hold_active,
-                       PhaseDampingCache& damping);
+                       bool operator_hold_active,
+                       StateDampingCache& damping);
 
 /// Executes one complete 1 kHz torque-control run and returns its samples.
 RunResult runControlLoop(ControllerConfig& params,
                          Robot& robot,
                          const Model& model,
-                         PhaseImpedanceGains gains,
+                         StateImpedanceGains gains,
                          KeyboardSignals& signals);
 
 /// Writes the post-run summary and chronological CSV log.
@@ -364,8 +364,8 @@ bool runManualGuidanceStart(ControllerConfig& params,
 // Operator output and data logging
 // ---------------------------------------------------------------------------
 
-/// Returns the terminal label for one controller phase.
-const char* phaseName(ControlPhase phase);
+/// Returns the terminal label for one controller state.
+const char* stateName(ControlState state);
 
 /// Returns the terminal label for one nullspace mode.
 const char* nullspaceModeName(NullspaceMode mode);
@@ -391,21 +391,21 @@ void printSpatialGainEigenvalues(const char* label, const Mat6x6& M);
 /// Prints the start and final joint postures in degrees [deg].
 void printJointStartEndTableDeg(const Vec7& q_start, const Vec7& q_final);
 
-/// Prints the active phase name and section heading.
-void printPhaseHeader(ControlPhase phase);
+/// Prints the active state name and section heading.
+void printStateHeader(ControlState state);
 
-/// Prints the impedance and damping selected for the active phase.
-void printPhaseIntro(const ControllerConfig& params,
-                     const PhaseDampingCache& damping,
-                     ControlPhase phase);
+/// Prints the impedance and damping selected for the active state.
+void printStateIntro(const ControllerConfig& params,
+                     const StateDampingCache& damping,
+                     ControlState state);
 
-/// Prints the impedance applied during a phase-transition hold.
-void printGateHold(const ControllerConfig& params,
-                   const PhaseDampingCache& damping);
+/// Prints the impedance applied in the pre-contact hold state.
+void printOperatorHoldState(const ControllerConfig& params,
+                   const StateDampingCache& damping);
 
-/// Prints setup gains and the selected virtual compliance-center definition.
-void printSetupImpedanceLaw(const ControllerConfig& params,
-                            const PhaseDampingCache& damping,
+/// Prints contact establishment gains and the selected virtual compliance-center definition.
+void printContactEstablishmentImpedanceLaw(const ControllerConfig& params,
+                            const StateDampingCache& damping,
                             bool tunable,
                             const Mat3& R_base_surface,
                             const Mat3& R_EE);
@@ -423,12 +423,12 @@ void printContactEdgeDebug(const Vec3& offset_ee,
                            const Vec3& contact_point);
 
 /// Prints tool-orientation progress and angular errors [deg].
-void printApproachOrientDebug(double phase_time,
+void printApproachOrientDebug(double state_time,
                               double axis_error_deg,
                               double spin_error_deg);
 
 /// Prints surface-approach distance, clearance, and force [mm, N].
-void printApproachDescendDebug(double phase_time,
+void printApproachDescendDebug(double state_time,
                                double distance_mm,
                                double height_mm,
                                double target_height_mm,
@@ -436,7 +436,7 @@ void printApproachDescendDebug(double phase_time,
 
 /// Prints the end-effector deviation, force, moment, and displacement.
 /// @param ee_deviation_deg End-effector rotation since first contact [deg].
-void printSetupDebug(double phase_time,
+void printContactEstablishmentDebug(double state_time,
                      double ee_deviation_deg,
                      double force_n,
                      double moment_nm,
@@ -444,13 +444,13 @@ void printSetupDebug(double phase_time,
                      double contact_mm);
 
 /// Prints grinding sweep, tracking error, and normal force [mm, N].
-void printGrindDebug(double phase_time,
+void printGrindDebug(double state_time,
                      double sweep_mm,
                      double track_error_mm,
                      double press_n);
 
 /// Prints hold force, position error, and orientation error [N, mm, deg].
-void printHoldDebug(double phase_time,
+void printHoldDebug(double state_time,
                     double force_n,
                     double pos_error_mm,
                     double rot_error_deg);
@@ -466,7 +466,7 @@ void printFinalSummary(const Vec3& final_p_d,
 void writeLogToCsv(const std::vector<LogData>& log_data,
                    const std::string& csv_file_name);
 
-/// Prints the setup termination condition, final pose, wrench, and gains.
-void reportSetupResult(const ControllerConfig& params,
+/// Prints the contact establishment termination condition, final pose, wrench, and gains.
+void reportContactEstablishmentResult(const ControllerConfig& params,
                        const Mat3& R_base_surface,
-                       const SetupReport& report);
+                       const ContactEstablishmentReport& report);

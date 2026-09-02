@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Draw the tool alignment falling from its commanded tilt during set-up.
+"""Draw the tool alignment falling from its commanded tilt during contact establishment.
 
   python3 analysis/plot_angle_descent.py [TRIAL=LABEL ...] [--out-dir DIR]
 
@@ -29,7 +29,7 @@ RESULTS = os.path.join(HERE, "..", "experiments", "results")
 
 apply_style()
 
-SETUP_PHASE = 2  # ControlPhase::kSetup
+CONTACT_ESTABLISHMENT_STATE = 2  # ControlState::kContactEstablishment
 
 # Archives written before the rename carry the alignment_ column names.
 COLUMN_ALIASES = {
@@ -53,20 +53,22 @@ DEFAULT_TRIALS = [
 
 
 def load(trial):
-    """Return time from set-up entry and the tool-to-plane angle [s, deg]."""
+    """Return time from contact-establishment entry and tool-to-plane angle [s, deg]."""
     matches = glob.glob(os.path.join(RESULTS, trial, "logs", "*.csv"))
     if not matches:
         raise SystemExit(f"no log csv under {trial}")
-    time, phase, angle = [], [], []
+    time, state, angle = [], [], []
     with open(matches[0]) as f:
-        for row in csv.DictReader(f):
+        reader = csv.DictReader(f)
+        state_field = "state" if "state" in reader.fieldnames else "phase"
+        for row in reader:
             time.append(float(row["time"]))
-            phase.append(float(row["phase"]))
+            state.append(float(row[state_field]))
             angle.append(column(row, "angular_deviation_deg"))
     time = np.array(time)
-    setup = np.array(phase) == SETUP_PHASE
-    t = time[setup]
-    return t - t[0], np.array(angle)[setup]
+    contact = np.array(state) == CONTACT_ESTABLISHMENT_STATE
+    t = time[contact]
+    return t - t[0], np.array(angle)[contact]
 
 
 def main():
@@ -92,7 +94,7 @@ def main():
         print(f"{trial:24s} {angle[0]:5.2f} -> {angle[-1]:4.2f} deg")
 
     reference_line(ax)
-    ax.set_xlabel("Time from start of set-up [s]")
+    ax.set_xlabel("Time from contact-establishment start [s]")
     ax.set_ylabel(r"Angular deviation [$^\circ$]")
     ax.set_ylim(bottom=-0.4)
     shared_legend(fig, [ax], ncol=2)

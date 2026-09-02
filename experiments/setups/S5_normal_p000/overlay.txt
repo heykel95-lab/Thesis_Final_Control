@@ -1,11 +1,11 @@
 # S5_normal_p000
 # Applied on top of surface_grinding_controller/params/.
 # Only keys listed here differ from the nominal set.
-setup_translation_surface_frame = 1
-pause_hold_translation_surface_frame = 1
-pause_hold_rotation_surface_frame = 1
-pause_before_setup = 0
-pause_before_grind = 1
+contact_establishment_translation_surface_frame = 1
+operator_hold_translation_surface_frame = 1
+operator_hold_rotation_surface_frame = 1
+enable_pre_contact_hold = 0
+enable_pre_grinding_hold = 1
 use_virtual_compliance_center = 1
 tool_target_offset_tangent1_deg = 10.0
 tool_target_offset_tangent2_deg = 0.0

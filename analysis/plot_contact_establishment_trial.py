@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Plot one set-up trial as a time series against the thesis figure style.
+"""Plot one contact-establishment trial against the thesis figure style.
 
-  python3 analysis/plot_setup_trial.py <log.csv> [--out-dir DIR] [--axis t1|t2|n]
+  python3 analysis/plot_contact_establishment_trial.py <log.csv> [--out-dir DIR]
 
 Writes two vector PDFs per log:
 
-  <name>_setup_trial.pdf      three panels sharing the time axis -- the
+  <name>_contact_establishment_trial.pdf
+                              three panels sharing the time axis -- the
                               misalignment angle, the press force, and the
                               moment about the tilt axis split into its two
                               contributions.
-  <name>_setup_coupling.pdf   the regulated moment M_TCP alone, resolved
+  <name>_contact_establishment_coupling.pdf
+                              the regulated moment M_TCP alone, resolved
                               into all three surface axes.
 
 The moment panel shows components rather than norms on purpose. M_contact is
@@ -93,7 +95,7 @@ MISALIGNMENT_LABEL = r"Misalignment $\theta$ [$^\circ$]"
 PRESS_FORCE_LABEL = r"Press force $f_n$ [N]"
 
 COLUMNS = (
-    "time", "phase",
+    "time", "state",
     "p_EE_x", "p_EE_y", "p_EE_z",
     "tool_contact_x", "tool_contact_y", "tool_contact_z",
     "angular_deviation_deg",
@@ -123,11 +125,12 @@ def surface_frame(a_deg, b_deg):
     return np.column_stack((t1, t2, normal))
 
 
-def setup_slice(d):
-    """Restrict every array to the set-up phase, with time from its start."""
-    mask = sgc_log.phase_mask(d["phase"], sgc_log.PHASE_SET_UP)
+def contact_establishment_slice(d):
+    """Restrict every array to contact establishment from its start."""
+    mask = sgc_log.state_mask(
+        d["state"], sgc_log.STATE_CONTACT_ESTABLISHMENT)
     if not mask.any():
-        raise SystemExit("log contains no set-up phase")
+        raise SystemExit("log contains no contact-establishment state")
     out = {k: v[mask] for k, v in d.items()}
     out["time"] = out["time"] - out["time"][0]
     return out
@@ -171,7 +174,7 @@ def plot_trial(d, press, m_tcp, m_lever, m_contact, axis, out_path):
                  label=r"$M_{\mathrm{contact}}$")
     axes[2].set_ylabel(
         f"Moment about {AXIS_LABELS[axis]} " r"[$\mathrm{N\,m}$]")
-    axes[2].set_xlabel(r"Set-up time $t$ [s]")
+    axes[2].set_xlabel(r"Contact-establishment time $t$ [s]")
 
     handles, labels = axes[2].get_legend_handles_labels()
     fig.legend(handles, labels, loc="lower center", ncol=3,
@@ -194,7 +197,7 @@ def plot_coupling(d, m_tcp, out_path):
             zip(AXIS_NAMES, (SERIES_BLACK, SERIES_RED, SERIES_BLUE))):
         ax.plot(d["time"], m_tcp[:, i], color=colour,
                 label=AXIS_LABELS[name])
-    ax.set_xlabel(r"Set-up time $t$ [s]")
+    ax.set_xlabel(r"Contact-establishment time $t$ [s]")
     ax.set_ylabel(r"$M_{\mathrm{TCP}}$ [$\mathrm{N\,m}$]")
 
     handles, labels = ax.get_legend_handles_labels()
@@ -219,7 +222,7 @@ def main():
     args = p.parse_args()
 
     d, _ = sgc_log.read_csv(args.log, columns=COLUMNS)
-    d = setup_slice(d)
+    d = contact_establishment_slice(d)
 
     R_bs = surface_frame(args.tilt_x, args.tilt_y)
     press, m_tcp, m_lever, m_contact = moment_terms(d, R_bs)
@@ -228,8 +231,10 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     stem = os.path.splitext(os.path.basename(args.log))[0]
 
-    trial_pdf = os.path.join(out_dir, f"{stem}_setup_trial.pdf")
-    coupling_pdf = os.path.join(out_dir, f"{stem}_setup_coupling.pdf")
+    trial_pdf = os.path.join(
+        out_dir, f"{stem}_contact_establishment_trial.pdf")
+    coupling_pdf = os.path.join(
+        out_dir, f"{stem}_contact_establishment_coupling.pdf")
     plot_trial(d, press, m_tcp, m_lever, m_contact, args.axis, trial_pdf)
     plot_coupling(d, m_tcp, coupling_pdf)
     print(f"wrote {trial_pdf}")

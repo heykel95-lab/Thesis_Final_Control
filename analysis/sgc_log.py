@@ -14,21 +14,26 @@ import os
 
 import numpy as np
 
-# ControlPhase enum order in controller.h.
-PHASE_APPROACH_ORIENT = 0
-PHASE_APPROACH_DESCEND = 1
-PHASE_SET_UP = 2
-PHASE_GRIND = 3
-PHASE_HOLD = 4
-PHASE_MANUAL_GUIDE = 5
+# ControlState values in controller_types.h. Existing values remain stable so
+# archived logs and current state logs use the same numeric codes.
+STATE_TOOL_ORIENTATION = 0
+STATE_SURFACE_APPROACH = 1
+STATE_CONTACT_ESTABLISHMENT = 2
+STATE_GRINDING = 3
+STATE_POSE_HOLD = 4
+STATE_MANUAL_GUIDANCE = 5
+STATE_PRE_CONTACT_HOLD = 6
+STATE_PRE_GRINDING_HOLD = 7
 
-PHASE_NAMES = {
-    0: "approach_orient",
-    1: "approach_descend",
-    2: "set_up",
-    3: "grind",
-    4: "hold",
-    5: "manual_guide",
+STATE_NAMES = {
+    0: "tool_orientation",
+    1: "surface_approach",
+    2: "contact_establishment",
+    3: "grinding",
+    4: "cartesian_pose_hold",
+    5: "manual_guidance",
+    6: "pre_contact_hold",
+    7: "pre_grinding_hold",
 }
 
 # ---------------------------------------------------------------------------
@@ -79,7 +84,7 @@ def alignment_improvement_deg(csv_path, plane=None):
     """How much closer to the REAL plane the tool got during set_up [deg].
 
     Positive means it rotated toward the surface. Returns None if the run has
-    no set-up phase.
+    no contact-establishment state.
 
     The tool's rotation is -e_R, not +e_R: orientationError(R_current,
     R_desired) returns the rotation taking current -> desired, and during
@@ -93,8 +98,9 @@ def alignment_improvement_deg(csv_path, plane=None):
     n_cfg = normal_from_tilt(*CONFIGURED_PLANE)
     n_real = normal_from_tilt(a_m, b_m)
 
-    d, _ = read_csv(csv_path, ["phase", "e_R_x", "e_R_y", "e_R_z"])
-    idx = np.where(phase_mask(d["phase"], PHASE_SET_UP))[0]
+    d, _ = read_csv(csv_path, ["state", "e_R_x", "e_R_y", "e_R_z"])
+    idx = np.where(state_mask(
+        d["state"], STATE_CONTACT_ESTABLISHMENT))[0]
     if idx.size == 0:
         return None
     i = idx[-1]
@@ -115,12 +121,17 @@ def read_csv(path, columns=None):
 
     if columns is None:
         use = list(range(len(header)))
-        names = header
+        names = ["state" if name == "phase" else name for name in header]
     else:
-        missing = [c for c in columns if c not in header]
+        source_names = [
+            ("phase" if name == "state" and
+             "state" not in header and "phase" in header else name)
+            for name in columns
+        ]
+        missing = [source for source in source_names if source not in header]
         if missing:
             raise KeyError(f"{os.path.basename(path)} lacks columns {missing}")
-        use = [header.index(c) for c in columns]
+        use = [header.index(source) for source in source_names]
         names = list(columns)
 
     data = np.loadtxt(path, delimiter=",", skiprows=1, usecols=use, ndmin=2)
@@ -149,8 +160,8 @@ def deviation_component_columns(header):
     return found if all(found) else None
 
 
-def phase_mask(phase, wanted):
-    return phase == wanted
+def state_mask(state, wanted):
+    return state == wanted
 
 
 def _norm3(d, prefix):
@@ -159,14 +170,14 @@ def _norm3(d, prefix):
                    + d[f"{prefix}_z"] ** 2)
 
 
-def setup_metrics(path):
-    """Extract the per-run set-up metrics used by the thesis tables.
+def contact_establishment_metrics(path):
+    """Extract contact-establishment metrics used by the thesis tables.
 
     Returns a dict of scalars. Values that cannot be computed from the
     available schema are NaN, never invented.
     """
     wanted = [
-        "time", "phase",
+        "time", "state",
         "e_R_x", "e_R_y", "e_R_z",
         "p_EE_x", "p_EE_y", "p_EE_z",
         "tool_contact_x", "tool_contact_y", "tool_contact_z",
@@ -194,29 +205,29 @@ def setup_metrics(path):
         "has_deviation_components": component_columns is not None,
     }
 
-    setup = phase_mask(d["phase"], PHASE_SET_UP)
-    out["setup_samples"] = int(setup.sum())
-    if out["setup_samples"] < 2:
-        out["setup_present"] = False
+    contact = state_mask(d["state"], STATE_CONTACT_ESTABLISHMENT)
+    out["contact_establishment_samples"] = int(contact.sum())
+    if out["contact_establishment_samples"] < 2:
+        out["contact_establishment_present"] = False
         return out
-    out["setup_present"] = True
+    out["contact_establishment_present"] = True
 
-    t = d["time"][setup]
-    out["setup_duration_s"] = float(t[-1] - t[0])
+    t = d["time"][contact]
+    out["contact_establishment_duration_s"] = float(t[-1] - t[0])
 
     # End-effector deviation: how far the end-effector turned away from the
     # orientation frozen at the clearance transition. It comes from joint
     # angles alone, so neither the tool axis nor the plane enters it.
-    e_r = np.sqrt(d["e_R_x"][setup] ** 2
-                  + d["e_R_y"][setup] ** 2
-                  + d["e_R_z"][setup] ** 2)
+    e_r = np.sqrt(d["e_R_x"][contact] ** 2
+                  + d["e_R_y"][contact] ** 2
+                  + d["e_R_z"][contact] ** 2)
     out["end_effector_deviation_final_deg"] = float(np.degrees(e_r[-1]))
     out["end_effector_deviation_max_deg"] = float(np.degrees(e_r.max()))
 
     # Angular deviation: residual angle to the configured surface. This is how
     # FLAT the tool ended up, and it is the quantity the thesis reports.
     if total_column:
-        a = d[total_column][setup]
+        a = d[total_column][contact]
         out["deviation_before_deg"] = float(a[0])
         out["deviation_after_deg"] = float(a[-1])
         out["deviation_gain_deg"] = float(a[0] - a[-1])
@@ -237,7 +248,7 @@ def setup_metrics(path):
 
     if component_columns:
         for axis, column in zip(("t1", "t2"), component_columns[:2]):
-            values = d[column][setup]
+            values = d[column][contact]
             out[f"deviation_{axis}_before_deg"] = float(values[0])
             out[f"deviation_{axis}_after_deg"] = float(values[-1])
             out[f"deviation_{axis}_improve_deg"] = float(
@@ -250,9 +261,9 @@ def setup_metrics(path):
             out[f"deviation_{axis}_improve_deg"] = np.nan
 
     # Contact force relative to the bias captured at the clearance transition.
-    fx = d["external_force_x"][setup] - d["contact_force_bias_x"][setup]
-    fy = d["external_force_y"][setup] - d["contact_force_bias_y"][setup]
-    fz = d["external_force_z"][setup] - d["contact_force_bias_z"][setup]
+    fx = d["external_force_x"][contact] - d["contact_force_bias_x"][contact]
+    fy = d["external_force_y"][contact] - d["contact_force_bias_y"][contact]
+    fz = d["external_force_z"][contact] - d["contact_force_bias_z"][contact]
     f = np.sqrt(fx ** 2 + fy ** 2 + fz ** 2)
     out["force_final_N"] = float(f[-1])
     out["force_max_N"] = float(f.max())
@@ -261,17 +272,17 @@ def setup_metrics(path):
     out["force_steady_N"] = float(np.median(f[-tail:]))
 
     # Edge travel: how far the pressed contact feature slid.
-    ex = d["tool_contact_x"][setup] - d["first_contact_x"][setup]
-    ey = d["tool_contact_y"][setup] - d["first_contact_y"][setup]
-    ez = d["tool_contact_z"][setup] - d["first_contact_z"][setup]
+    ex = d["tool_contact_x"][contact] - d["first_contact_x"][contact]
+    ey = d["tool_contact_y"][contact] - d["first_contact_y"][contact]
+    ez = d["tool_contact_z"][contact] - d["first_contact_z"][contact]
     out["edge_travel_mm"] = float(1000.0 * np.sqrt(ex[-1] ** 2 + ey[-1] ** 2 + ez[-1] ** 2))
 
-    tau = np.vstack([d[f"tau_cmd_{i}"][setup] for i in range(1, 8)])
+    tau = np.vstack([d[f"tau_cmd_{i}"][contact] for i in range(1, 8)])
     out["tau_max_Nm"] = float(np.abs(tau).max())
     out["tau_norm_max_Nm"] = float(np.linalg.norm(tau, axis=0).max())
 
     # Equilibrium check: how much the tool still moved over the last 20% of the
-    # phase. Large values mean the reported number is a transient, not an
+    # state. Large values mean the reported number is a transient, not an
     # equilibrium, which invalidates the quasi-static reading.
     last = max(2, len(e_r) // 5)
     out["tip_drift_last20pct_deg"] = float(
@@ -283,7 +294,7 @@ def setup_metrics(path):
 def hold_metrics(path):
     """Extract null-space metrics from a general log covering a hold test."""
     wanted = [
-        "time", "phase", "nullspace_mode",
+        "time", "state", "nullspace_mode",
         "sigma_current", "sigma_difference", "sigma_direction_valid",
         "tau_sigma_norm", "nullspace_speed", "sigma_speed_toward_better",
         "sigma_Jn_norm", "tau_nullspace_norm",
@@ -292,7 +303,7 @@ def hold_metrics(path):
     ]
     d, _ = read_csv(path, wanted)
 
-    hold = phase_mask(d["phase"], PHASE_HOLD)
+    hold = state_mask(d["state"], STATE_POSE_HOLD)
     out = {"hold_samples": int(hold.sum())}
     if out["hold_samples"] < 2:
         out["hold_present"] = False
@@ -328,8 +339,8 @@ def hold_metrics(path):
     return out
 
 
-def parse_setup_report(terminal_log_path):
-    """Pull the controller's own set-up report out of the saved transcript.
+def parse_contact_establishment_report(terminal_log_path):
+    """Pull the contact-establishment report from the saved transcript.
 
     Gives an independent cross-check of the CSV-derived metrics: if the two
     disagree, one of them is wrong and the run should not be used.
@@ -367,7 +378,7 @@ def parse_setup_report(terminal_log_path):
                     elif part.startswith("M="):
                         out["report_moment_Nm"] = float(part[2:].split()[0])
                     elif part.startswith("t="):
-                        out["report_phase_time_s"] = float(part[2:].split()[0])
+                        out["report_state_time_s"] = float(part[2:].split()[0])
             elif line.startswith("alignment:"):
                 for part in line.replace("alignment:", "").split("|"):
                     part = part.strip()
@@ -396,7 +407,7 @@ def parse_setup_report(terminal_log_path):
 
 
 def read_overlay(path):
-    """Read a setup overlay into {key: value} for labelling plots."""
+    """Read a configuration overlay into {key: value} for labelling plots."""
     out = {}
     if not os.path.exists(path):
         return out

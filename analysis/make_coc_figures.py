@@ -14,7 +14,7 @@ with a white face, a horizontal grid, and no dashed line anywhere.
   G  the centre swept along the tool axis
   H  the same positions at half the commanded offset
 
-Every case uses the signed set-up rotation about the commanded tangent. This
+Every case uses the signed contact-establishment rotation about the commanded tangent. This
 controller-response metric does not depend on the reconstructed tool normal or
 its uncertain absolute zero.
 """
@@ -38,11 +38,11 @@ from figure_style import (apply_style, reference_line,  # noqa: E402
 
 apply_style()
 
-ROTATION_LABEL = (r"Set-up rotation about the commanded tangent"
+ROTATION_LABEL = (r"Contact-establishment rotation about the commanded tangent"
                   r" [$^\circ$]")
 
 # The four groups of the sweep, in the order they are drawn. Their legend
-# labels are formed from the measured orientation at the start of set-up below; the
+# labels use the measured orientation at the start of contact establishment; the
 # nominal commanded offset is deliberately not used as a substitute for it.
 GROUPS = [
     ("P2_t1_pos", "t1"),
@@ -94,7 +94,7 @@ def tag(position):
 
 
 def initial_label(groups, runs, axis, linebreak=False):
-    """Name a series by its measured signed orientation before set-up."""
+    """Name a series by its measured orientation before contact establishment."""
     key = f"deviation_before_{axis}"
     values = [value for run in runs for value in groups.get(run, {}).get(key, [])]
     if not values:
@@ -106,7 +106,7 @@ def initial_label(groups, runs, axis, linebreak=False):
 
 
 def sweep(groups, prefix, positions, key):
-    """Return positions and signed set-up-rotation statistics for one group."""
+    """Return positions and signed contact-rotation statistics for one group."""
     x, y, err = [], [], []
     for position in positions:
         value = stat(groups, f"{prefix}_{tag(position)}", key)
@@ -252,7 +252,7 @@ def main():
     ax.set_xticks(x)
     ax.set_xticklabels(commands)
     ax.set_xlabel("Commanded orientation offset")
-    ax.set_ylabel(r"Set-up rotation about $t_1$ [$^\circ$]")
+    ax.set_ylabel(r"Contact-establishment rotation about $t_1$ [$^\circ$]")
     ax.legend(loc="upper left")
     fig.tight_layout()
     fig.savefig(out("MAIN_F_frame.pdf"))

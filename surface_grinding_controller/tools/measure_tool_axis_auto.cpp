@@ -440,10 +440,12 @@ int main() {
             // Calculating the penetration that unloads to the relief force [m].
             const double amplitude = std::max(
                 0.0, (kSeatingForce - kDitherReliefForce) / kSeatNormalStiffness);
-            const double phase = 2.0 * M_PI * kDitherFrequency * stage_time;
-            const double relief = 0.5 * (1.0 - std::cos(phase));
+            const double oscillation_angle =
+                2.0 * M_PI * kDitherFrequency * stage_time;
+            const double relief = 0.5 * (1.0 - std::cos(oscillation_angle));
             p_d = seat_contact_p - (seat_push - amplitude * relief) * surface_normal;
-            pdot_d = amplitude * M_PI * kDitherFrequency * std::sin(phase) *
+            pdot_d = amplitude * M_PI * kDitherFrequency *
+                     std::sin(oscillation_angle) *
                      surface_normal;
 
             if (stage_time >= kDitherCycles / kDitherFrequency) {

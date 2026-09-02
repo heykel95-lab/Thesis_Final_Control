@@ -85,14 +85,14 @@ void startKeyboardStopThread(const ControllerConfig& /*params*/,
   std::atomic<char>& guidance_menu_key = signals.guidance_menu_key;
   std::atomic<bool>& guided_hold_selector_pending =
       signals.guided_hold_selector_pending;
-  std::atomic<bool>& gate_continue = signals.gate_continue;
+  std::atomic<bool>& operator_hold_continue = signals.operator_hold_continue;
   std::atomic<bool>& menu_requested = signals.menu_requested;
 
   // Starting the detached thread that parses commands during control.
   std::thread keyboard_thread([&signals, &stop_requested, &proceed_requested,
                                &guide_requested, &guidance_menu_key,
                                &guided_hold_selector_pending,
-                               &gate_continue, &menu_requested]() {
+                               &operator_hold_continue, &menu_requested]() {
     std::string line;
     while (true) {
       // Suspending runtime commands while the startup menu owns standard input.
@@ -108,7 +108,7 @@ void startKeyboardStopThread(const ControllerConfig& /*params*/,
         double value = 0.0;
         if (std::sscanf(line.c_str(), "t%d %lf", &index, &value) == 2) {
           if ((index == 1 || index == 2) && std::isfinite(value)) {
-            signals.setup_tilt_deg_request[index - 1].store(value);
+            signals.contact_establishment_tilt_deg_request[index - 1].store(value);
           } else {
             printf("Tilt index must be 1 or 2 and the value finite.\n");
           }
@@ -116,19 +116,19 @@ void startKeyboardStopThread(const ControllerConfig& /*params*/,
         }
       }
 
-      // Parsing setup stiffness and compliance-center commands.
+      // Parsing contact establishment stiffness and compliance-center commands.
       {
         int index = 0;
         double value = 0.0;
         std::array<std::atomic<double>, 3>* target = nullptr;
         if (std::sscanf(line.c_str(), "kp%d %lf", &index, &value) == 2) {
-          target = &signals.setup_kp_request;
+          target = &signals.contact_establishment_kp_request;
         } else if (std::sscanf(line.c_str(), "kr%d %lf", &index, &value) == 2) {
-          target = &signals.setup_kr_request;
+          target = &signals.contact_establishment_kr_request;
         } else if (std::sscanf(line.c_str(), "pc%d %lf", &index, &value) == 2) {
-          target = &signals.setup_compliance_center_mm_request;
+          target = &signals.contact_establishment_compliance_center_mm_request;
         } else if (std::sscanf(line.c_str(), "r%d %lf", &index, &value) == 2) {
-          target = &signals.setup_rc_mm_request;
+          target = &signals.contact_establishment_rc_mm_request;
         }
         if (target != nullptr) {
           if (index >= 1 && index <= 3 && std::isfinite(value)) {
@@ -166,8 +166,8 @@ void startKeyboardStopThread(const ControllerConfig& /*params*/,
         continue;
       }
       if (line.empty()) {
-        // Continuing the active phase gate.
-        gate_continue.store(true);
+        // Continuing the active operator-controlled hold state.
+        operator_hold_continue.store(true);
       } else if (line == "e" || line == "E") {
         stop_requested.store(true);
         break;

@@ -3,8 +3,8 @@
 
   python3 analysis/extract_metrics.py [--results DIR] [--out FILE]
 
-Reads what each trial recorded rather than recomputing it: the set-up report in
-terminal.log carries the alignment, the wrench and the stop condition, and
+Reads what each trial recorded rather than recomputing it. The contact report
+in terminal.log carries the alignment, the wrench and the stop condition, and
 params_effective/ carries the settings the trial actually ran with. Both were
 written by the trial itself, so a row here cannot disagree with its archive.
 
@@ -22,7 +22,7 @@ import sys
 
 import numpy as np
 
-PHASE_SET_UP = 2  # ControlPhase::kSetup
+STATE_CONTACT_ESTABLISHMENT = 2  # ControlState::kContactEstablishment
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.normpath(os.path.join(HERE, ".."))
@@ -42,15 +42,23 @@ PARAM_KEYS = (
     "r_tcp_from_compliance_center_surface_tangent1",
     "r_tcp_from_compliance_center_surface_tangent2",
     "r_tcp_from_compliance_center_surface_normal",
-    "setup_push_speed",
-    "setup_push_end",
-    "setup_timeout",
-    "setup_translation_surface_frame",
+    "contact_establishment_push_speed",
+    "contact_establishment_push_end",
+    "contact_establishment_timeout",
+    "contact_establishment_translation_surface_frame",
 )
+
+LEGACY_PARAM_KEYS = {
+    "contact_establishment_push_speed": "setup_push_speed",
+    "contact_establishment_push_end": "setup_push_end",
+    "contact_establishment_timeout": "setup_timeout",
+    "contact_establishment_translation_surface_frame":
+        "setup_translation_surface_frame",
+}
 
 FIELDS = (
     ("stop_reason", re.compile(r"^\s*stop:\s*(\w+)", re.M)),
-    ("phase_time_s", re.compile(r"stop:.*\|\s*t=([-\d.]+)\s*s")),
+    ("state_time_s", re.compile(r"stop:.*\|\s*t=([-\d.]+)\s*s")),
     # Archives predating the renames carry tip=, defl= or dev=.
     ("end_effector_deviation_deg",
      re.compile(r"stop:.*\|\s*(?:ee|grip|dev|defl|tip)=([-\d.]+)\s*deg")),
@@ -85,7 +93,7 @@ VECTOR_ROWS = (
     # The attitude the tool actually held when contact began, and the one it
     # ended on, resolved on the surface axes. The commanded offset is carried
     # separately in the parameter columns, and the two differ: the orientation
-    # phase exits on a tolerance against joint friction, so a commanded ten
+    # state exits on a tolerance against joint friction, so a commanded ten
     # degrees arrives as somewhat less.
     ("deviation_before",
      re.compile(r"deviation components.*?before=\[(.*?)\]", re.M)),
@@ -100,7 +108,7 @@ VECTOR_ROWS = (
 AXES = ("t1", "t2", "n")
 AXES_XYZ = ("x", "y", "z")
 
-# Samples averaged at the end of the phase, one half second at 1 kHz.
+# Samples averaged at the end of the state, one half second at 1 kHz.
 SETTLED_SAMPLES = 500
 
 # A tool is counted flat when the TCP stands no more than this above the
@@ -125,11 +133,14 @@ def read_params(directory):
                     continue
                 key, value = line.split("=", 1)
                 values[key.strip()] = value.strip()
+    for current, legacy in LEGACY_PARAM_KEYS.items():
+        if current not in values and legacy in values:
+            values[current] = values[legacy]
     return values
 
 
 def parse_report(path):
-    """Pull the set-up report out of a trial transcript.
+    """Pull the contact-establishment report from a trial transcript.
 
     The first surface-frame block is the alignment-target frame; a second
     M_contact row follows in tool-face axes and is deliberately not taken here.
@@ -175,10 +186,10 @@ def surface_frame(tilt_x_deg, tilt_y_deg):
 
 
 def contact_rotation(trial, params):
-    """Return the set-up rotation since the start of set-up in surface axes [deg].
+    """Return the contact-state rotation in surface axes [deg].
 
-    The set-up phase holds the orientation captured at the clearance transition as its
-    reference, so the logged orientation error is the rotation away from it.
+    Contact establishment holds the orientation captured at the clearance
+    transition, so the logged orientation error is the rotation away from it.
     That comes from joint angles alone: no tool axis and no plane zero enter
     it, which matters because the tool axis is only known to a degree or two
     and drifts as the tool settles in the gripper. The plane enters solely as
@@ -195,8 +206,10 @@ def contact_rotation(trial, params):
 
     rotation = []
     with open(logs[0]) as f:
-        for record in csv.DictReader(f):
-            if float(record["phase"]) != PHASE_SET_UP:
+        reader = csv.DictReader(f)
+        state_field = "state" if "state" in reader.fieldnames else "phase"
+        for record in reader:
+            if float(record[state_field]) != STATE_CONTACT_ESTABLISHMENT:
                 continue
             rotation.append([float(record["e_R_x"]),
                              float(record["e_R_y"]),
@@ -216,7 +229,7 @@ def contact_rotation(trial, params):
 
 
 def tool_flatness(trial, params):
-    """Return how far the TCP stands above the plane at the end of set-up [mm].
+    """Return the final TCP height after contact establishment [mm].
 
     A tool lying flat on the surface puts its grinding face on the plane, so
     the TCP stands one face offset above it. A tool resting on one edge stands
@@ -243,8 +256,10 @@ def tool_flatness(trial, params):
 
     heights = []
     with open(logs[0]) as f:
-        for record in csv.DictReader(f):
-            if float(record["phase"]) != PHASE_SET_UP:
+        reader = csv.DictReader(f)
+        state_field = "state" if "state" in reader.fieldnames else "phase"
+        for record in reader:
+            if float(record[state_field]) != STATE_CONTACT_ESTABLISHMENT:
                 continue
             p_ee = np.array([float(record[f"p_EE_{a}"]) for a in AXES_XYZ])
             heights.append(float(frame[:, 2] @ (p_ee - p_s)))
@@ -305,7 +320,7 @@ def collect(results_dir):
             row.update(contact_rotation(trial, params))
             row.update(tool_flatness(trial, params))
             if "deviation_gain_deg" not in report:
-                row["note"] = "no set-up report in transcript"
+                row["note"] = "no contact-establishment report in transcript"
             rows.append(row)
     return rows
 
@@ -338,7 +353,8 @@ def main():
 
     incomplete = sum(1 for row in rows if row.get("note"))
     print(f"wrote {len(rows)} rows to {args.out}"
-          + (f" ({incomplete} without a set-up report)" if incomplete else ""))
+          + (f" ({incomplete} without a contact-establishment report)"
+             if incomplete else ""))
 
 
 if __name__ == "__main__":

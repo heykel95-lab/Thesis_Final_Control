@@ -5,14 +5,12 @@ usage: auto_drive.py <run_id> <repeat_index>
 
 The controller asks for input at three points. This answers each one the moment
 its prompt appears, with exactly what a hand at the keyboard would type, so the
-protocol is the one an operator would follow, gates included. What changes is
-only that the gate waits become instant and identical every trial rather than
-however long the operator took.
+protocol is the one an operator would follow, including the two optional hold
+states. The waits become instant and identical between trials.
 
-That matters more than it used to. The set-up push ramp runs on the live phase
-clock, so a wait at the pre-grinding gate keeps building preload until the
-configured final penetration is reached. An instant, identical answer removes
-the operator's reaction time from the recorded load.
+The controller now freezes the established contact command in the pre-grinding
+hold state. An instant answer still removes operator reaction time from the
+recorded protocol.
 
 Reading is by chunk, not by line: the startup menu prompt ends in ": " with no
 newline, so a line-based reader blocks on it forever.
@@ -33,7 +31,7 @@ def replies_for(run_id):
 
     The startup key comes from the setup rather than being assumed: a contact
     trial runs the sequence with s, and a pose-hold trial holds with h. A hold
-    run ends on its own experiment duration, so the gate answers are simply
+    run ends on its own experiment duration, so the hold answers are simply
     never matched.
     """
     mode = b"s"
@@ -63,8 +61,8 @@ def replies_for(run_id):
         # The "Enter = N" tail of this prompt changes with the configured mode,
         # so match the stable part.
         (b"Selection [0/1/2/3", nullspace + b"\n"),
-        (b"[GATE] Reached", b"\n"),          # start the set-up press
-        (b"[GATE] Set up finished", b"e\n"),  # result has printed; stop
+        (b"[STATE] Pre-contact hold active", b"\n"),
+        (b"[STATE] Pre-grinding hold active", b"e\n"),
     ]
 
 

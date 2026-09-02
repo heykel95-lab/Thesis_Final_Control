@@ -186,8 +186,8 @@ std::vector<std::string> parameterFiles(const std::string& dir) {
       prefix + "tool_geometry.conf",
       prefix + "initial_pose.conf",
       prefix + "approach.conf",
-      prefix + "phase_gates.conf",
-      prefix + "setup.conf",
+      prefix + "operator_hold_states.conf",
+      prefix + "contact_establishment.conf",
       prefix + "grinding.conf",
       prefix + "nullspace.conf",
       prefix + "disturbance.conf",
@@ -299,8 +299,8 @@ ControllerConfig readControllerConfig(const std::vector<std::string>& filenames)
   p.gripper_grasp_epsilon_outer =
       getDouble("gripper_grasp_epsilon_outer", p.gripper_grasp_epsilon_outer);
 
-  // Assigning orientation-phase and manual-guidance selectors.
-  p.enable_orientation_phase = getBool("enable_orientation_phase", p.enable_orientation_phase);
+  // Assigning orientation-state and manual-guidance selectors.
+  p.enable_orientation_state = getBool("enable_orientation_state", p.enable_orientation_state);
   p.manual_guidance_damping =
       getDouble("manual_guidance_damping", p.manual_guidance_damping);
 
@@ -416,31 +416,31 @@ ControllerConfig readControllerConfig(const std::vector<std::string>& filenames)
   p.descend_surface_clearance =
       getDouble("descend_surface_clearance", p.descend_surface_clearance);
 
-  // Assigning setup timing [s], preload motion [m], and Cartesian impedance.
-  p.setup_min_time = getDouble("setup_min_time", p.setup_min_time);
-  p.setup_timeout = getDouble("setup_timeout", p.setup_timeout);
-  p.setup_moment_threshold = getDouble("setup_moment_threshold", p.setup_moment_threshold);
-  p.setup_push_speed = getDouble("setup_push_speed", p.setup_push_speed);
-  p.setup_push_end = getDouble("setup_push_end", p.setup_push_end);
-  p.setup_align_tolerance_deg =
-      getDouble("setup_align_tolerance_deg", p.setup_align_tolerance_deg);
-  p.setup_align_hold_time =
-      getDouble("setup_align_hold_time", p.setup_align_hold_time);
-  p.setup_align_fraction =
-      getDouble("setup_align_fraction", p.setup_align_fraction);
-  p.setup_Kp_diag = getVec3Xyz("setup_Kp", p.setup_Kp_diag);
-  p.setup_Dp_diag = getVec3Xyz("setup_Dp", p.setup_Dp_diag);
-  p.setup_translation_surface_frame =
-      getBool("setup_translation_surface_frame", p.setup_translation_surface_frame);
-  p.setup_Kp_surface_diag =
-      getVec3Task("setup_Kp_surface", p.setup_Kp_surface_diag);
-  p.setup_Dp_surface_diag =
-      getVec3Task("setup_Dp_surface", p.setup_Dp_surface_diag);
-  p.setup_KR_diag = getVec3Task("setup_KR", p.setup_KR_diag);
-  p.setup_DR_diag = getVec3Task("setup_DR", p.setup_DR_diag);
-  p.setup_auto_damping = getBool("setup_auto_damping", p.setup_auto_damping);
-  p.setup_auto_damping_factor =
-      getDouble("setup_auto_damping_factor", p.setup_auto_damping_factor);
+  // Assigning contact establishment timing [s], preload motion [m], and Cartesian impedance.
+  p.contact_establishment_min_time = getDouble("contact_establishment_min_time", p.contact_establishment_min_time);
+  p.contact_establishment_timeout = getDouble("contact_establishment_timeout", p.contact_establishment_timeout);
+  p.contact_establishment_moment_threshold = getDouble("contact_establishment_moment_threshold", p.contact_establishment_moment_threshold);
+  p.contact_establishment_push_speed = getDouble("contact_establishment_push_speed", p.contact_establishment_push_speed);
+  p.contact_establishment_push_end = getDouble("contact_establishment_push_end", p.contact_establishment_push_end);
+  p.contact_establishment_align_tolerance_deg =
+      getDouble("contact_establishment_align_tolerance_deg", p.contact_establishment_align_tolerance_deg);
+  p.contact_establishment_align_hold_time =
+      getDouble("contact_establishment_align_hold_time", p.contact_establishment_align_hold_time);
+  p.contact_establishment_align_fraction =
+      getDouble("contact_establishment_align_fraction", p.contact_establishment_align_fraction);
+  p.contact_establishment_Kp_diag = getVec3Xyz("contact_establishment_Kp", p.contact_establishment_Kp_diag);
+  p.contact_establishment_Dp_diag = getVec3Xyz("contact_establishment_Dp", p.contact_establishment_Dp_diag);
+  p.contact_establishment_translation_surface_frame =
+      getBool("contact_establishment_translation_surface_frame", p.contact_establishment_translation_surface_frame);
+  p.contact_establishment_Kp_surface_diag =
+      getVec3Task("contact_establishment_Kp_surface", p.contact_establishment_Kp_surface_diag);
+  p.contact_establishment_Dp_surface_diag =
+      getVec3Task("contact_establishment_Dp_surface", p.contact_establishment_Dp_surface_diag);
+  p.contact_establishment_KR_diag = getVec3Task("contact_establishment_KR", p.contact_establishment_KR_diag);
+  p.contact_establishment_DR_diag = getVec3Task("contact_establishment_DR", p.contact_establishment_DR_diag);
+  p.contact_establishment_auto_damping = getBool("contact_establishment_auto_damping", p.contact_establishment_auto_damping);
+  p.contact_establishment_auto_damping_factor =
+      getDouble("contact_establishment_auto_damping_factor", p.contact_establishment_auto_damping_factor);
 
   // Assigning grinding sweep direction, half-amplitude [m], and frequency [Hz].
   p.grind_sweep_enabled = getBool("grind_sweep_enabled", p.grind_sweep_enabled);
@@ -448,29 +448,29 @@ ControllerConfig readControllerConfig(const std::vector<std::string>& filenames)
   p.grind_amplitude_m = getDouble("grind_amplitude_m", p.grind_amplitude_m);
   p.grind_frequency_hz = getDouble("grind_frequency_hz", p.grind_frequency_hz);
 
-  // Assigning phase-gate selectors and Cartesian hold impedance.
-  p.pause_before_setup = getBool("pause_before_setup", p.pause_before_setup);
-  p.pause_before_grind = getBool("pause_before_grind", p.pause_before_grind);
-  p.pause_hold_Kp_diag = getVec3Xyz("pause_hold_Kp", p.pause_hold_Kp_diag);
-  p.pause_hold_Dp_diag = getVec3Xyz("pause_hold_Dp", p.pause_hold_Dp_diag);
-  p.pause_hold_translation_surface_frame =
-      getBool("pause_hold_translation_surface_frame",
-              p.pause_hold_translation_surface_frame);
-  p.pause_hold_Kp_surface_diag =
-      getVec3Task("pause_hold_Kp_surface", p.pause_hold_Kp_surface_diag);
-  p.pause_hold_Dp_surface_diag =
-      getVec3Task("pause_hold_Dp_surface", p.pause_hold_Dp_surface_diag);
-  p.pause_hold_KR_diag = getVec3Xyz("pause_hold_KR", p.pause_hold_KR_diag);
-  p.pause_hold_DR_diag = getVec3Xyz("pause_hold_DR", p.pause_hold_DR_diag);
-  p.pause_hold_rotation_surface_frame =
-      getBool("pause_hold_rotation_surface_frame",
-              p.pause_hold_rotation_surface_frame);
-  p.pause_hold_KR_surface_diag =
-      getVec3Task("pause_hold_KR_surface", p.pause_hold_KR_surface_diag);
-  p.pause_hold_DR_surface_diag =
-      getVec3Task("pause_hold_DR_surface", p.pause_hold_DR_surface_diag);
-  p.pause_hold_auto_damping =
-      getBool("pause_hold_auto_damping", p.pause_hold_auto_damping);
+  // Assigning operator-hold state selectors and Cartesian hold impedance.
+  p.enable_pre_contact_hold = getBool("enable_pre_contact_hold", p.enable_pre_contact_hold);
+  p.enable_pre_grinding_hold = getBool("enable_pre_grinding_hold", p.enable_pre_grinding_hold);
+  p.operator_hold_Kp_diag = getVec3Xyz("operator_hold_Kp", p.operator_hold_Kp_diag);
+  p.operator_hold_Dp_diag = getVec3Xyz("operator_hold_Dp", p.operator_hold_Dp_diag);
+  p.operator_hold_translation_surface_frame =
+      getBool("operator_hold_translation_surface_frame",
+              p.operator_hold_translation_surface_frame);
+  p.operator_hold_Kp_surface_diag =
+      getVec3Task("operator_hold_Kp_surface", p.operator_hold_Kp_surface_diag);
+  p.operator_hold_Dp_surface_diag =
+      getVec3Task("operator_hold_Dp_surface", p.operator_hold_Dp_surface_diag);
+  p.operator_hold_KR_diag = getVec3Xyz("operator_hold_KR", p.operator_hold_KR_diag);
+  p.operator_hold_DR_diag = getVec3Xyz("operator_hold_DR", p.operator_hold_DR_diag);
+  p.operator_hold_rotation_surface_frame =
+      getBool("operator_hold_rotation_surface_frame",
+              p.operator_hold_rotation_surface_frame);
+  p.operator_hold_KR_surface_diag =
+      getVec3Task("operator_hold_KR_surface", p.operator_hold_KR_surface_diag);
+  p.operator_hold_DR_surface_diag =
+      getVec3Task("operator_hold_DR_surface", p.operator_hold_DR_surface_diag);
+  p.operator_hold_auto_damping =
+      getBool("operator_hold_auto_damping", p.operator_hold_auto_damping);
 
   // Assigning the compliance-center selector and lever definitions [m].
   p.use_virtual_compliance_center = getBool("use_virtual_compliance_center", p.use_virtual_compliance_center);

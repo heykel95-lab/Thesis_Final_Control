@@ -37,7 +37,7 @@ CORE_SRCS := src/config/parameter_io.cpp \
              src/interface/operator_interface.cpp \
              src/control/tool_axis_estimation.cpp \
              src/report/csv_logging.cpp \
-             src/report/setup_evaluation.cpp
+             src/report/contact_establishment_evaluation.cpp
 
 RUN_SRCS := src/control/impedance_gains.cpp \
             src/runtime/control_loop.cpp \

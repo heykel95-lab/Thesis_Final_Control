@@ -30,7 +30,7 @@ RESULTS = os.path.join(HERE, "..", "experiments", "results")
 
 apply_style()
 
-SETUP_PHASE = 2  # ControlPhase::kSetup
+CONTACT_ESTABLISHMENT_STATE = 2  # ControlState::kContactEstablishment
 
 # Archives written before the rename carry the alignment_ column names.
 COLUMN_ALIASES = {
@@ -52,20 +52,22 @@ def column(row, name):
 
 
 def load(trial):
-    """Return set-up time and the two in-plane deviation components [s, deg]."""
+    """Return contact-establishment time and in-plane deviations [s, deg]."""
     matches = glob.glob(os.path.join(RESULTS, trial, "logs", "*.csv"))
     if not matches:
         raise SystemExit(f"no log csv under {trial}")
-    time, phase, t1, t2 = [], [], [], []
+    time, state, t1, t2 = [], [], [], []
     with open(matches[0]) as f:
-        for row in csv.DictReader(f):
+        reader = csv.DictReader(f)
+        state_field = "state" if "state" in reader.fieldnames else "phase"
+        for row in reader:
             time.append(float(row["time"]))
-            phase.append(float(row["phase"]))
+            state.append(float(row[state_field]))
             t1.append(column(row, "angular_deviation_t1_deg"))
             t2.append(column(row, "angular_deviation_t2_deg"))
-    setup = np.array(phase) == SETUP_PHASE
-    t = np.array(time)[setup]
-    return t - t[0], np.array(t1)[setup], np.array(t2)[setup]
+    contact = np.array(state) == CONTACT_ESTABLISHMENT_STATE
+    t = np.array(time)[contact]
+    return t - t[0], np.array(t1)[contact], np.array(t2)[contact]
 
 
 def main():
@@ -88,7 +90,7 @@ def main():
                     label=f"{name}, {label}")
 
     reference_line(ax)
-    ax.set_xlabel("Time from start of set-up [s]")
+    ax.set_xlabel("Time from contact-establishment start [s]")
     ax.set_ylabel(r"Angular deviation [$^\circ$]")
     shared_legend(fig, [ax], ncol=2, bottom=0.17)
 

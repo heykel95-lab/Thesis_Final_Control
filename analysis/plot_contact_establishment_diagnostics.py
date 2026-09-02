@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Draw the surface-frame rotation and commanded wrench during set-up.
+"""Draw the surface-frame rotation and commanded wrench during contact establishment.
 
-  python3 analysis/plot_setup_diagnostics.py [TRIAL=LABEL ...] [--out-dir DIR]
+  python3 analysis/plot_contact_establishment_diagnostics.py [TRIAL=LABEL ...]
 
 One column per trial, three rows sharing the same time axis, so the rotation can
 be read against the load that produced it.
 
-  rotation   the turn since the start of set-up, resolved along the surface axes. It
+  rotation   the turn since contact establishment began, resolved along the surface axes. It
              comes from joint angles alone, so no tool axis enters it.
   force      the controller-commanded Cartesian force.
   moment     the controller-commanded Cartesian moment at the TCP.
@@ -37,7 +37,7 @@ apply_style()
 AXIS_NAMES = (r"$t_1$", r"$t_2$", r"$n$")
 
 
-SETUP_PHASE = 2  # ControlPhase::kSetup
+CONTACT_ESTABLISHMENT_STATE = 2  # ControlState::kContactEstablishment
 
 DEFAULT_TRIALS = [
     ("P2_t1_pos_m040/r01", "centre -40 mm"),
@@ -61,8 +61,10 @@ def load(trial):
 
     time, rotation, force, moment = [], [], [], []
     with open(logs[0]) as f:
-        for row in csv.DictReader(f):
-            if float(row["phase"]) != SETUP_PHASE:
+        reader = csv.DictReader(f)
+        state_field = "state" if "state" in reader.fieldnames else "phase"
+        for row in reader:
+            if float(row[state_field]) != CONTACT_ESTABLISHMENT_STATE:
                 continue
             time.append(float(row["time"]))
             rotation.append(vec(row, "e_R"))
@@ -107,12 +109,13 @@ def main():
         t, rotation, force, moment = thin(*load(trial))
         first = column == 0
         draw_axes(axes[0][column], t, rotation,
-                  r"Set-up rotation [$^\circ$]" if first else "")
+                  r"Contact-establishment rotation [$^\circ$]" if first else "")
         draw_axes(axes[1][column], t, force,
                   r"$F_{\mathrm{cmd}}$ [N]" if first else "")
         draw_axes(axes[2][column], t, moment,
                   r"$M_{\mathrm{cmd}}$ [N m]" if first else "")
-        axes[2][column].set_xlabel(f"Time from start of set-up [s]\n{label}")
+        axes[2][column].set_xlabel(
+            f"Time from contact-establishment start [s]\n{label}")
 
         print(f"{trial:24s} rotation t1 {rotation[-1, 0]:+6.2f} deg | "
               f"F_cmd n {force[-1, 2]:+6.1f} N | "

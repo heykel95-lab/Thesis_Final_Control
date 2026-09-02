@@ -353,7 +353,7 @@ Vec3 applyRotationalAxisMask(const ControllerConfig& params, Vec3 e_R, const Mat
 // ====================================================================
 
 Vec6 computeCartesianImpedanceWrench(const ControllerConfig& params,
-                         ControlPhase phase,
+                         ControlState state,
                          const Mat3& Kp,
                          const Mat3& Dp,
                          const Mat3& KR,
@@ -362,11 +362,12 @@ Vec6 computeCartesianImpedanceWrench(const ControllerConfig& params,
                          const Vec6& dx,
                          const Vec6& dv,
                          const Mat3& R_EE) {
-  // Selecting compliance-center coupling during setup and setup hold.
+  // Selecting compliance-centre coupling for contact establishment and its hold.
   const bool coupled =
       params.use_virtual_compliance_center &&
-      (phase == ControlPhase::kSetup ||
-       (phase == ControlPhase::kPoseHold && params.use_setup_impedance_hold));
+      (state == ControlState::kContactEstablishment ||
+       state == ControlState::kPreGrindingHold ||
+       (state == ControlState::kPoseHold && params.use_contact_impedance_hold));
   if (!coupled) {
     // Calculating decoupled force [N] and moment [N m] at the TCP.
     Vec6 wrench;

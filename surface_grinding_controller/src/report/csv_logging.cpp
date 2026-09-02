@@ -44,7 +44,7 @@ void writeLogToCsv(
   std::ofstream log_file(csv_file_name);
 
   // Writing the fixed column order used by the analysis workflow.
-  log_file << "time,phase,"
+  log_file << "time,state,"
            << "p_EE_x,p_EE_y,p_EE_z,"
            << "p_d_x,p_d_y,p_d_z,"
            << "tool_contact_x,tool_contact_y,tool_contact_z,"
@@ -86,7 +86,7 @@ void writeLogToCsv(
   // Writing each recorded sample in chronological order.
   log_file << std::fixed << std::setprecision(9);
   for (const auto& row : log_data) {
-    log_file << row.time << "," << row.phase << ",";
+    log_file << row.time << "," << row.state << ",";
     writeVec3(log_file, row.p_EE);
     writeVec3(log_file, row.p_d);
     writeVec3(log_file, row.tool_contact_point);

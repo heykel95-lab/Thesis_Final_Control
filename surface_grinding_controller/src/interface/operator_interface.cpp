@@ -438,9 +438,9 @@ bool askStartupRunMode(ControllerConfig& params, Robot& robot,
 
     printSection("RUN MODES");
     printf("  %-5s  %s\n", "s",
-           "Run orientation, approach, setup, and grinding");
+           "Run orientation, approach, contact establishment, and grinding");
     printf("  %-5s  %s\n", "h", "Cartesian pose hold at the initial posture");
-    printf("  %-5s  %s\n", "t", "Cartesian pose hold with the setup impedance");
+    printf("  %-5s  %s\n", "t", "Cartesian pose hold with the contact establishment impedance");
     printf("  %-5s  %s\n", "g",
            "Start manual guidance from the current robot pose");
 
@@ -463,25 +463,25 @@ bool askStartupRunMode(ControllerConfig& params, Robot& robot,
 
     const std::string choice = readChoice();
     if (matches(choice, {"s", "sequence"})) {
-      printSection("SELECTED MODE: PHASE SEQUENCE");
+      printSection("SELECTED MODE: STATE SEQUENCE");
       ensure_q_init();
       params.start_with_manual_guidance = false;
-      params.run_phase_sequence = true;
-      params.use_setup_impedance_hold = false;
+      params.run_state_sequence = true;
+      params.use_contact_impedance_hold = false;
       break;
     }
     if (matches(choice, {"h", "hold"})) {
       ensure_q_init();
       params.start_with_manual_guidance = false;
-      params.run_phase_sequence = false;
-      params.use_setup_impedance_hold = false;
+      params.run_state_sequence = false;
+      params.use_contact_impedance_hold = false;
       break;
     }
-    if (matches(choice, {"t", "test", "setup"})) {
+    if (matches(choice, {"t", "test", "contact establishment"})) {
       ensure_q_init();
       params.start_with_manual_guidance = false;
-      params.run_phase_sequence = false;
-      params.use_setup_impedance_hold = true;
+      params.run_state_sequence = false;
+      params.use_contact_impedance_hold = true;
       break;
     }
     if (matches(choice, {"i", "init", "qinit"})) {
@@ -558,17 +558,17 @@ bool askStartupRunMode(ControllerConfig& params, Robot& robot,
     return true;
   }
 
-  // Assigning the configured nullspace mode to the phase sequence.
-  if (params.run_phase_sequence) {
+  // Assigning the configured nullspace mode to the state sequence.
+  if (params.run_state_sequence) {
     return true;
   }
 
-  // Assigning the configured nullspace mode to setup-impedance hold.
-  if (params.use_setup_impedance_hold) {
-    printSection("SELECTED MODE: SETUP-IMPEDANCE HOLD");
+  // Assigning the configured nullspace mode to contact-impedance hold.
+  if (params.use_contact_impedance_hold) {
+    printSection("SELECTED MODE: CONTACT-IMPEDANCE HOLD");
     printf("  %-16s   %s\n", "spring",
-           params.use_virtual_compliance_center ? "coupled setup impedance"
-                                        : "decoupled setup impedance");
+           params.use_virtual_compliance_center ? "coupled contact establishment impedance"
+                                        : "decoupled contact establishment impedance");
     printf("  %-16s   %s, from nullspace.conf\n", "nullspace",
            nullspaceModeName(params.nullspace_mode));
     return true;
@@ -656,10 +656,10 @@ bool runManualGuidanceStart(ControllerConfig& params,
   while (true) {
     printSection("MANUAL GUIDANCE");
     printf("  Move the robot by hand and select an action.\n");
-    printf("  %-5s  %s\n", "s", "Start the phase sequence from the guided pose");
+    printf("  %-5s  %s\n", "s", "Start the state sequence from the guided pose");
     printf("  %-5s  %s\n", "h", "Start Cartesian pose hold from the guided pose");
     printf("  %-5s  %s\n", "t",
-           "Start setup-impedance hold from the guided pose");
+           "Start contact-impedance hold from the guided pose");
     printf("  %-5s  %s\n", "q",
            "Save the guided pose in params/initial_pose.conf");
     printf("  %-5s  %s\n", "m", "Return to the startup menu");
@@ -697,18 +697,18 @@ bool runManualGuidanceStart(ControllerConfig& params,
       const RobotState saved_state = robot.readOnce();
       (void)saveGuidedPoseAsQInit(Map<const Vec7>(saved_state.q.data()));
     } else if (key == 's') {
-      params.run_phase_sequence = true;
-      params.use_setup_impedance_hold = false;
-      printf("Selected: phase sequence from the guided pose.\n");
+      params.run_state_sequence = true;
+      params.use_contact_impedance_hold = false;
+      printf("Selected: state sequence from the guided pose.\n");
       return true;
     } else if (key == 't') {
-      params.run_phase_sequence = false;
-      params.use_setup_impedance_hold = true;
-      printf("Selected: setup-impedance hold from the guided pose.\n");
+      params.run_state_sequence = false;
+      params.use_contact_impedance_hold = true;
+      printf("Selected: contact-impedance hold from the guided pose.\n");
       return true;
     } else if (key == 'h') {
-      params.run_phase_sequence = false;
-      params.use_setup_impedance_hold = false;
+      params.run_state_sequence = false;
+      params.use_contact_impedance_hold = false;
       bool stop_selected = false;
       if (!selectHoldNullspaceMode(params, &stop_selected)) {
         stop_requested.store(true);

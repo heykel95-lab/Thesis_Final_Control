@@ -10,7 +10,7 @@ Follows MyOwn-thesis/FIGURE_STYLE.md, which owns the rules:
 
 Two conventions are added here. Every line is solid: a broken line reads as a
 different kind of quantity, and the panels distinguish their series by colour.
-Time series are drawn at a bounded number of points, because a set-up log holds
+Time series are drawn at a bounded number of points, because a contact log holds
 about five thousand samples and a panel is a few centimetres wide, so the full
 rate paints a band rather than a curve.
 """

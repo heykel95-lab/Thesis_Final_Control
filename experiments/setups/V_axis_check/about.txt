@@ -3,6 +3,6 @@ Verification trial for the calibrated tool axis.
 Identical to S1_none_t1_10deg: no compliance lever, 10 deg commanded about
 tangent 1. Kept out of the campaign so the archived case keeps three repeats.
 
-What it checks: the reported alignment at the start of setup. With a correctly
+What it checks: the reported alignment at the start of contact establishment. With a correctly
 calibrated tool axis this reads close to the commanded 10 deg. It read 8.74 deg
 while the axis was assumed to be the end-effector z direction.

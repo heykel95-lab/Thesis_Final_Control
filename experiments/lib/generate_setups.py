@@ -58,7 +58,7 @@ FACE_LONG_EE = (0.0, 1.0, 0.0)
 # because the assisting direction is not the same on the two tangents.
 #
 # About t1: with the lever along -t2 the alignment component moved 0.08 deg
-# over a set-up that moved 2.05 deg with no lever at all, so that direction
+# over contact establishment that moved 2.05 deg with no lever, so that direction
 # cancels the correction. The assisting direction is +t2.
 #
 # About t2: with the lever along -t1 the component went from -5.15 to
@@ -131,15 +131,15 @@ SWEEP_OFFSET = ("t1_10deg", 10.0, 0.0)
 # Applied to every trial: surface-frame translational stiffness, and the
 # compliance-centre coupling active.
 #
-# The clearance gate is disabled so a trial runs from the initial pose into
-# contact without stopping. The pre-grinding gate stays enabled and is where
-# lib/auto_drive.py ends the trial, after the set-up result has printed.
+# The pre-contact hold is disabled so a trial runs from the initial pose into
+# contact without stopping. The pre-grinding hold stays enabled and is where
+# lib/auto_drive.py ends the trial after the contact-establishment result prints.
 COMMON = [
-    ("setup_translation_surface_frame", "1"),
-    ("pause_hold_translation_surface_frame", "1"),
-    ("pause_hold_rotation_surface_frame", "1"),
-    ("pause_before_setup", "0"),
-    ("pause_before_grind", "1"),
+    ("contact_establishment_translation_surface_frame", "1"),
+    ("operator_hold_translation_surface_frame", "1"),
+    ("operator_hold_rotation_surface_frame", "1"),
+    ("enable_pre_contact_hold", "0"),
+    ("enable_pre_grinding_hold", "1"),
     ("use_virtual_compliance_center", "1"),
 ]
 

@@ -1,10 +1,10 @@
 # Surface Grinding Controller
 
 This program implements a real-time Cartesian impedance controller for a
-seven-joint Franka robot. The phase sequence orients the tool, approaches the
-calibrated surface, applies the setup preload, and executes the grinding motion.
-The program also provides Cartesian pose holding, setup-impedance holding, and
-manual guidance.
+seven-joint Franka robot. Its surface-contact sequence is Tool Orientation,
+Surface Approach, optional Pre-Contact Hold, Contact Establishment, optional
+Pre-Grinding Hold, and Grinding. Cartesian Pose Hold and Manual Guidance are
+separate selectable states.
 
 ## Program structure
 
@@ -14,7 +14,7 @@ manual guidance.
 | `include/` | Defines configuration, controller data, common types, and module interfaces. |
 | `src/config/` | Loads the parameter files. |
 | `src/control/` | Implements Cartesian impedance, nullspace control, damping, geometry, and robot support. |
-| `src/runtime/` | Executes the phase state machine and the 1 kHz torque-control loop. |
+| `src/runtime/` | Executes the controller state machine and the 1 kHz torque-control loop. |
 | `src/interface/` | Provides the startup menu, gripper actions, and manual guidance. |
 | `src/report/` | Writes the control log and prints the run report. |
 | `params/` | Stores robot, geometry, controller, safety, and experiment settings. |
@@ -28,7 +28,7 @@ The main execution sequence is:
 main.cpp
   -> readControllerConfig()
   -> startup menu and robot preparation
-  -> buildPhaseImpedanceGains()
+  -> buildStateImpedanceGains()
   -> runControlLoop() at 1 kHz
   -> writeRunLogs()
 ```
@@ -239,9 +239,9 @@ axis direction matters at that level.
 
 | Key | Action |
 |---|---|
-| `s` | Move to the configured initial posture and run the complete phase sequence. |
+| `s` | Move to the configured initial posture and run the complete state sequence. |
 | `h` | Move to the configured initial posture and hold the Cartesian pose. |
-| `t` | Move to the configured initial posture and hold with the setup impedance. |
+| `t` | Move to the configured initial posture and hold with the contact establishment impedance. |
 | `g` | Start manual guidance directly from the current robot pose. |
 | `i` | Move to the configured initial joint posture. |
 | `o` | Open the gripper. |
@@ -255,9 +255,9 @@ After selecting `g`, move the robot by hand and select an action:
 
 | Key | Manual-guidance action |
 |---|---|
-| `s` | Start the phase sequence from the current guided pose. |
+| `s` | Start the state sequence from the current guided pose. |
 | `h` | Start Cartesian pose hold from the current guided pose. |
-| `t` | Start setup-impedance hold from the current guided pose. |
+| `t` | Start contact-impedance pose hold from the current guided pose. |
 | `q` | Save the current joint posture in `params/initial_pose.conf`. |
 | `m` | Return to the startup menu. |
 | `e` | Stop and print the current joint posture. |
@@ -276,7 +276,7 @@ Selector comments use one consistent form:
 Multi-value selectors list every accepted entry and its effect directly above
 the parameter. For the virtual center of compliance, enable
 `use_virtual_compliance_center` and select exactly one center definition in
-`setup.conf`: a tool-frame center or a surface-frame lever.
+`contact_establishment.conf`: a tool-frame centre or a surface-frame lever.
 
 | File | Contents |
 |---|---|
@@ -288,8 +288,8 @@ the parameter. For the virtual center of compliance, enable
 | `tool_geometry.conf` | Tool-face dimensions and contact-feature selection. |
 | `initial_pose.conf` | Initial joint configurations. |
 | `approach.conf` | Tool orientation and surface-approach settings. |
-| `phase_gates.conf` | Surface clearance and phase-transition holds. |
-| `setup.conf` | Setup preload, impedance, and virtual compliance center. |
+| `operator_hold_states.conf` | Surface clearance and operator-controlled hold states. |
+| `contact_establishment.conf` | Contact-establishment preload, impedance, and virtual compliance centre. |
 | `grinding.conf` | Grinding direction, amplitude, and frequency. |
 | `nullspace.conf` | Nullspace damping and singular-value conditioning. |
 | `disturbance.conf` | Disturbance-test timing and force settings. |

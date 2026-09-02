@@ -1,7 +1,7 @@
 // ============================================================================
 // Real-time control loop
 // ============================================================================
-// Executing the phase state machine and the 1 kHz torque-control callback,
+// Executing the controller state machine and the 1 kHz torque-control callback,
 // then returning the recorded run state to the reporting modules.
 #include "controller_api.h"
 
@@ -11,46 +11,47 @@
 RunResult runControlLoop(ControllerConfig& params,
                          Robot& robot,
                          const Model& model,
-                         PhaseImpedanceGains gains,  // by value: retuning rebuilds it
+                         StateImpedanceGains gains,  // by value: retuning rebuilds it
                          KeyboardSignals& signals) {
   RunResult result;
-  // Assigning local references to phase stiffness and damping matrices.
+  // Assigning local references to state stiffness and damping matrices.
   const Mat3& R_base_surface = gains.R_base_surface;
   const Mat3& Kp_approach = gains.Kp_approach;
   const Mat3& Dp_approach = gains.Dp_approach;
   const Mat3& KR_approach = gains.KR_approach;
   const Mat3& DR_approach = gains.DR_approach;
-  const Mat3& Kp_setup = gains.Kp_setup;
-  const Mat3& Dp_setup = gains.Dp_setup;
-  const Mat3& KR_setup = gains.KR_setup;
-  const Mat3& DR_setup = gains.DR_setup;
+  const Mat3& Kp_contact_establishment = gains.Kp_contact_establishment;
+  const Mat3& Dp_contact_establishment = gains.Dp_contact_establishment;
+  const Mat3& KR_contact_establishment = gains.KR_contact_establishment;
+  const Mat3& DR_contact_establishment = gains.DR_contact_establishment;
   const Mat3& Kp_hold = gains.Kp_hold;
   const Mat3& Dp_hold = gains.Dp_hold;
   const Mat3& KR_hold = gains.KR_hold;
   const Mat3& DR_hold = gains.DR_hold;
-  const Mat3& Kp_pause = gains.Kp_pause;
-  const Mat3& Dp_pause = gains.Dp_pause;
-  const Mat3& KR_pause = gains.KR_pause;
-  const Mat3& DR_pause = gains.DR_pause;
+  const Mat3& Kp_operator_hold = gains.Kp_operator_hold;
+  const Mat3& Dp_operator_hold = gains.Dp_operator_hold;
+  const Mat3& KR_operator_hold = gains.KR_operator_hold;
+  const Mat3& DR_operator_hold = gains.DR_operator_hold;
 
   // ================================================================
   // 2. Task frames, gains and run state
   // ================================================================
   // Reading the initial robot state and mapping the start pose.
-  RobotState initial_state = robot.readOnce();
-  Map<const Mat4x4> T_initial(initial_state.O_T_EE.data());
+  RobotState initial_robot_state = robot.readOnce();
+  Map<const Mat4x4> T_initial(initial_robot_robot_state.O_T_EE.data());
   // Initializing TCP position [m], desired orientation [-], and joint posture [rad].
   Vec3 p_start = T_initial.block<3, 1>(0, 3);
   Mat3 R_d = T_initial.block<3, 3>(0, 0);
-  Vec7 q_start = Map<const Vec7>(initial_state.q.data());
+  Vec7 q_start = Map<const Vec7>(initial_robot_robot_state.q.data());
 
-  // Initializing the reference pose for repeated setup-impedance hold trials.
+  // Initializing the reference pose for repeated contact-impedance hold trials.
   Vec3 hold_return_p = p_start;
   Mat3 hold_return_R = R_d;
   bool hold_returning = false;
 
   // Initializing force [N] and moment [N m] baselines for contact evaluation.
-  Map<const Vec6> initial_external_wrench(initial_state.O_F_ext_hat_K.data());
+  Map<const Vec6> initial_external_wrench(
+      initial_robot_robot_state.O_F_ext_hat_K.data());
   Vec3 contact_force_bias = initial_external_wrench.head<3>();
   Vec3 contact_moment_bias = initial_external_wrench.tail<3>();
 
@@ -98,40 +99,40 @@ RunResult runControlLoop(ControllerConfig& params,
     return selected / static_cast<double>(selected_count);
   };
 
-  // Selecting the first and initial control phases.
-  const ControlPhase sequence_first_phase =
-      params.enable_orientation_phase ? ControlPhase::kToolOrientation
-                                      : ControlPhase::kSurfaceApproach;
-  const ControlPhase initial_phase =
-      params.run_phase_sequence ? sequence_first_phase : ControlPhase::kPoseHold;
+  // Selecting the first and initial control states.
+  const ControlState sequence_first_state =
+      params.enable_orientation_state ? ControlState::kToolOrientation
+                                      : ControlState::kSurfaceApproach;
+  const ControlState initial_state =
+      params.run_state_sequence ? sequence_first_state : ControlState::kPoseHold;
   Vec3 disturbance_force_direction_base = Vec3::Zero();
   if (params.disturbance_auto_enabled) {
     std::string error;
     if (!validateAutomaticDisturbance(params, error)) {
       throw std::runtime_error("automatic disturbance: " + error);
     }
-    if (initial_phase != ControlPhase::kPoseHold ||
-        params.use_setup_impedance_hold) {
+    if (initial_state != ControlState::kPoseHold ||
+        params.use_contact_impedance_hold) {
       throw std::runtime_error(
           "automatic disturbance requires the plain h hold mode");
     }
     const std::array<double, 42> initial_jacobian_array =
-        model.zeroJacobian(Frame::kEndEffector, initial_state);
+        model.zeroJacobian(Frame::kEndEffector, initial_robot_state);
     Map<const Mat6x7> initial_jacobian(initial_jacobian_array.data());
     disturbance_force_direction_base = automaticDisturbanceDirection(
-        params, model, initial_state, initial_jacobian);
+        params, model, initial_robot_state, initial_jacobian);
     if (disturbance_force_direction_base.norm() <= 1e-9) {
       throw std::runtime_error(
           "automatic disturbance point cannot excite the redundant axis");
     }
   }
-  ControlPhase phase = initial_phase;
-  // Initializing the phase resumed after manual guidance.
-  ControlPhase restart_phase = initial_phase;
+  ControlState state = initial_state;
+  // Initializing the state resumed after manual guidance.
+  ControlState restart_state = initial_state;
   // Clearing pending run-mode input before entering torque control.
   signals.run_mode_request.store(0);
-  // Initializing phase and terminal clocks [s].
-  double phase_start_time = 0.0;
+  // Initializing state and terminal clocks [s].
+  double state_start_time = 0.0;
   double next_debug_time = 0.0;
   bool descend_failed = false;
 
@@ -145,38 +146,33 @@ RunResult runControlLoop(ControllerConfig& params,
   Mat3 R_orient_start = R_d;
   Mat3 R_orient_command = R_base_tool_target;
 
-  // Initializing phase-gate states and paused clocks [s].
-  bool gate_setup_armed = false;
-  bool gate_setup_passed = false;
-  Vec3 gate_setup_hold_pd = Vec3::Zero();
-  double gate_paused_time = 0.0;  // frozen descend clock while gated
-  bool gate_grind_armed = false;
-  bool gate_grind_passed = false;
-  bool setup_reported = false;  // the result prints once, at phase end
+  // Initializing the operator-controlled hold reference [m].
+  Vec3 pre_contact_hold_p_d = p_start;
+  bool contact_establishment_reported = false;
   bool disturb_push_cued = false;       // scripted disturbance cues, once each
   bool disturb_hold_cued = false;
   bool disturb_release_cued = false;
 
-  // Initializing setup and grinding virtual penetration [m].
-  double setup_push_start = -params.descend_surface_clearance;
+  // Initializing contact establishment and grinding virtual penetration [m].
+  double contact_establishment_push_start = -params.descend_surface_clearance;
   double grind_push = 0.0;
 
-  // Tracking the offline alignment criterion. The phase clock at which the
+  // Tracking the offline alignment criterion. The state clock at which the
   // deviation entered the tolerance is kept, and only once it has stayed
   // inside for the configured hold does that entry time become the reported
   // alignment time. Neither value is read by the control law.
   double align_entered_at = -1.0;
   double t_align = -1.0;
   // The relative criterion and the closest approach. The deviation at first
-  // contact is captured on the first set-up sample, so both are available
-  // while the phase runs and neither depends on how the phase ends.
+  // contact is captured on the first contact establishment sample, so both are available
+  // while the state runs and neither depends on how the state ends.
   double deviation_at_contact_deg = -1.0;
   double t_align_fraction = -1.0;
   double deviation_min_deg = 0.0;
   double t_deviation_min = 0.0;
 
-  // Initializing phase-dependent damping matrices.
-  PhaseDampingCache damping = manualPhaseDampingCache(gains);
+  // Initializing state-dependent damping matrices.
+  StateDampingCache damping = manualStateDampingCache(gains);
 
   printSection("start pose");
   printVec7Deg("q_start", q_start);
@@ -201,12 +197,11 @@ RunResult runControlLoop(ControllerConfig& params,
   Vec7 final_q = q_start;
 
   printBanner("RUN");
-  // Initializing the terminal state for phase-dependent information.
-  bool setup_law_printed = false;
-  // Assigning the initial terminal phase-state tracker.
-  ControlPhase intro_printed_for = ControlPhase::kManualGuidance;
-  bool gate_block_printed = false;
-  if (phase == ControlPhase::kPoseHold && !params.use_setup_impedance_hold) {
+  // Initializing the terminal state for state-dependent information.
+  bool contact_establishment_law_printed = false;
+  // Assigning the initial terminal-state tracker.
+  ControlState intro_printed_for = ControlState::kManualGuidance;
+  if (state == ControlState::kPoseHold && !params.use_contact_impedance_hold) {
     printNullspaceLaw(params);
     printAutomaticDisturbance(params, disturbance_force_direction_base);
   }
@@ -215,16 +210,17 @@ RunResult runControlLoop(ControllerConfig& params,
   // 3. Control loop: libfranka calls this back at ~1 kHz with the current
   //    state and expects the 7 commanded joint torques in return.
   // ================================================================
-  robot.control([&](const RobotState& state, Duration period) -> Torques {
+  robot.control([&](const RobotState& robot_state, Duration period) -> Torques {
     // Integrating elapsed controller time [s].
     time += period.toSec();
 
     // Mapping measured joint velocity [rad/s] and joint position [rad].
-    Map<const Vec7> dq(state.dq.data());
-    Map<const Vec7> q_current(state.q.data());
+    Map<const Vec7> dq(robot_state.dq.data());
+    Map<const Vec7> q_current(robot_state.q.data());
 
     // Loading the 6x7 end-effector Jacobian with the configured tool offset.
-    std::array<double, 42> jacobian_array = model.zeroJacobian(Frame::kEndEffector, state);
+    std::array<double, 42> jacobian_array =
+        model.zeroJacobian(Frame::kEndEffector, robot_state);
     Map<const Mat6x7> J(jacobian_array.data());
     // Calculating Cartesian linear velocity [m/s] and angular velocity [rad/s].
     const Vec6 xdot = J * dq;
@@ -232,12 +228,12 @@ RunResult runControlLoop(ControllerConfig& params,
     const Vec3 omega = xdot.tail<3>();
 
     // Mapping TCP position [m] and orientation [-] in the robot base frame.
-    Map<const Mat4x4> T_EE(state.O_T_EE.data());
+    Map<const Mat4x4> T_EE(robot_state.O_T_EE.data());
     const Vec3 p_EE = T_EE.block<3, 1>(0, 3);
     const Mat3 R_EE = T_EE.block<3, 3>(0, 0);
 
     // Mapping estimated external force [N] and moment [N m].
-    Map<const Vec6> external_wrench(state.O_F_ext_hat_K.data());
+    Map<const Vec6> external_wrench(robot_state.O_F_ext_hat_K.data());
     const Vec3 external_force = external_wrench.head<3>();
     const Vec3 external_moment = external_wrench.tail<3>();
 
@@ -262,46 +258,42 @@ RunResult runControlLoop(ControllerConfig& params,
       R_contact_start = R_base_tool_target;
       active_tool_contact_offset_ee = params.tool_contact_face_center_ee;
 
-      phase_start_time = time;
+      state_start_time = time;
       next_debug_time = time;
-      gate_setup_armed = false;
-      gate_setup_passed = false;
-      gate_paused_time = 0.0;
-      gate_grind_armed = false;
-      gate_grind_passed = false;
-      setup_reported = false;
-      setup_push_start = -params.descend_surface_clearance;
+      pre_contact_hold_p_d = p_start;
+      contact_establishment_reported = false;
+      contact_establishment_push_start = -params.descend_surface_clearance;
       grind_push = 0.0;
       damping.hold_computed = false;
       damping.Dp_hold = Dp_hold;
       damping.DR_hold = DR_hold;
-      damping.pause_computed = false;
-      damping.Dp_pause = Dp_pause;
-      damping.DR_pause = DR_pause;
+      damping.operator_hold_computed = false;
+      damping.Dp_operator_hold = Dp_operator_hold;
+      damping.DR_operator_hold = DR_operator_hold;
 
     };
 
     // ---------------------------------------------------------------
     // Selecting the run mode
     // ---------------------------------------------------------------
-    // Selecting the phase sequence or setup-impedance hold during a run.
+    // Selecting the state sequence or contact-impedance hold during a run.
     const char run_mode_request = signals.run_mode_request.exchange(0);
     if (run_mode_request == 's') {
-      if (phase == ControlPhase::kManualGuidance) {
+      if (state == ControlState::kManualGuidance) {
         printf("Pose recapture is active; complete it with p + Enter.\n");
-      } else if (phase != ControlPhase::kPoseHold) {
-        printf("The phase sequence is active; use t + Enter for setup hold.\n");
+      } else if (state != ControlState::kPoseHold) {
+        printf("The state sequence is active; use t + Enter for contact-impedance hold.\n");
       } else if (hold_returning) {
         // Completing the return trajectory before restarting the sequence.
         printf("Return motion to the hold reference is active.\n");
       } else {
-        params.run_phase_sequence = true;
-        params.use_setup_impedance_hold = false;
+        params.run_state_sequence = true;
+        params.use_contact_impedance_hold = false;
         restartFromPoseReached(false);
-        restart_phase = sequence_first_phase;
-        phase = sequence_first_phase;
-        intro_printed_for = ControlPhase::kManualGuidance;
-        setup_law_printed = false;
+        restart_state = sequence_first_state;
+        state = sequence_first_state;
+        intro_printed_for = ControlState::kManualGuidance;
+        contact_establishment_law_printed = false;
         printSection("s: sequence from the pose held");
         printVec3Mm("p_start", p_start);
         printf("  %-16s   the one commanded now\n", "impedance");
@@ -310,23 +302,23 @@ RunResult runControlLoop(ControllerConfig& params,
                params.tool_target_offset_tangent2_deg);
       }
     } else if (run_mode_request == 't') {
-      if (phase == ControlPhase::kManualGuidance) {
+      if (state == ControlState::kManualGuidance) {
         printf("Pose recapture is active; complete it with p + Enter.\n");
-      } else if (phase == ControlPhase::kPoseHold && params.use_setup_impedance_hold) {
+      } else if (state == ControlState::kPoseHold && params.use_contact_impedance_hold) {
         printf(hold_returning
                    ? "Return motion to the hold reference is active.\n"
-                   : "Setup-impedance hold is active.\n");
+                   : "Contact-impedance hold is active.\n");
       } else {
-        params.run_phase_sequence = false;
-        params.use_setup_impedance_hold = true;
+        params.run_state_sequence = false;
+        params.use_contact_impedance_hold = true;
         restartFromPoseReached(false);
-        restart_phase = ControlPhase::kPoseHold;
-        phase = ControlPhase::kPoseHold;
+        restart_state = ControlState::kPoseHold;
+        state = ControlState::kPoseHold;
         hold_returning = true;
-        // Refreshing setup-hold information after the mode transition.
-        intro_printed_for = ControlPhase::kManualGuidance;
-        setup_law_printed = false;
-        printSection("t: setup impedance hold, returning to its pose");
+        // Refreshing contact establishment-hold information after the mode transition.
+        intro_printed_for = ControlState::kManualGuidance;
+        contact_establishment_law_printed = false;
+        printSection("t: contact establishment impedance hold, returning to its pose");
         printVec3Mm("p_start", hold_return_p);
         printf("  %-16s   %.3f m/s, turning at %.1f deg/s\n", "returning at",
                params.descend_speed, params.approach_orient_max_rate_deg);
@@ -337,24 +329,24 @@ RunResult runControlLoop(ControllerConfig& params,
     // Entering manual guidance
     // ---------------------------------------------------------------
     // Entering gravity-compensated manual guidance from active control.
-    if (phase != ControlPhase::kManualGuidance && signals.guide_requested.load()) {
+    if (state != ControlState::kManualGuidance && signals.guide_requested.load()) {
       signals.guide_requested.store(false);
       signals.proceed_requested.store(false);
 
 
-      phase = ControlPhase::kManualGuidance;
-      phase_start_time = time;
-      // Refreshing phase information after guidance.
-      intro_printed_for = ControlPhase::kManualGuidance;
-      printPhaseHeader(ControlPhase::kManualGuidance);
+      state = ControlState::kManualGuidance;
+      state_start_time = time;
+      // Refreshing state information after guidance.
+      intro_printed_for = ControlState::kManualGuidance;
+      printStateHeader(ControlState::kManualGuidance);
       printf("  %-16s   move the tool by hand\n", "motion");
-      // Selecting the phase resumed after pose recapture.
+      // Selecting the state resumed after pose recapture.
       printf("  %-16s   p re-capture and restart %s | e stop\n", "keys",
-             phaseName(restart_phase));
+             stateName(restart_state));
     }
-    if (phase == ControlPhase::kManualGuidance) {
+    if (state == ControlState::kManualGuidance) {
       // Loading Coriolis torque [N m] and calculating task torque J^T W [N m].
-    Array7 coriolis_array = model.coriolis(state);
+      Array7 coriolis_array = model.coriolis(robot_state);
       Map<const Vec7> coriolis(coriolis_array.data());
       const Array7 tau_array =
           vec7ToArray(Vec7(coriolis - params.manual_guidance_damping * dq));
@@ -366,7 +358,7 @@ RunResult runControlLoop(ControllerConfig& params,
         signals.proceed_requested.store(false);
         // Assigning the guided pose as the new sequence and hold reference.
         restartFromPoseReached(true);
-        phase = restart_phase;
+        state = restart_state;
         hold_return_p = p_start;
         hold_return_R = R_d;
         hold_returning = false;
@@ -381,15 +373,15 @@ RunResult runControlLoop(ControllerConfig& params,
     // ---------------------------------------------------------------
     // Applying the hold-disturbance sequence
     // ---------------------------------------------------------------
-    // Defining hold-phase time [s] for repeatable disturbance timing.
+    // Defining hold-state time [s] for repeatable disturbance timing.
     if ((params.disturbance_cues_enabled ||
          params.disturbance_auto_enabled) &&
-        phase == ControlPhase::kPoseHold) {
+        state == ControlState::kPoseHold) {
       const auto cue = [&](const char* text) {
         printf("\n>>> %s  (t = %.1f s)\n", text, time);
         fflush(stdout);
       };
-      const double hold_time = time - phase_start_time;
+      const double hold_time = time - state_start_time;
       if (!disturb_push_cued && hold_time >= params.disturbance_push_time) {
         disturb_push_cued = true;
         cue(params.disturbance_auto_enabled
@@ -412,9 +404,11 @@ RunResult runControlLoop(ControllerConfig& params,
       }
     }
 
-    // Selecting the pre-transition phase for contact-feature locking.
+    // Selecting the pre-transition state for contact-feature locking.
     const bool edge_locked =
-        (phase == ControlPhase::kSetup || phase == ControlPhase::kGrinding);
+        (state == ControlState::kContactEstablishment ||
+         state == ControlState::kPreGrindingHold ||
+         state == ControlState::kGrinding);
 
     // ---------------------------------------------------------------
     // Calculating the active tool contact point [m].
@@ -443,14 +437,14 @@ RunResult runControlLoop(ControllerConfig& params,
     // The compliance centre sits on the TCP until a lever moves it.
     Vec3 p_CoC_log = p_EE;
     Vec3 r_eff_log = tool_contact_point - p_EE;
-    // Selecting stiff Cartesian hold only while a phase gate blocks.
-    bool pause_hold_active = false;
+    // Tracking the explicit operator-hold state for damping selection.
+    bool operator_hold_active = state == ControlState::kPreContactHold;
 
-    switch (phase) {
+    switch (state) {
       // -------------------------------------------------------------
       // Orienting the tool before surface descent.
       // -------------------------------------------------------------
-      case ControlPhase::kToolOrientation: {
+      case ControlState::kToolOrientation: {
         // Defining current and desired tool-axis directions in base
         // coordinates [-].
         const Vec3 tool_axis_current =
@@ -461,8 +455,8 @@ RunResult runControlLoop(ControllerConfig& params,
         const double tool_axis_error = std::acos(
             std::max(-1.0,
                      std::min(1.0, tool_axis_current.dot(tool_axis_target))));
-        // Calculating elapsed phase time [s].
-        const double phase_time = time - phase_start_time;
+        // Calculating elapsed state time [s].
+        const double state_time = time - state_start_time;
         // Resolving tool tilt and twist in the surface frame [rad].
         const Vec3 e_R_orient =
             R_base_surface.transpose() *
@@ -476,7 +470,7 @@ RunResult runControlLoop(ControllerConfig& params,
           const Eigen::AngleAxisd to_target(R_base_tool_target *
                                             R_orient_start.transpose());
           const double reachable =
-              (M_PI / 180.0) * params.approach_orient_max_rate_deg * phase_time;
+              (M_PI / 180.0) * params.approach_orient_max_rate_deg * state_time;
           const double commanded =
               std::min(std::abs(to_target.angle()), std::max(0.0, reachable));
           R_orient_command =
@@ -485,8 +479,8 @@ RunResult runControlLoop(ControllerConfig& params,
         }
 
         if (params.debug_period > 0.0 && time >= next_debug_time &&
-            intro_printed_for == phase) {
-          printApproachOrientDebug(phase_time,
+            intro_printed_for == state) {
+          printApproachOrientDebug(state_time,
                                    (180.0 / M_PI) * tool_axis_error,
                                    (180.0 / M_PI) * spin_error);
           next_debug_time = time + params.debug_period;
@@ -497,14 +491,14 @@ RunResult runControlLoop(ControllerConfig& params,
             tool_axis_error <= params.approach_orient_error_threshold &&
             (!params.command_tool_twist ||
              spin_error <= params.approach_orient_spin_error_threshold);
-        // Ending the phase after convergence or the configured timeout [s].
+        // Ending the state after convergence or the configured timeout [s].
         const bool orient_timed_out =
             params.approach_orient_timeout > 0.0 &&
-            phase_time >= params.approach_orient_timeout;
-        if (phase_time >= params.approach_orient_min_time &&
+            state_time >= params.approach_orient_timeout;
+        if (state_time >= params.approach_orient_min_time &&
             (orientation_reached || orient_timed_out)) {
-          phase = ControlPhase::kSurfaceApproach;
-          phase_start_time = time;
+          state = ControlState::kSurfaceApproach;
+          state_start_time = time;
           next_debug_time = time;
           contact_force_bias = external_force;
           contact_moment_bias = external_moment;
@@ -513,7 +507,7 @@ RunResult runControlLoop(ControllerConfig& params,
                    (180.0 / M_PI) * tool_axis_error,
                    (180.0 / M_PI) * spin_error);
           } else {
-            printf("\nOrientation settled short of the %.1f deg gate after "
+            printf("\nOrientation settled short of the %.1f deg threshold after "
                    "%.1f s: axis_err=%.1f deg | spin_err=%.1f deg\n",
                    (180.0 / M_PI) * params.approach_orient_error_threshold,
                    params.approach_orient_timeout,
@@ -528,11 +522,11 @@ RunResult runControlLoop(ControllerConfig& params,
       // -------------------------------------------------------------
       // Descending to the configured surface clearance [m].
       // -------------------------------------------------------------
-      case ControlPhase::kSurfaceApproach: {
+      case ControlState::kSurfaceApproach: {
         // Calculating elapsed approach time [s] and bounded descent [m].
-        const double phase_time = time - phase_start_time;
+        const double state_time = time - state_start_time;
         const double distance =
-            std::min(params.descend_speed * (phase_time - gate_paused_time),
+            std::min(params.descend_speed * state_time,
                      params.descend_max_distance);
         desired.p_d = p_start + distance * descend_direction;
         desired.pdot_d = params.descend_speed * descend_direction;
@@ -552,36 +546,9 @@ RunResult runControlLoop(ControllerConfig& params,
         const double force_along_descend =
             (external_force - contact_force_bias).dot(descend_direction);
 
-        // Holding the measured clearance pose until operator confirmation.
-        bool gate_blocking = false;
-        if (params.pause_before_setup && !gate_setup_passed &&
-            (gate_setup_armed || clearance_reached)) {
-          if (!gate_setup_armed) {
-            gate_setup_armed = true;
-            // Assigning the measured pose reached at the gate.
-            gate_setup_hold_pd = p_EE;
-            signals.gate_continue.store(false);
-            printf("\n[GATE] Reached %.0f mm above the plane. Press Enter to start "
-                   "the setup press (e+Enter stops).\n",
-                   1000.0 * params.descend_surface_clearance);
-          }
-          if (signals.gate_continue.load()) {
-            gate_setup_passed = true;
-            signals.gate_continue.store(false);
-            printf("[GATE] Continuing to the setup press.\n");
-          } else {
-            gate_blocking = true;
-            pause_hold_active = true;
-            desired.p_d = gate_setup_hold_pd;
-            desired.pdot_d.setZero();
-            // Freezing the approach clock during operator confirmation.
-            gate_paused_time += period.toSec();
-          }
-        }
-
         if (params.debug_period > 0.0 && time >= next_debug_time &&
-            !gate_blocking && intro_printed_for == phase) {
-          printApproachDescendDebug(phase_time,
+            intro_printed_for == state) {
+          printApproachDescendDebug(state_time,
                                     1000.0 * distance,
                                     1000.0 * height_above_surface,
                                     1000.0 * params.descend_surface_clearance,
@@ -589,17 +556,28 @@ RunResult runControlLoop(ControllerConfig& params,
           next_debug_time = time + params.debug_period;
         }
 
-        if (clearance_reached && !gate_blocking) {
+        if (clearance_reached) {
           active_tool_contact_offset_ee = tool_contact_offset_ee;
           first_contact_tcp = p_EE;
           first_contact_point = projected_surface_point;
           // Using the live signed surface coordinate [m] for a continuous transition.
-          setup_push_start = -controlled_point_height;
+          contact_establishment_push_start = -controlled_point_height;
           R_contact_start = R_EE;
           contact_force_bias = external_force;
           contact_moment_bias = external_moment;
-          phase = ControlPhase::kSetup;
-          phase_start_time = time;
+          if (params.enable_pre_contact_hold) {
+            pre_contact_hold_p_d = p_EE;
+            desired.p_d = pre_contact_hold_p_d;
+            desired.pdot_d.setZero();
+            signals.operator_hold_continue.store(false);
+            state = ControlState::kPreContactHold;
+            operator_hold_active = true;
+            printf("[STATE] Pre-contact hold active. Press Enter to start "
+                   "contact establishment (e+Enter stops).\n");
+          } else {
+            state = ControlState::kContactEstablishment;
+          }
+          state_start_time = time;
           next_debug_time = time;
           printf("\nClearance reached: distance=%.1f mm | height=%.1f mm | target=%.1f mm | force=%.1f N\n",
                  1000.0 * distance,
@@ -618,23 +596,50 @@ RunResult runControlLoop(ControllerConfig& params,
       }
 
       // -------------------------------------------------------------
+      // Holding the measured clearance pose until operator confirmation.
+      // -------------------------------------------------------------
+      case ControlState::kPreContactHold: {
+        operator_hold_active = true;
+        desired.p_d = pre_contact_hold_p_d;
+        desired.pdot_d.setZero();
+
+        if (signals.operator_hold_continue.exchange(false)) {
+          const Vec3 surface_normal = (-descend_direction).normalized();
+          const double controlled_point_height =
+              surface_normal.dot(tool_contact_point - surface_point_runtime);
+          first_contact_tcp = p_EE;
+          first_contact_point =
+              tool_contact_point - controlled_point_height * surface_normal;
+          contact_establishment_push_start = -controlled_point_height;
+          R_contact_start = R_EE;
+          contact_force_bias = external_force;
+          contact_moment_bias = external_moment;
+          state = ControlState::kContactEstablishment;
+          state_start_time = time;
+          next_debug_time = time;
+          operator_hold_active = false;
+          printf("[STATE] Continuing to contact establishment.\n");
+        }
+        break;
+      }
+
+      // -------------------------------------------------------------
       // Pressing the contact edge while holding the contact orientation
       // as a soft rotational target.
       // -------------------------------------------------------------
-      case ControlPhase::kSetup: {
-        // Calculating elapsed setup time [s] and initializing push speed [m/s].
-        const double phase_time = time - phase_start_time;
-        double setup_push_velocity = 0.0;
-        // Calculating the bounded virtual penetration [m]. The ramp runs on the
-        // live phase clock, so waiting at the grinding gate keeps pressing
-        // deeper until the configured final penetration is reached.
+      case ControlState::kContactEstablishment: {
+        // Calculating elapsed contact establishment time [s] and initializing push speed [m/s].
+        const double state_time = time - state_start_time;
+        double contact_establishment_push_velocity = 0.0;
+        // Calculating the bounded virtual penetration [m] from the live
+        // contact-establishment state clock.
         const double push =
-            setupPush(params, phase_time, setup_push_start,
-                      setup_push_velocity);
+            contactEstablishmentPush(params, state_time, contact_establishment_push_start,
+                      contact_establishment_push_velocity);
         // Assigning the desired pressed-edge position in the base frame [m].
         const Vec3 edge_target = first_contact_point + push * descend_direction;
         desired.p_d = edge_target - R_contact_start * tool_contact_offset_ee;
-        desired.pdot_d = setup_push_velocity * descend_direction;
+        desired.pdot_d = contact_establishment_push_velocity * descend_direction;
         edge_target_log = edge_target;
         push_log = push;
 
@@ -666,67 +671,66 @@ RunResult runControlLoop(ControllerConfig& params,
         r_eff_log = tool_contact_point - p_CoC_log;
 
         // Observing the alignment criterion. It only reads the deviation and
-        // the clock, and never feeds the phase exit or the command.
+        // the clock, and never feeds the state exit or the command.
         const double deviation_deg =
             (180.0 / M_PI) *
             toolSurfaceMisalignmentAngle(params, R_EE, R_base_surface);
-        if (deviation_deg < params.setup_align_tolerance_deg) {
+        if (deviation_deg < params.contact_establishment_align_tolerance_deg) {
           if (align_entered_at < 0.0) {
-            align_entered_at = phase_time;
+            align_entered_at = state_time;
           } else if (t_align < 0.0 &&
-                     phase_time - align_entered_at >=
-                         params.setup_align_hold_time) {
+                     state_time - align_entered_at >=
+                         params.contact_establishment_align_hold_time) {
             t_align = align_entered_at;
           }
         } else {
           align_entered_at = -1.0;
         }
 
-        // Capturing the deviation the phase started from, then the closest
+        // Capturing the deviation the state started from, then the closest
         // approach to flat and the crossing of the relative threshold.
         if (deviation_at_contact_deg < 0.0) {
           deviation_at_contact_deg = deviation_deg;
           deviation_min_deg = deviation_deg;
-          t_deviation_min = phase_time;
+          t_deviation_min = state_time;
         }
         if (deviation_deg < deviation_min_deg) {
           deviation_min_deg = deviation_deg;
-          t_deviation_min = phase_time;
+          t_deviation_min = state_time;
         }
         if (t_align_fraction < 0.0 &&
             deviation_deg <
-                params.setup_align_fraction * deviation_at_contact_deg) {
-          t_align_fraction = phase_time;
+                params.contact_establishment_align_fraction * deviation_at_contact_deg) {
+          t_align_fraction = state_time;
         }
 
-        const bool waiting_at_gate = gate_grind_armed && !gate_grind_passed;
         if (params.debug_period > 0.0 && time >= next_debug_time &&
-            !waiting_at_gate && intro_printed_for == phase) {
+            intro_printed_for == state) {
           // Measuring passive rotation from the first-contact orientation [rad].
-          printSetupDebug(phase_time,
+          printContactEstablishmentDebug(state_time,
                           (180.0 / M_PI) * orientationError(R_EE, R_contact_start).norm(),
                           df_ext_norm,
                           m_tcp_norm,
-                          params.setup_moment_threshold,
+                          params.contact_establishment_moment_threshold,
                           1000.0 * (tool_contact_point - first_contact_point).norm());
           next_debug_time = time + params.debug_period;
         }
 
-        // Ending setup at the moment threshold [N m] or timeout [s].
+        // Ending contact establishment at the moment threshold [N m] or timeout [s].
         const bool stopped_on_moment =
-            phase_time >= params.setup_min_time &&
-            m_tcp_norm >= params.setup_moment_threshold;
-        if (!gate_grind_armed && !stopped_on_moment &&
-            phase_time < params.setup_timeout) {
+            state_time >= params.contact_establishment_min_time &&
+            m_tcp_norm >= params.contact_establishment_moment_threshold;
+        if (!stopped_on_moment &&
+            state_time < params.contact_establishment_timeout) {
           break;
         }
 
-        // Capturing the setup result before entering the grinding gate.
-        if (!setup_reported) {
-          setup_reported = true;
-          SetupReport report;
+        // Capturing the contact-establishment result before the next state.
+        if (!contact_establishment_reported) {
+          contact_establishment_reported = true;
+          ContactEstablishmentReport report;
           report.stopped_on_moment = stopped_on_moment;
-          report.phase_time = phase_time;
+          report.state_time = state_time;
           report.df_ext_norm = df_ext_norm;
           report.m_tcp_norm = m_tcp_norm;
           report.t_align = t_align;
@@ -742,40 +746,53 @@ RunResult runControlLoop(ControllerConfig& params,
           report.first_contact_point = first_contact_point;
           report.R_contact_start = R_contact_start;
           report.contact_force_bias = contact_force_bias;
-          report.Kp = Kp_setup;
-          report.Dp = params.setup_auto_damping ? damping.Dp_setup : Dp_setup;
-          report.KR = KR_setup;
-          report.DR = params.setup_auto_damping ? damping.DR_setup : DR_setup;
-          reportSetupResult(params, R_base_surface, report);
+          report.Kp = Kp_contact_establishment;
+          report.Dp = params.contact_establishment_auto_damping ? damping.Dp_contact_establishment : Dp_contact_establishment;
+          report.KR = KR_contact_establishment;
+          report.DR = params.contact_establishment_auto_damping ? damping.DR_contact_establishment : DR_contact_establishment;
+          reportContactEstablishmentResult(params, R_base_surface, report);
         }
 
-        if (params.pause_before_grind && !gate_grind_passed) {
-          if (!gate_grind_armed) {
-            gate_grind_armed = true;
-            signals.gate_continue.store(false);
-            printf("\n[GATE] Set up finished (still pressing). Press "
-                   "Enter to start the grind (e+Enter stops).\n");
-          }
-          if (!signals.gate_continue.load()) {
-            break;  // keep ramping the preload while waiting
-          }
-          gate_grind_passed = true;
-          signals.gate_continue.store(false);
-          printf("[GATE] Continuing to grind.\n");
-        }
-
-        // Assigning the final setup penetration to the grinding phase [m].
+        // Freezing the established penetration for the following hold or grind [m].
         grind_push = push;
-        phase = ControlPhase::kGrinding;
-        phase_start_time = time;
+        if (params.enable_pre_grinding_hold) {
+          signals.operator_hold_continue.store(false);
+          state = ControlState::kPreGrindingHold;
+          printf("\n[STATE] Pre-grinding hold active. Press Enter to start "
+                 "grinding (e+Enter stops).\n");
+        } else {
+          state = ControlState::kGrinding;
+        }
+        state_start_time = time;
         next_debug_time = time;
+        break;
+      }
+
+      // -------------------------------------------------------------
+      // Holding the established contact command until operator confirmation.
+      // -------------------------------------------------------------
+      case ControlState::kPreGrindingHold: {
+        const Vec3 edge_target =
+            first_contact_point + grind_push * descend_direction;
+        desired.p_d =
+            edge_target - R_contact_start * active_tool_contact_offset_ee;
+        desired.pdot_d.setZero();
+        edge_target_log = edge_target;
+        push_log = grind_push;
+
+        if (signals.operator_hold_continue.exchange(false)) {
+          state = ControlState::kGrinding;
+          state_start_time = time;
+          next_debug_time = time;
+          printf("[STATE] Continuing to grinding.\n");
+        }
         break;
       }
 
       // -------------------------------------------------------------
       // Maintaining the frozen preload with an optional tangential sweep.
       // -------------------------------------------------------------
-      case ControlPhase::kGrinding: {
+      case ControlState::kGrinding: {
         const Vec3 n = descend_direction;  // unit, into the surface
         Vec3 edge_target;
 
@@ -785,7 +802,7 @@ RunResult runControlLoop(ControllerConfig& params,
                                          : Vec3(R_base_surface.col(0));
           double sweep_s = 0.0;
           double sweep_s_dot = 0.0;
-          grindSweep(time - phase_start_time, params.grind_amplitude_m,
+          grindSweep(time - state_start_time, params.grind_amplitude_m,
                      grindStrokeDuration(params), sweep_s, sweep_s_dot);
           edge_target = first_contact_point + grind_push * n + sweep_s * grind_tangent;
           desired.pdot_d = sweep_s_dot * grind_tangent;
@@ -803,7 +820,7 @@ RunResult runControlLoop(ControllerConfig& params,
       // -------------------------------------------------------------
       // Holding the captured Cartesian pose or returning smoothly to it.
       // -------------------------------------------------------------
-      case ControlPhase::kPoseHold: {
+      case ControlState::kPoseHold: {
         if (!hold_returning) {
           break;
         }
@@ -841,13 +858,15 @@ RunResult runControlLoop(ControllerConfig& params,
         break;
       }
 
-      case ControlPhase::kManualGuidance:
+      case ControlState::kManualGuidance:
         break;  // hold the captured start position
     }
 
-    // Selecting the post-transition phase for control and logging.
+    // Selecting the post-transition state for control and logging.
     const bool after_contact =
-        (phase == ControlPhase::kSetup || phase == ControlPhase::kGrinding);
+        (state == ControlState::kContactEstablishment ||
+         state == ControlState::kPreGrindingHold ||
+         state == ControlState::kGrinding);
 
     // ---------------------------------------------------------------
     // Cartesian errors
@@ -855,15 +874,15 @@ RunResult runControlLoop(ControllerConfig& params,
     const Vec3 e_p = desired.p_d - p_EE;
     const Mat3& R_d_used =
         after_contact ? R_contact_start
-        : (phase == ControlPhase::kPoseHold) ? R_d
-        : (phase == ControlPhase::kToolOrientation) ? R_orient_command
+        : (state == ControlState::kPoseHold) ? R_d
+        : (state == ControlState::kToolOrientation) ? R_orient_command
                                                    : R_base_tool_target;
     const Vec3 e_R =
         applyRotationalAxisMask(params, orientationError(R_EE, R_d_used), R_base_surface);
 
-    if (phase == ControlPhase::kPoseHold && params.print_hold_debug &&
+    if (state == ControlState::kPoseHold && params.print_hold_debug &&
         params.debug_period > 0.0 && time >= next_debug_time &&
-        intro_printed_for == phase) {
+        intro_printed_for == state) {
       printHoldDebug(time,
                      (external_force - contact_force_bias).norm(),
                      1000.0 * e_p.norm(),
@@ -871,55 +890,62 @@ RunResult runControlLoop(ControllerConfig& params,
       next_debug_time = time + params.debug_period;
     }
 
-    updateAutoDamping(params, gains, model, state, J, phase, after_contact,
-                      pause_hold_active, damping);
+    updateAutoDamping(params, gains, model, robot_state, J, state, after_contact,
+                      operator_hold_active, damping);
 
     const Mat3& Dp_approach_eff =
         params.approach_auto_damping ? damping.Dp_approach : Dp_approach;
     const Mat3& DR_approach_eff =
         params.approach_auto_damping ? damping.DR_approach : DR_approach;
-    const Mat3& Dp_setup_eff = params.setup_auto_damping ? damping.Dp_setup : Dp_setup;
-    const Mat3& DR_setup_eff = params.setup_auto_damping ? damping.DR_setup : DR_setup;
+    const Mat3& Dp_contact_establishment_eff = params.contact_establishment_auto_damping ? damping.Dp_contact_establishment : Dp_contact_establishment;
+    const Mat3& DR_contact_establishment_eff = params.contact_establishment_auto_damping ? damping.DR_contact_establishment : DR_contact_establishment;
     const Mat3& Dp_hold_eff = params.hold_auto_damping ? damping.Dp_hold : Dp_hold;
     const Mat3& DR_hold_eff = params.hold_auto_damping ? damping.DR_hold : DR_hold;
-    const Mat3& Dp_pause_eff =
-        params.pause_hold_auto_damping ? damping.Dp_pause : Dp_pause;
-    const Mat3& DR_pause_eff =
-        params.pause_hold_auto_damping ? damping.DR_pause : DR_pause;
+    const Mat3& Dp_operator_hold_eff =
+        params.operator_hold_auto_damping ? damping.Dp_operator_hold : Dp_operator_hold;
+    const Mat3& DR_operator_hold_eff =
+        params.operator_hold_auto_damping ? damping.DR_operator_hold : DR_operator_hold;
 
     // ---------------------------------------------------------------
-    // Selecting phase gains; a gate hold overrides the position gains.
+    // Selecting the impedance gains associated with the active state.
     // ---------------------------------------------------------------
-    // Selecting hold gains or setup gains when mode t is active.
-    const Mat3* Kp_phase = params.use_setup_impedance_hold ? &Kp_setup : &Kp_hold;
-    const Mat3* Dp_phase =
-        params.use_setup_impedance_hold ? &Dp_setup_eff : &Dp_hold_eff;
-    const Mat3* KR_phase = params.use_setup_impedance_hold ? &KR_setup : &KR_hold;
-    const Mat3* DR_phase =
-        params.use_setup_impedance_hold ? &DR_setup_eff : &DR_hold_eff;
-    switch (phase) {
-      case ControlPhase::kToolOrientation:
-      case ControlPhase::kSurfaceApproach:
-        Kp_phase = &Kp_approach;
-        Dp_phase = &Dp_approach_eff;
-        KR_phase = &KR_approach;
-        DR_phase = &DR_approach_eff;
+    // Selecting hold gains or contact establishment gains when mode t is active.
+    const Mat3* Kp_state = params.use_contact_impedance_hold ? &Kp_contact_establishment : &Kp_hold;
+    const Mat3* Dp_state =
+        params.use_contact_impedance_hold ? &Dp_contact_establishment_eff : &Dp_hold_eff;
+    const Mat3* KR_state = params.use_contact_impedance_hold ? &KR_contact_establishment : &KR_hold;
+    const Mat3* DR_state =
+        params.use_contact_impedance_hold ? &DR_contact_establishment_eff : &DR_hold_eff;
+    switch (state) {
+      case ControlState::kToolOrientation:
+      case ControlState::kSurfaceApproach:
+        Kp_state = &Kp_approach;
+        Dp_state = &Dp_approach_eff;
+        KR_state = &KR_approach;
+        DR_state = &DR_approach_eff;
         break;
-      case ControlPhase::kSetup:
-      case ControlPhase::kGrinding:
-        Kp_phase = &Kp_setup;
-        Dp_phase = &Dp_setup_eff;
-        KR_phase = &KR_setup;
-        DR_phase = &DR_setup_eff;
+      case ControlState::kPreContactHold:
+        Kp_state = &Kp_operator_hold;
+        Dp_state = &Dp_operator_hold_eff;
+        KR_state = &KR_operator_hold;
+        DR_state = &DR_operator_hold_eff;
         break;
-      case ControlPhase::kPoseHold:
-      case ControlPhase::kManualGuidance:
+      case ControlState::kContactEstablishment:
+      case ControlState::kPreGrindingHold:
+      case ControlState::kGrinding:
+        Kp_state = &Kp_contact_establishment;
+        Dp_state = &Dp_contact_establishment_eff;
+        KR_state = &KR_contact_establishment;
+        DR_state = &DR_contact_establishment_eff;
+        break;
+      case ControlState::kPoseHold:
+      case ControlState::kManualGuidance:
         break;
     }
-    const Mat3& Kp_used = pause_hold_active ? Kp_pause : *Kp_phase;
-    const Mat3& Dp_used = pause_hold_active ? Dp_pause_eff : *Dp_phase;
-    const Mat3& KR_used = pause_hold_active ? KR_pause : *KR_phase;
-    const Mat3& DR_used = pause_hold_active ? DR_pause_eff : *DR_phase;
+    const Mat3& Kp_used = *Kp_state;
+    const Mat3& Dp_used = *Dp_state;
+    const Mat3& KR_used = *KR_state;
+    const Mat3& DR_used = *DR_state;
 
     // ---------------------------------------------------------------
     // Constructing Cartesian displacement [m, rad] and velocity errors
@@ -934,23 +960,23 @@ RunResult runControlLoop(ControllerConfig& params,
 
     const Vec6 wrench =
         computeCartesianImpedanceWrench(
-            params, phase, Kp_used, Dp_used, KR_used, DR_used,
+            params, state, Kp_used, Dp_used, KR_used, DR_used,
             R_base_surface, dx, dv, R_EE);
     const Vec3 f = wrench.head<3>();
     const Vec3 m = wrench.tail<3>();
 
-    if (phase == ControlPhase::kGrinding && params.grind_sweep_enabled &&
+    if (state == ControlState::kGrinding && params.grind_sweep_enabled &&
         params.print_grind_debug && params.debug_period > 0.0 &&
-        time >= next_debug_time && intro_printed_for == phase) {
+        time >= next_debug_time && intro_printed_for == state) {
       // Reporting sweep displacement [m], error [m], and press force [N].
       const Vec3 grind_tangent = (params.grind_tangent_axis == 2)
                                      ? Vec3(R_base_surface.col(1))
                                      : Vec3(R_base_surface.col(0));
       double sweep_s = 0.0;
       double sweep_s_dot = 0.0;
-      grindSweep(time - phase_start_time, params.grind_amplitude_m,
+      grindSweep(time - state_start_time, params.grind_amplitude_m,
                  grindStrokeDuration(params), sweep_s, sweep_s_dot);
-      printGrindDebug(time - phase_start_time,
+      printGrindDebug(time - state_start_time,
                       1000.0 * sweep_s,
                       1000.0 * e_p.dot(grind_tangent),
                       f.dot(descend_direction));
@@ -971,7 +997,7 @@ RunResult runControlLoop(ControllerConfig& params,
     const int mode_request = signals.nullspace_mode_request.exchange(-1);
     if (std::isfinite(damping_request) || std::isfinite(k_sigma_request) ||
         std::isfinite(alpha_deg_request) || mode_request >= 0) {
-      if (phase == ControlPhase::kPoseHold && !params.use_setup_impedance_hold) {
+      if (state == ControlState::kPoseHold && !params.use_contact_impedance_hold) {
         if (std::isfinite(damping_request)) {
           params.nullspace_damping = damping_request;
           printf("nullspace damping -> %.3f Nms/rad\n", damping_request);
@@ -990,22 +1016,22 @@ RunResult runControlLoop(ControllerConfig& params,
           params.nullspace_mode = static_cast<NullspaceMode>(mode_request);
         }
         printNullspaceLaw(params);
-      } else if (phase == ControlPhase::kPoseHold) {
+      } else if (state == ControlState::kPoseHold) {
         printf("Nullspace tuning is available in Cartesian pose hold.\n");
       } else {
         printf("Nullspace tuning requires an active hold mode.\n");
       }
     }
 
-    // Assigning orientation offsets [deg] used by the next phase sequence.
+    // Assigning orientation offsets [deg] used by the next state sequence.
     for (int i = 0; i < 2; ++i) {
-      const double tilt_deg = signals.setup_tilt_deg_request[i].exchange(
+      const double tilt_deg = signals.contact_establishment_tilt_deg_request[i].exchange(
           std::numeric_limits<double>::quiet_NaN());
       if (!std::isfinite(tilt_deg)) {
         continue;
       }
-      if (phase != ControlPhase::kPoseHold || !params.use_setup_impedance_hold) {
-        printf("Tool-tilt tuning is available in setup-impedance hold.\n");
+      if (state != ControlState::kPoseHold || !params.use_contact_impedance_hold) {
+        printf("Tool-tilt tuning is available in contact-impedance hold.\n");
         continue;
       }
       if (i == 0) {
@@ -1018,36 +1044,36 @@ RunResult runControlLoop(ControllerConfig& params,
              params.tool_target_offset_tangent2_deg);
     }
 
-    // Rebuilding setup gains and damping after a live tuning update.
-    bool setup_impedance_changed = false;
+    // Rebuilding contact establishment gains and damping after a live tuning update.
+    bool contact_establishment_impedance_changed = false;
     for (int i = 0; i < 3; ++i) {
-      const double kp = signals.setup_kp_request[i].exchange(
+      const double kp = signals.contact_establishment_kp_request[i].exchange(
           std::numeric_limits<double>::quiet_NaN());
-      const double kr = signals.setup_kr_request[i].exchange(
+      const double kr = signals.contact_establishment_kr_request[i].exchange(
           std::numeric_limits<double>::quiet_NaN());
-      const double center_mm = signals.setup_compliance_center_mm_request[i].exchange(
+      const double center_mm = signals.contact_establishment_compliance_center_mm_request[i].exchange(
           std::numeric_limits<double>::quiet_NaN());
-      const double rc_mm = signals.setup_rc_mm_request[i].exchange(
+      const double rc_mm = signals.contact_establishment_rc_mm_request[i].exchange(
           std::numeric_limits<double>::quiet_NaN());
       if (!std::isfinite(kp) && !std::isfinite(kr) && !std::isfinite(center_mm) &&
           !std::isfinite(rc_mm)) {
         continue;
       }
-      if (phase != ControlPhase::kPoseHold || !params.use_setup_impedance_hold) {
-        printf("Setup-impedance tuning is available in mode t.\n");
+      if (state != ControlState::kPoseHold || !params.use_contact_impedance_hold) {
+        printf("Contact-impedance tuning is available in mode t.\n");
         continue;
       }
       if (std::isfinite(kp) && kp > 0.0) {
-        if (params.setup_translation_surface_frame) {
-          params.setup_Kp_surface_diag(i) = kp;
+        if (params.contact_establishment_translation_surface_frame) {
+          params.contact_establishment_Kp_surface_diag(i) = kp;
         } else {
-          params.setup_Kp_diag(i) = kp;
+          params.contact_establishment_Kp_diag(i) = kp;
         }
-        setup_impedance_changed = true;
+        contact_establishment_impedance_changed = true;
       }
       if (std::isfinite(kr) && kr > 0.0) {
-        params.setup_KR_diag(i) = kr;
-        setup_impedance_changed = true;
+        params.contact_establishment_KR_diag(i) = kr;
+        contact_establishment_impedance_changed = true;
       }
       // Converting live compliance-center values [mm] to the configured frame.
       if (std::isfinite(center_mm) || std::isfinite(rc_mm)) {
@@ -1083,58 +1109,50 @@ RunResult runControlLoop(ControllerConfig& params,
             params.r_tcp_from_compliance_center_surface =
                 R_base_surface.transpose() * r_c_base;
           }
-          setup_impedance_changed = true;
+          contact_establishment_impedance_changed = true;
         }
       }
     }
-    if (setup_impedance_changed) {
-      gains = buildPhaseImpedanceGains(params);
-      damping = manualPhaseDampingCache(gains);
-      setup_law_printed = false;  // reprinted with the new gains
+    if (contact_establishment_impedance_changed) {
+      gains = buildStateImpedanceGains(params);
+      damping = manualStateDampingCache(gains);
+      contact_establishment_law_printed = false;  // reprinted with the new gains
     }
-    // Reporting phase-gate impedance on its first active cycle.
-    if (pause_hold_active && !gate_block_printed) {
-      printGateHold(params, damping);
-      gate_block_printed = true;
-    }
-    if (!pause_hold_active) {
-      gate_block_printed = false;
+    // Printing each state block after active damping matrices are available.
+    if (intro_printed_for != state) {
+      printStateHeader(state);
+      printStateIntro(params, damping, state);
+      intro_printed_for = state;
     }
 
-    // Printing each phase block after active damping matrices are available.
-    if (intro_printed_for != phase) {
-      printPhaseHeader(phase);
-      printPhaseIntro(params, damping, phase);
-      intro_printed_for = phase;
-    }
-
-    const bool wants_setup_block =
-        phase == ControlPhase::kSetup ||
-        (phase == ControlPhase::kPoseHold && params.use_setup_impedance_hold);
-    if (wants_setup_block && !setup_law_printed) {
-      printSetupImpedanceLaw(params, damping,
-                             phase == ControlPhase::kPoseHold,
+    const bool wants_contact_establishment_block =
+        state == ControlState::kContactEstablishment ||
+        state == ControlState::kPreGrindingHold ||
+        (state == ControlState::kPoseHold && params.use_contact_impedance_hold);
+    if (wants_contact_establishment_block && !contact_establishment_law_printed) {
+      printContactEstablishmentImpedanceLaw(params, damping,
+                             state == ControlState::kPoseHold,
                              R_base_surface, R_EE);
-      setup_law_printed = true;
+      contact_establishment_law_printed = true;
     }
-    if (!wants_setup_block) {
-      // Resetting the report flag before the next setup entry.
-      setup_law_printed = false;
+    if (!wants_contact_establishment_block) {
+      // Resetting the report flag before the next contact establishment entry.
+      contact_establishment_law_printed = false;
     }
     // Calculating the nullspace torque selected by nullspace_mode [N m].
     const Vec7 tau_nullspace =
-        computeNullspaceTorque(params, model, state, J, dq);
+        computeNullspaceTorque(params, model, robot_state, J, dq);
 
     // Initializing the optional joint-torque disturbance [N m].
     AutomaticDisturbance disturbance;
-    if (phase == ControlPhase::kPoseHold && params.disturbance_auto_enabled) {
+    if (state == ControlState::kPoseHold && params.disturbance_auto_enabled) {
       disturbance = computeAutomaticDisturbance(
-          params, model, state, disturbance_force_direction_base,
-          time - phase_start_time);
+          params, model, robot_state, disturbance_force_direction_base,
+          time - state_start_time);
     }
 
     // Loading Coriolis torque [N m] and calculating task torque J^T W [N m].
-    Array7 coriolis_array = model.coriolis(state);
+    Array7 coriolis_array = model.coriolis(robot_state);
     Map<const Vec7> coriolis(coriolis_array.data());
     const Vec7 tau_task = J.transpose() * wrench;
     // Summing task, nullspace, disturbance, and Coriolis torques [N m].
@@ -1149,7 +1167,7 @@ RunResult runControlLoop(ControllerConfig& params,
         (control_cycle_count % static_cast<std::size_t>(log_every_n_cycles)) == 0) {
       LogData& row = log_data[log_write_index];
       row.time = time;
-      row.phase = static_cast<int>(phase);
+      row.state = static_cast<int>(state);
       row.nullspace_mode = static_cast<int>(params.nullspace_mode);
       row.p_EE = p_EE;
       row.p_d = desired.p_d;
