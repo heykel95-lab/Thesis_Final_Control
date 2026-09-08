@@ -1,0 +1,8 @@
+run_id:   S3_surface_t1_10deg
+repeats:  3
+
+purpose:
+  Surface-frame compliance centre at 60 mm, commanded offset t1 10deg.
+
+pass criterion:
+  Should match S2 at zero offset and differ from it at 10 deg. The zero-offset pair is the consistency check.

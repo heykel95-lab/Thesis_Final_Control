@@ -1,0 +1,6 @@
+run_id:        S5_normal_p060
+repeat:        r02
+recorded:      2026-08-14T00:05:15+02:00
+commit:        195b453
+tree_state:    dirty
+exit_status:   0

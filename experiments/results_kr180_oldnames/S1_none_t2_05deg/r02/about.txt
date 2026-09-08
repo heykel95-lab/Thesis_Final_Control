@@ -1,0 +1,8 @@
+run_id:   S1_none_t2_05deg
+repeats:  3
+
+purpose:
+  Baseline without compliance-centre coupling, commanded offset t2 05deg.
+
+pass criterion:
+  Alignment change should stay near zero at every commanded offset. This is the reference the other series are read against.

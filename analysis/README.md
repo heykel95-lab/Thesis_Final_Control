@@ -58,21 +58,18 @@ ones the reported figure uses. The others carry their trials as defaults.
 `figure_style.py` holds the drawing conventions and is imported by the rest.
 It is not run on its own.
 
-## What data is here, and what is not
+## Downloading the experiment data
 
-Trial archives under `experiments/results/` keep their set-up report, effective
-parameters and calibration for every trial. The raw 1 kHz logs are 3.4 GB
-across the campaign and are **not** tracked, with one exception: the trials a
-figure is drawn from, listed in the table above, carry their full logs. That is
-what makes a clone enough to redraw.
+Trial archives under `experiments/results/` include their reports, effective
+parameters, calibration, and raw logs. Older campaigns are also tracked in
+`experiments/results_prior/`, `experiments/results_kr300/`, and
+`experiments/results_kr180_oldnames/`.
 
-The consequence is that `extract_metrics.py` cannot run from a clone. It reads
-every archived log to rebuild `experiments/derived/metrics.csv`, and most of
-those logs are only on the lab machine. `metrics.csv` is therefore tracked as
-data rather than treated as a build product, together with
-`derived/MAIN_NS_automatic_summary.csv`. Between them they hold the numbers the
-thesis quotes.
+All experiment CSV files use Git LFS. Install Git LFS and run `git lfs install`
+and `git lfs pull` inside the clone before running analysis scripts. See
+`experiments/README.md` for archive details. The raw logs needed by
+`extract_metrics.py` are now included in this download.
 
-If a figure is changed to read a trial not in the table, add that trial's logs
-to the exceptions in `.gitignore` in the same commit. Otherwise the figure will
-redraw on the machine that happens to hold the archive and nowhere else.
+`experiments/derived/metrics.csv` and
+`experiments/derived/MAIN_NS_automatic_summary.csv` remain tracked as data:
+they hold the numbers the thesis quotes.

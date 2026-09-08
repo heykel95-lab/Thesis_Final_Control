@@ -1,0 +1,8 @@
+run_id:   S2_tool_00deg
+repeats:  3
+
+purpose:
+  Tool-frame compliance centre at 60 mm, commanded offset 00deg.
+
+pass criterion:
+  Alignment improvement should be present at every commanded offset. A correction that holds across the offsets supports the tool-frame definition.

@@ -1,0 +1,8 @@
+run_id:   S4_tangential_p050
+repeats:  3
+
+purpose:
+  Tool-frame compliance centre +50 mm along the face long axis.
+
+pass criterion:
+  Locates the tangential lever position giving the largest improvement at a 10 deg commanded offset about t1.

@@ -1,0 +1,6 @@
+run_id:        S3_surface_t1_10deg
+repeat:        r02
+recorded:      2026-08-14T00:01:17+02:00
+commit:        195b453
+tree_state:    dirty
+exit_status:   0
