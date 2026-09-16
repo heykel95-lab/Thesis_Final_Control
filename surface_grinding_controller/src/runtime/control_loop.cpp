@@ -38,11 +38,11 @@ RunResult runControlLoop(ControllerConfig& params,
   // ================================================================
   // Reading the initial robot state and mapping the start pose.
   RobotState initial_robot_state = robot.readOnce();
-  Map<const Mat4x4> T_initial(initial_robot_robot_state.O_T_EE.data());
+  Map<const Mat4x4> T_initial(initial_robot_state.O_T_EE.data());
   // Initializing TCP position [m], desired orientation [-], and joint posture [rad].
   Vec3 p_start = T_initial.block<3, 1>(0, 3);
   Mat3 R_d = T_initial.block<3, 3>(0, 0);
-  Vec7 q_start = Map<const Vec7>(initial_robot_robot_state.q.data());
+  Vec7 q_start = Map<const Vec7>(initial_robot_state.q.data());
 
   // Initializing the reference pose for repeated contact-impedance hold trials.
   Vec3 hold_return_p = p_start;
@@ -51,7 +51,7 @@ RunResult runControlLoop(ControllerConfig& params,
 
   // Initializing force [N] and moment [N m] baselines for contact evaluation.
   Map<const Vec6> initial_external_wrench(
-      initial_robot_robot_state.O_F_ext_hat_K.data());
+      initial_robot_state.O_F_ext_hat_K.data());
   Vec3 contact_force_bias = initial_external_wrench.head<3>();
   Vec3 contact_moment_bias = initial_external_wrench.tail<3>();
 
@@ -1200,12 +1200,12 @@ RunResult runControlLoop(ControllerConfig& params,
       row.external_force_K_base = external_force_K_base;
       row.external_moment_K_base = external_moment_K_base;
       row.r_K_TCP_base = r_K_TCP_base;
-      row.setup_Dp_used = damping.setup_damping_valid
-                              ? damping.setup_Dp_used
-                              : gains.setup_Dp_active_diag;
-      row.setup_DR_used = damping.setup_damping_valid
-                              ? damping.setup_DR_used
-                              : params.setup_DR_diag;
+      row.setup_Dp_used = damping.contact_establishment_damping_valid
+                              ? damping.contact_establishment_Dp_used
+                              : gains.contact_establishment_Dp_active_diag;
+      row.setup_DR_used = damping.contact_establishment_damping_valid
+                              ? damping.contact_establishment_DR_used
+                              : params.contact_establishment_DR_diag;
       row.contact_force_bias = contact_force_bias;
       row.contact_moment_bias = contact_moment_bias;
       row.push = push_log;
