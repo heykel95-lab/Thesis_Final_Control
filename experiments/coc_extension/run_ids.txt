@@ -1,0 +1,9 @@
+# New t1 settings only, 90 mm before 100 mm; three repeats each.
+P2_t1_pos_m090
+P2_t1_neg_m090
+P2_t1_pos_p090
+P2_t1_neg_p090
+P2_t1_pos_m100
+P2_t1_neg_m100
+P2_t1_pos_p100
+P2_t1_neg_p100

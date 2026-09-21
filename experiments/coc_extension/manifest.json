@@ -1,0 +1,146 @@
+[
+  {
+    "run_id": "P2_t1_pos_m090",
+    "plot_position_mm": -90,
+    "commanded_tilt_t1_deg": 10.0,
+    "compliance_center_offset_ee_y_m": 0.09,
+    "reference": "experiments/results/P2_t1_pos_m080/r01",
+    "reference_parameter_sha256": {
+      "setup.conf": "addc9db0fe454db2e45aee52ab37178530bcebbec39ccd7e5f0518b9923a8d9f",
+      "approach.conf": "d2f121c4ed953898f5b3652fc2abae7018841ee9a434b3e4acef564b77bac6b0",
+      "phase_gates.conf": "3ea8bfea3b03455e30a8421f56c8103b77b5c5ae3e768e8679a5390bd56f71bc",
+      "auto_damping.conf": "1cd2b3c1f462acf88a5ac3e433e579e6dc40908e9125fde8686e19d4e32fcf4a",
+      "nullspace.conf": "c596a195fde02b532eb09b18321e7a707fb797ab2fdf08dc8eb26b381037bce7",
+      "tool_orientation.conf": "83e52909b5f59f084722ea0dff57779e80ca8b45cc33afc41ff421b3282ba18f"
+    },
+    "overlay_sha256": "95eb1e9a9070f18bd962f221676fdce353322002ac450f91d3b4a4dc62836ccc",
+    "repeats": 3,
+    "status": "measurement_pending"
+  },
+  {
+    "run_id": "P2_t1_neg_m090",
+    "plot_position_mm": -90,
+    "commanded_tilt_t1_deg": -10.0,
+    "compliance_center_offset_ee_y_m": 0.09,
+    "reference": "experiments/results/P2_t1_neg_m080/r01",
+    "reference_parameter_sha256": {
+      "setup.conf": "addc9db0fe454db2e45aee52ab37178530bcebbec39ccd7e5f0518b9923a8d9f",
+      "approach.conf": "d2f121c4ed953898f5b3652fc2abae7018841ee9a434b3e4acef564b77bac6b0",
+      "phase_gates.conf": "3ea8bfea3b03455e30a8421f56c8103b77b5c5ae3e768e8679a5390bd56f71bc",
+      "auto_damping.conf": "1cd2b3c1f462acf88a5ac3e433e579e6dc40908e9125fde8686e19d4e32fcf4a",
+      "nullspace.conf": "c596a195fde02b532eb09b18321e7a707fb797ab2fdf08dc8eb26b381037bce7",
+      "tool_orientation.conf": "a7ad15475040b731426ebb217ef3bbfed13866c24bcc9d0fe92bd8e482d7cb86"
+    },
+    "overlay_sha256": "fb641cd702e324054b760313bfb7ecb453adb6f3bc690ece20fa528c33679d95",
+    "repeats": 3,
+    "status": "measurement_pending"
+  },
+  {
+    "run_id": "P2_t1_pos_p090",
+    "plot_position_mm": 90,
+    "commanded_tilt_t1_deg": 10.0,
+    "compliance_center_offset_ee_y_m": -0.09,
+    "reference": "experiments/results/P2_t1_pos_p080/r01",
+    "reference_parameter_sha256": {
+      "setup.conf": "0df65bd6b471edd0fd996c0627602a5bb926cf384bb49eda3c74573deea02082",
+      "approach.conf": "d2f121c4ed953898f5b3652fc2abae7018841ee9a434b3e4acef564b77bac6b0",
+      "phase_gates.conf": "3ea8bfea3b03455e30a8421f56c8103b77b5c5ae3e768e8679a5390bd56f71bc",
+      "auto_damping.conf": "1cd2b3c1f462acf88a5ac3e433e579e6dc40908e9125fde8686e19d4e32fcf4a",
+      "nullspace.conf": "c596a195fde02b532eb09b18321e7a707fb797ab2fdf08dc8eb26b381037bce7",
+      "tool_orientation.conf": "83e52909b5f59f084722ea0dff57779e80ca8b45cc33afc41ff421b3282ba18f"
+    },
+    "overlay_sha256": "c4ac0566829b9cd2b136abcbdfed6977cd3fadb62dffe1a5473b1e32342e2a77",
+    "repeats": 3,
+    "status": "measurement_pending"
+  },
+  {
+    "run_id": "P2_t1_neg_p090",
+    "plot_position_mm": 90,
+    "commanded_tilt_t1_deg": -10.0,
+    "compliance_center_offset_ee_y_m": -0.09,
+    "reference": "experiments/results/P2_t1_neg_p080/r01",
+    "reference_parameter_sha256": {
+      "setup.conf": "0df65bd6b471edd0fd996c0627602a5bb926cf384bb49eda3c74573deea02082",
+      "approach.conf": "d2f121c4ed953898f5b3652fc2abae7018841ee9a434b3e4acef564b77bac6b0",
+      "phase_gates.conf": "3ea8bfea3b03455e30a8421f56c8103b77b5c5ae3e768e8679a5390bd56f71bc",
+      "auto_damping.conf": "1cd2b3c1f462acf88a5ac3e433e579e6dc40908e9125fde8686e19d4e32fcf4a",
+      "nullspace.conf": "c596a195fde02b532eb09b18321e7a707fb797ab2fdf08dc8eb26b381037bce7",
+      "tool_orientation.conf": "a7ad15475040b731426ebb217ef3bbfed13866c24bcc9d0fe92bd8e482d7cb86"
+    },
+    "overlay_sha256": "d06b19ff4d0e1ab6bda153c1204b4b0847df264f312e19278061bf7e92c475b4",
+    "repeats": 3,
+    "status": "measurement_pending"
+  },
+  {
+    "run_id": "P2_t1_pos_m100",
+    "plot_position_mm": -100,
+    "commanded_tilt_t1_deg": 10.0,
+    "compliance_center_offset_ee_y_m": 0.1,
+    "reference": "experiments/results/P2_t1_pos_m080/r01",
+    "reference_parameter_sha256": {
+      "setup.conf": "addc9db0fe454db2e45aee52ab37178530bcebbec39ccd7e5f0518b9923a8d9f",
+      "approach.conf": "d2f121c4ed953898f5b3652fc2abae7018841ee9a434b3e4acef564b77bac6b0",
+      "phase_gates.conf": "3ea8bfea3b03455e30a8421f56c8103b77b5c5ae3e768e8679a5390bd56f71bc",
+      "auto_damping.conf": "1cd2b3c1f462acf88a5ac3e433e579e6dc40908e9125fde8686e19d4e32fcf4a",
+      "nullspace.conf": "c596a195fde02b532eb09b18321e7a707fb797ab2fdf08dc8eb26b381037bce7",
+      "tool_orientation.conf": "83e52909b5f59f084722ea0dff57779e80ca8b45cc33afc41ff421b3282ba18f"
+    },
+    "overlay_sha256": "4a9f4586312545ccc270b722d795bde45d7335ac51f33121c8c453ac9a217f71",
+    "repeats": 3,
+    "status": "measurement_pending"
+  },
+  {
+    "run_id": "P2_t1_neg_m100",
+    "plot_position_mm": -100,
+    "commanded_tilt_t1_deg": -10.0,
+    "compliance_center_offset_ee_y_m": 0.1,
+    "reference": "experiments/results/P2_t1_neg_m080/r01",
+    "reference_parameter_sha256": {
+      "setup.conf": "addc9db0fe454db2e45aee52ab37178530bcebbec39ccd7e5f0518b9923a8d9f",
+      "approach.conf": "d2f121c4ed953898f5b3652fc2abae7018841ee9a434b3e4acef564b77bac6b0",
+      "phase_gates.conf": "3ea8bfea3b03455e30a8421f56c8103b77b5c5ae3e768e8679a5390bd56f71bc",
+      "auto_damping.conf": "1cd2b3c1f462acf88a5ac3e433e579e6dc40908e9125fde8686e19d4e32fcf4a",
+      "nullspace.conf": "c596a195fde02b532eb09b18321e7a707fb797ab2fdf08dc8eb26b381037bce7",
+      "tool_orientation.conf": "a7ad15475040b731426ebb217ef3bbfed13866c24bcc9d0fe92bd8e482d7cb86"
+    },
+    "overlay_sha256": "811f8548789a9313b12b73a9ac5eb8071750f0d046b2d35458e3010c87097f6b",
+    "repeats": 3,
+    "status": "measurement_pending"
+  },
+  {
+    "run_id": "P2_t1_pos_p100",
+    "plot_position_mm": 100,
+    "commanded_tilt_t1_deg": 10.0,
+    "compliance_center_offset_ee_y_m": -0.1,
+    "reference": "experiments/results/P2_t1_pos_p080/r01",
+    "reference_parameter_sha256": {
+      "setup.conf": "0df65bd6b471edd0fd996c0627602a5bb926cf384bb49eda3c74573deea02082",
+      "approach.conf": "d2f121c4ed953898f5b3652fc2abae7018841ee9a434b3e4acef564b77bac6b0",
+      "phase_gates.conf": "3ea8bfea3b03455e30a8421f56c8103b77b5c5ae3e768e8679a5390bd56f71bc",
+      "auto_damping.conf": "1cd2b3c1f462acf88a5ac3e433e579e6dc40908e9125fde8686e19d4e32fcf4a",
+      "nullspace.conf": "c596a195fde02b532eb09b18321e7a707fb797ab2fdf08dc8eb26b381037bce7",
+      "tool_orientation.conf": "83e52909b5f59f084722ea0dff57779e80ca8b45cc33afc41ff421b3282ba18f"
+    },
+    "overlay_sha256": "05073e5797f34e77d6da801a7d5590972d6d2f90d10ba102ffc2b9951014b179",
+    "repeats": 3,
+    "status": "measurement_pending"
+  },
+  {
+    "run_id": "P2_t1_neg_p100",
+    "plot_position_mm": 100,
+    "commanded_tilt_t1_deg": -10.0,
+    "compliance_center_offset_ee_y_m": -0.1,
+    "reference": "experiments/results/P2_t1_neg_p080/r01",
+    "reference_parameter_sha256": {
+      "setup.conf": "0df65bd6b471edd0fd996c0627602a5bb926cf384bb49eda3c74573deea02082",
+      "approach.conf": "d2f121c4ed953898f5b3652fc2abae7018841ee9a434b3e4acef564b77bac6b0",
+      "phase_gates.conf": "3ea8bfea3b03455e30a8421f56c8103b77b5c5ae3e768e8679a5390bd56f71bc",
+      "auto_damping.conf": "1cd2b3c1f462acf88a5ac3e433e579e6dc40908e9125fde8686e19d4e32fcf4a",
+      "nullspace.conf": "c596a195fde02b532eb09b18321e7a707fb797ab2fdf08dc8eb26b381037bce7",
+      "tool_orientation.conf": "a7ad15475040b731426ebb217ef3bbfed13866c24bcc9d0fe92bd8e482d7cb86"
+    },
+    "overlay_sha256": "4c4f55f70ed72e74b9624032c21e5ec7adaa18f9c9997457cbe1e7fd51fbe2a8",
+    "repeats": 3,
+    "status": "measurement_pending"
+  }
+]

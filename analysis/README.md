@@ -1,5 +1,14 @@
 # Redrawing the thesis figures
 
+For the active Case-D CoC position plot, including the prepared +/-90 and
++/-100 mm extension, use `python3 analysis/make_coc_position_figure.py`.
+It reads the archived terminal reports directly and refuses missing trials.
+See [`../experiments/coc_extension/README.md`](../experiments/coc_extension/README.md)
+for the acquisition status, dependencies and commands for regenerating the
+existing +/-80 mm figure while the extension is still unmeasured. The older
+`make_coc_figures.py` sign plot below reports contact rotation, which differs
+from the calibrated-normal angular error used by the active thesis figure.
+
 Every generated plot the thesis includes is written by a script in this
 directory, from data tracked in this repository. A clone is enough: nothing
 here needs the lab machine or the robot.

@@ -1,0 +1,9 @@
+
+==============================================================================
+  SURFACE GRINDING CONTROLLER
+==============================================================================
+  robot              172.16.0.2
+  parameters         /home/hm-panda/Desktop/Thesis_Final_Control/surface_grinding_controller/params
+------------------------------------------------------------------------------
+Automatic error recovery failed: libfranka: Automatic Error Recovery command rejected: command not possible in the current mode!
+Recover and unlock the robot in Franka Desk, then restart.
