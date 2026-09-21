@@ -18,6 +18,6 @@ Archived `params_effective/` files preserve the parameters used for each run,
 including historical names such as `setup.conf`. Current controller parameters
 are in `surface_grinding_controller/params/` at the repository root.
 
-The prepared +/-90 and +/-100 mm t1 CoC extension is documented in
+The completed +/-90 and +/-100 mm t1 CoC extension is documented in
 [`coc_extension/README.md`](coc_extension/README.md). Its eight settings still
 need measurements before updating the thesis and presentation figures.

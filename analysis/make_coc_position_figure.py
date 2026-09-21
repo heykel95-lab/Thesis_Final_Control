@@ -87,9 +87,10 @@ def collect(root, positions):
 
 def source(groups, positions, presentation=False):
     limit = max(abs(p) for p in positions) + 8
-    width = "13.5" if limit > 88 else "11.5"
+    width = "15.5" if limit > 88 else "11.5"
     # Keep the original y range unless new measured error bars require more room.
     ymax = max(11, math.ceil(max(abs(g["final_t1_deg_mean"]) + g["final_t1_deg_sd"] for g in groups)) + 1)
+    ystep = 10 if ymax > 25 else 5 if ymax > 15 else 2
     text = r'''% Generated from archived contact-error endpoint reports; three repeats, sample SD.
 \begin{tikzpicture}
 \begin{axis}[
@@ -111,8 +112,13 @@ def source(groups, positions, presentation=False):
 '''
     for key, value in {"WIDTH": width, "LIMIT": limit, "YMAX": ymax,
                        "TICKS": ",".join(map(str, positions)),
-                       "YTICKS": ",".join(map(str, range(-ymax + ymax % 2, ymax, 2)))}.items():
+                       "YTICKS": ",".join(map(str, range(-(ymax // ystep) * ystep, ymax, ystep)))}.items():
         text = text.replace(f"@{key}@", str(value))
+    if presentation:
+        text = text.replace(r"font=\footnotesize", r"font=\normalsize")
+        text = text.replace(r"font=\scriptsize", r"font=\small")
+        text = text.replace("at={(0.5,-0.24)}, anchor=north}",
+                            "at={(0.5,-0.20)}, anchor=north, legend columns=2, column sep=1.2em}")
     for direction, colour, marker in (("pos", "black", "o"), ("neg", "blue!55!black", "square")):
         subset = [row for row in groups if row["direction"] == direction]
         text += (r"\addplot[" + colour + ", mark=" + marker + r''', mark options={fill=white},
@@ -145,15 +151,16 @@ def main():
             writer.writeheader()
             writer.writerows(values)
     (args.summary_dir / "source_provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
-    preamble = ("\\documentclass[tikz,border=4pt]{standalone}\n"
+    preamble = ("\\documentclass[@SIZE@tikz,border=4pt]{standalone}\n"
                 "\\usepackage{amsmath,pgfplots,lmodern}\n\\pgfplotsset{compat=1.16}\n\\begin{document}\n")
     for name, presentation in (("results_case_d_panels", False), ("CoC_position", True)):
+        wrapper = preamble.replace("@SIZE@", "" if presentation else "12pt,")
         body = source(groups, positions, presentation)
-        (args.out_dir / (name + ".tex")).write_text(body if not presentation else preamble + body + "\\end{document}\n")
+        (args.out_dir / (name + ".tex")).write_text(body if not presentation else wrapper + body + "\\end{document}\n")
         if not args.no_render:
             render = name if presentation else "render_" + name
             if not presentation:
-                (args.out_dir / (render + ".tex")).write_text(preamble + body + "\\end{document}\n")
+                (args.out_dir / (render + ".tex")).write_text(wrapper + body + "\\end{document}\n")
             result = subprocess.run(["pdflatex", "-interaction=nonstopmode", "-halt-on-error", render + ".tex"],
                                     cwd=args.out_dir, capture_output=True, text=True)
             if result.returncode:

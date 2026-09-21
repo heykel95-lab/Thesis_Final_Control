@@ -1,14 +1,24 @@
 # CoC sweep extension for the thesis and presentation
 
-Prepared on 2026-09-21. Measurements at -100, -90, +90 and +100 mm are
-pending. The existing figures and measured results remain unchanged.
+Completed on 2026-09-21: all 24 trials at -100, -90, +90 and +100 mm
+finished the five-second contact phase and exited successfully. Each of the
+eight conditions has three repeats. The plot now contains 78 trials over
+26 position/entry conditions; the full main-contact summary has 93 trials
+over 31 settings.
 
-The first acquisition attempt was rejected by the robot before motion:
-`Automatic Error Recovery command rejected: command not possible in the current mode!`
-It is preserved under
-`experiments/results_aborted/P2_t1_pos_m090_r01_20260921_mode_rejected/`.
-Enable FCI/unlock the robot in Franka Desk before resuming. No new measurement
-has been included in either plot.
+This is a later-session extension of the archived campaign. Saved surface,
+tool geometry, initial posture, gripper and safety parameters match the
+corresponding +/-80 mm references. Contact, approach and damping settings
+were translated from those references to the current parameter names.
+Acquisition used controller revision `e23bd03`; each trial records its exact
+provenance. Saved calibration equality does not independently establish an
+unchanged physical tool mounting or surface placement.
+
+The first attempt was rejected by the robot before motion because its mode
+disallowed automatic error recovery. That attempt remains under
+`experiments/results_aborted/P2_t1_pos_m090_r01_20260921_mode_rejected/`
+and contributes no measurement. Acquisition succeeded after the robot was
+unlocked. All 16 active parameter files were restored byte for byte.
 
 The extension adds four CoC positions for each of the +10 and -10 degree
 commanded entry tilts about t1: eight settings and 24 trials at three repeats.
@@ -61,7 +71,8 @@ Check them against the archived reference for comparability; any changed
 calibration or physical tool mounting makes this a later-session extension.
 The current controller revision is also recorded separately from the original
 campaign. `manifest.json` records the baseline file hashes and generated
-overlay hashes. These are prepared conditions, not completed measurements.
+overlay hashes. Its `status_at_preparation` records the original preparation state.
+`completed_trials.json` and `measurement_audit.json` record completed acquisition.
 
 When starting acquisition, run each setting with repeat indices 1, 2 and 3.
 For example, from the repository root:
@@ -94,8 +105,7 @@ Use `--limit 1` to collect one new trial. Full console output is retained in
 
 ## Regenerating the plot from a checkout
 
-The archive and this generator live in the same repository. After collecting
-all 24 new trials, regenerate both figure variants with:
+The archive and this generator live in the same repository. Regenerate both figure variants with:
 
 ```sh
 git lfs pull
@@ -110,7 +120,7 @@ grouped means/sample SD and source hashes are written to
 successful five-second terminal reports with matching saved parameters.
 Missing measurements stop generation before outputs are written.
 
-To reproduce the existing +/-80 mm plot before acquisition:
+To reproduce the original +/-80 mm plot:
 
 ```sh
 python3 analysis/make_coc_position_figure.py \
@@ -121,28 +131,34 @@ python3 analysis/make_coc_position_figure.py \
 All 18 existing plotted means and sample standard deviations were checked
 against the thesis source and matched at its nine-decimal stored precision.
 
-## Pending figure update
+## Measured extension
 
-After all 24 trials are complete, audit the saved conditions and complete
-five-second contact reports. Use the same angular-error metric as the current
-figure: theta_err,t1 is the negative of the controller's normal-alignment
-error component. Report the three-repeat mean and sample standard deviation.
-The contact rotation `e_R` is a different metric.
+Angular error theta_err,t1 is the negative of the controller's normal-alignment
+error component. Values below are mean +/- sample SD across three trials,
+in degrees, from 0.01-degree terminal endpoints.
 
-The authoritative existing figures are:
+| Plot position [mm] | Positive entry | Negative entry |
+|---:|---:|---:|
+| -100 | 31.77 +/- 1.33 | 2.76 +/- 0.14 |
+| -90 | 10.52 +/- 0.39 | 2.48 +/- 0.03 |
+| +90 | 1.11 +/- 0.06 | -11.91 +/- 0.57 |
+| +100 | 0.83 +/- 0.06 | -33.98 +/- 1.16 |
 
-- Thesis: `MyOwn-thesis/figures/ch05/results_case_d_panels.tex`.
-- Thesis endpoint extraction:
-  `MyOwn-thesis/code/python/figures/contact_angular_error/recalculate_normal_error.py`.
-- Thesis plot generator:
-  `MyOwn-thesis/code/python/figures/make_contact_angular_error_figures.py`.
-- Presentation: the `Effect of CoC position` slide in
-  `Presentation_new/Final Presentation`, using the same audited endpoints.
+The smallest positive-entry mean magnitude is 0.83 degrees at +100 mm,
+52.6% below the 1.75-degree TCP reference. The negative-entry minimum
+remains at +10 mm. The larger opposing errors at 100 mm require a wider
+vertical axis; no result is clipped or replaced by a prediction.
 
-The final x positions will be -100, -90, -80, -40, -20, -10, 0, 10, 20, 40,
-80, 90 and 100 mm. Keep proportional spacing, horizontal tick labels and a
-dotted vertical gridline at every measured position. Update the summary,
-source provenance, plot sources and rendered assets together; the full main
-contact summary will then contain 93 trials and 31 settings. Preserve the
-representative wrench traces at -40, 0 and +40 mm and the existing speaking
-text and PowerPoint notes. Do not add predicted endpoints to measured series.
+Validation checks all 24 effective parameter sets and raw contact durations.
+An independent 3D reconstruction from the logged EE rotation agrees with
+the logged normal-error vectors, and the report endpoints agree with the
+raw endpoints within their reporting precision. Exact residuals and source
+hashes are in `measurement_audit.json` and `completed_trials.json`.
+All original 23 main-contact setting summaries are unchanged.
+
+The synchronized plot has 13 positions: -100, -90, -80, -40, -20, -10, 0,
+10, 20, 40, 80, 90 and 100 mm. The thesis Case-D source and presentation's
+Effect of CoC position figure use identical means and error bars. The original
+representative wrench traces at -40, 0 and +40 mm remain unchanged.
+The plot, summaries, editable sources and raw logs can be regenerated from
+this repository without the robot or either document checkout.

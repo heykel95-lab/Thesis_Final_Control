@@ -1,11 +1,11 @@
 # Redrawing the thesis figures
 
-For the active Case-D CoC position plot, including the prepared +/-90 and
+For the active Case-D CoC position plot, including the measured +/-90 and
 +/-100 mm extension, use `python3 analysis/make_coc_position_figure.py`.
 It reads the archived terminal reports directly and refuses missing trials.
 See [`../experiments/coc_extension/README.md`](../experiments/coc_extension/README.md)
 for the acquisition status, dependencies and commands for regenerating the
-existing +/-80 mm figure while the extension is still unmeasured. The older
+original +/-80 mm figure or the completed +/-100 mm extension. The older
 `make_coc_figures.py` sign plot below reports contact rotation, which differs
 from the calibrated-normal angular error used by the active thesis figure.
 
@@ -43,9 +43,9 @@ a generator that still runs.
 `figures/MAIN_D_trace.png` is the one exception: no script here writes it and
 no chapter includes it.
 
-The four Chapter 5 plots drawn in `pgfplots` have no generator here. They are
-`.tex` sources in the thesis repository and are drawn from means already
-tabulated in the text.
+The active Case-D `pgfplots` comparison is regenerated here by
+`make_coc_position_figure.py`. The other A--C `pgfplots` comparisons have
+their generator in the thesis repository.
 
 ## Running them
 

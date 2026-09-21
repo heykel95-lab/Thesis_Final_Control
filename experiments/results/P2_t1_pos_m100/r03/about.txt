@@ -1,0 +1,10 @@
+run_id: P2_t1_pos_m100
+repeats: 3
+reference: P2_t1_pos_m080/r01
+
+Commanded t1 tilt: 10.0 deg.
+Position on the existing Case-D plot: -100 mm.
+Tool-frame centre y: +0.100000 m.
+
+Measurement pending. Record three complete contact-establishment
+trials before adding a mean and sample SD to either figure.

@@ -1,0 +1,194 @@
+[
+  {
+    "run_id": "P2_t1_pos_m090",
+    "repeat": "r01",
+    "contact_samples": 4961,
+    "contact_duration_s": 4.999,
+    "final_t1_deg": 10.92,
+    "raw_log_sha256": "9dfb2f24ef60e2d805a76f1ee65560171877aab285a708cc6c485776328cb2a8"
+  },
+  {
+    "run_id": "P2_t1_pos_m090",
+    "repeat": "r02",
+    "contact_samples": 4968,
+    "contact_duration_s": 4.9990000000000006,
+    "final_t1_deg": 10.5,
+    "raw_log_sha256": "be3fb2cbebf80f19b991481b472ca9146253ab08376ecc90c9343b9e2fcdc41e"
+  },
+  {
+    "run_id": "P2_t1_pos_m090",
+    "repeat": "r03",
+    "contact_samples": 4990,
+    "contact_duration_s": 4.9990000000000006,
+    "final_t1_deg": 10.15,
+    "raw_log_sha256": "a39ed77c8039efdde88c22af872d7b3355a0f4b35e9ecce36c46b312458d7ac8"
+  },
+  {
+    "run_id": "P2_t1_neg_m090",
+    "repeat": "r01",
+    "contact_samples": 4956,
+    "contact_duration_s": 4.999,
+    "final_t1_deg": 2.48,
+    "raw_log_sha256": "39274ec357f6a981fb9d16ea5b75e4cb399d51cce7478d8bc3e2d5a12974fa7a"
+  },
+  {
+    "run_id": "P2_t1_neg_m090",
+    "repeat": "r02",
+    "contact_samples": 4977,
+    "contact_duration_s": 4.999,
+    "final_t1_deg": 2.45,
+    "raw_log_sha256": "e0f293bd7a0e94ba63cac01d9393bd2c06e161a9e0f991892800ea3f975532f4"
+  },
+  {
+    "run_id": "P2_t1_neg_m090",
+    "repeat": "r03",
+    "contact_samples": 4973,
+    "contact_duration_s": 4.9990000000000006,
+    "final_t1_deg": 2.51,
+    "raw_log_sha256": "e29742ce93ebd26d0fbbecc00fb971e71dd21a6c48589ee973859ca4e1f0ffc4"
+  },
+  {
+    "run_id": "P2_t1_pos_p090",
+    "repeat": "r01",
+    "contact_samples": 4974,
+    "contact_duration_s": 4.999,
+    "final_t1_deg": 1.04,
+    "raw_log_sha256": "121a8f8bf491e6ad046cd5a9d4c2a4979f9e45734dcc140c81688e3677e22637"
+  },
+  {
+    "run_id": "P2_t1_pos_p090",
+    "repeat": "r02",
+    "contact_samples": 4972,
+    "contact_duration_s": 4.999,
+    "final_t1_deg": 1.16,
+    "raw_log_sha256": "db08b3936926707903a822b18ef2ee840a729a5bb73a8e193a923f05f5c0a2c5"
+  },
+  {
+    "run_id": "P2_t1_pos_p090",
+    "repeat": "r03",
+    "contact_samples": 4958,
+    "contact_duration_s": 4.9990000000000006,
+    "final_t1_deg": 1.14,
+    "raw_log_sha256": "cdb8ef4287dfaf4f453c4538ac1c51af1909012ab250c3c4b860c1aeb08d5deb"
+  },
+  {
+    "run_id": "P2_t1_neg_p090",
+    "repeat": "r01",
+    "contact_samples": 4957,
+    "contact_duration_s": 4.9990000000000006,
+    "final_t1_deg": -11.26,
+    "raw_log_sha256": "8ed6358281d564c696dfaca8d67785269e2cbd39ffc416635f115274e3936c7f"
+  },
+  {
+    "run_id": "P2_t1_neg_p090",
+    "repeat": "r02",
+    "contact_samples": 4943,
+    "contact_duration_s": 4.999,
+    "final_t1_deg": -12.31,
+    "raw_log_sha256": "30a94d33fc46504f02292bd92c931ed1ce3a314317e2c12a2044dd6be41a58b0"
+  },
+  {
+    "run_id": "P2_t1_neg_p090",
+    "repeat": "r03",
+    "contact_samples": 4982,
+    "contact_duration_s": 4.9990000000000006,
+    "final_t1_deg": -12.15,
+    "raw_log_sha256": "d57190f90ea460821121cb1ea792d0710f751fe970a54bfc9a1f0b27946bb9fb"
+  },
+  {
+    "run_id": "P2_t1_pos_m100",
+    "repeat": "r01",
+    "contact_samples": 4965,
+    "contact_duration_s": 4.9990000000000006,
+    "final_t1_deg": 30.28,
+    "raw_log_sha256": "ffd137d08f664fcb04c0c1a9fbe85087d101fcd609484250772985125f85c86e"
+  },
+  {
+    "run_id": "P2_t1_pos_m100",
+    "repeat": "r02",
+    "contact_samples": 4972,
+    "contact_duration_s": 4.999,
+    "final_t1_deg": 32.17,
+    "raw_log_sha256": "ab57f69a5caacb543f8afb6594a87cec84d1fb53c86099702a49d485c70ed2c2"
+  },
+  {
+    "run_id": "P2_t1_pos_m100",
+    "repeat": "r03",
+    "contact_samples": 4968,
+    "contact_duration_s": 4.9990000000000006,
+    "final_t1_deg": 32.85,
+    "raw_log_sha256": "c5654b0ed9e6003f0d9dc76c8904baf4d93732e04803b54d8049afb13175f86b"
+  },
+  {
+    "run_id": "P2_t1_neg_m100",
+    "repeat": "r01",
+    "contact_samples": 4973,
+    "contact_duration_s": 4.9990000000000006,
+    "final_t1_deg": 2.89,
+    "raw_log_sha256": "591de58287c91ac7574e384e3bfcdc32d22bdfd4f6ef9b9fc43c6b8bbbc561d1"
+  },
+  {
+    "run_id": "P2_t1_neg_m100",
+    "repeat": "r02",
+    "contact_samples": 4970,
+    "contact_duration_s": 4.9990000000000006,
+    "final_t1_deg": 2.79,
+    "raw_log_sha256": "b24929a12c4536029704aa6ed53c9ecfa1ee7d0be6895b53ca1ef1514fbf5cdd"
+  },
+  {
+    "run_id": "P2_t1_neg_m100",
+    "repeat": "r03",
+    "contact_samples": 4953,
+    "contact_duration_s": 4.9990000000000006,
+    "final_t1_deg": 2.61,
+    "raw_log_sha256": "c5686000f9171ced8f75b7d6899bd750e42d67a11c96e91a7772b949fad62426"
+  },
+  {
+    "run_id": "P2_t1_pos_p100",
+    "repeat": "r01",
+    "contact_samples": 4953,
+    "contact_duration_s": 4.9990000000000006,
+    "final_t1_deg": 0.76,
+    "raw_log_sha256": "e2f74e7f251628083557c56f56454f8c9a1c6f420433127243526a83dc7d0a93"
+  },
+  {
+    "run_id": "P2_t1_pos_p100",
+    "repeat": "r02",
+    "contact_samples": 4974,
+    "contact_duration_s": 4.999,
+    "final_t1_deg": 0.87,
+    "raw_log_sha256": "af7d2fc51bbfb6859e22f23561b1ebebbc601377314a9b24f85d14f4efc10232"
+  },
+  {
+    "run_id": "P2_t1_pos_p100",
+    "repeat": "r03",
+    "contact_samples": 4961,
+    "contact_duration_s": 4.999,
+    "final_t1_deg": 0.86,
+    "raw_log_sha256": "57e8a7500af021a164611a4f1d602c64892885e509993b0e3020e29fb8101000"
+  },
+  {
+    "run_id": "P2_t1_neg_p100",
+    "repeat": "r01",
+    "contact_samples": 4969,
+    "contact_duration_s": 4.9990000000000006,
+    "final_t1_deg": -32.65,
+    "raw_log_sha256": "d4277a6376ea86f3ea8dc0ce81c9d849e33cf15278917ca885bb5afce3bba93e"
+  },
+  {
+    "run_id": "P2_t1_neg_p100",
+    "repeat": "r02",
+    "contact_samples": 4957,
+    "contact_duration_s": 4.9990000000000006,
+    "final_t1_deg": -34.72,
+    "raw_log_sha256": "35a49f47b6e743de0e33c38973c4592f7bfef80462e2ef45a973cada4dd479bb"
+  },
+  {
+    "run_id": "P2_t1_neg_p100",
+    "repeat": "r03",
+    "contact_samples": 4954,
+    "contact_duration_s": 4.9990000000000006,
+    "final_t1_deg": -34.58,
+    "raw_log_sha256": "d662c3e9700fe7f756e083bba42abb4fb659ccb249b939afa249260018739b12"
+  }
+]

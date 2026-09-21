@@ -98,7 +98,7 @@ def main():
                 reference=f"experiments/results/{reference_id}/r01",
                 reference_parameter_sha256=hashes,
                 overlay_sha256=hashlib.sha256(overlay.read_bytes()).hexdigest(),
-                repeats=REPEATS, status="measurement_pending"))
+                repeats=REPEATS, status_at_preparation="measurement_pending"))
     DESTINATION.mkdir(parents=True, exist_ok=True)
     (DESTINATION / "manifest.json").write_text(json.dumps(prepared, indent=2) + "\n")
     (DESTINATION / "run_ids.txt").write_text(
