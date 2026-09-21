@@ -254,7 +254,7 @@ void printContactEstablishmentImpedanceLaw(const ControllerConfig& params,
            "keys");
     if (params.use_virtual_compliance_center) {
       // Displaying coordinate conventions accepted by live center tuning [mm].
-      printf("  %-16s   r1..r3 <mm> lever in surface frame | "
+      printf("  %-16s   r1..r3 (or rc1..rc3) <mm> lever in surface frame | "
              "pc1..pc3 <mm> center in tool frame\n", "");
     }
     printf("  %-16s   s runs the sequence with them | t comes back here\n", "");

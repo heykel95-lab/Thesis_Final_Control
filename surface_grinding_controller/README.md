@@ -265,6 +265,30 @@ After selecting `g`, move the robot by hand and select an action:
 During active control, `e` stops the run, `m` returns to the startup menu, and
 `g` enters manual guidance from the current pose.
 
+### Live compliance-center tuning in mode t
+
+With `use_virtual_compliance_center = 1`, enter `r2 -80` or `rc2 -80` to
+set the compliance lever's surface-tangent-2 component to -80 mm. The indices
+1, 2, and 3 refer to `[t1,t2,n]`. After an accepted update, the impedance
+summary reprints `r_c [t1,t2,n]` in millimetres. These commands update the
+running session; configuration-file distances use metres and are loaded
+before each new session selected from the startup menu.
+
+Mode `t` holds the captured pose with contact-establishment impedance. It
+does not apply the sequence's automatic contact penetration, and `t1`/`t2`
+commands set the tilt for the next `s` sequence. To repeat the contact
+experiment, set the lever and tilt in `t`, then enter `s`; enter `t` to
+return for the next setting.
+
+For a lever `r_c = [0, r2, 0]` and the surface-frame gains, the commanded
+moment is `M_t1 = KR_t1 * e_R_t1 - DR_t1 * omega_t1 + r2 * F_n`, with `r2`
+in metres and `F_n` the signed commanded normal force. At `F_n = -20 N`,
+-80 mm adds +1.6 Nm and +80 mm adds -1.6 Nm. Rotating by hand with little
+normal load can feel similar for the two signs: with TCP translation fixed,
+the added rotational stiffness is `Kp_n * r2^2`, which is the same for
+both signs. Allowing normal translation can further reduce that stiffness
+contribution. Compare the contact response under a consistent normal load.
+
 ## Parameter files
 
 Selector comments use one consistent form:

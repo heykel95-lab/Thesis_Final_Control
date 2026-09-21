@@ -127,7 +127,8 @@ void startKeyboardStopThread(const ControllerConfig& /*params*/,
           target = &signals.contact_establishment_kr_request;
         } else if (std::sscanf(line.c_str(), "pc%d %lf", &index, &value) == 2) {
           target = &signals.contact_establishment_compliance_center_mm_request;
-        } else if (std::sscanf(line.c_str(), "r%d %lf", &index, &value) == 2) {
+        } else if (std::sscanf(line.c_str(), "r%d %lf", &index, &value) == 2 ||
+                   std::sscanf(line.c_str(), "rc%d %lf", &index, &value) == 2) {
           target = &signals.contact_establishment_rc_mm_request;
         }
         if (target != nullptr) {
